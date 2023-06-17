@@ -149,7 +149,7 @@
                                 <ion-text translate>Index.loggedInAs</ion-text> {{ edge.getRoleString() }}.
                               </p>
                             </ion-label>
-                            <ion-icon slot="end" name="play-outline" color="primary"></ion-icon>
+                            <ion-icon slot="end" name="play-outline" [color]="edge.isOnline ? 'primary' : 'medium'"></ion-icon>
                           </ion-item>
                         </ng-container>
                         <ion-infinite-scroll (ionInfinite)="doInfinite($event)" [disabled]="limitReached">

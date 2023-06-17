@@ -57,7 +57,7 @@ export class SystemLogComponent implements OnInit, OnDestroy {
       this.lines.unshift({
         time: "-------------------",
         level: "----",
-        color: "black",
+        color: "var(--ion-color-dark)",
         message: "",
         source: ""
       });
@@ -97,15 +97,15 @@ export class SystemLogComponent implements OnInit, OnDestroy {
   private getColor(level): string {
     switch (level) {
       case 'INFO':
-        return 'green';
+        return 'var(--ion-color-success)';
       case 'WARN':
-        return 'orange';
+        return 'var(--ion-color-warning)';
       case 'DEBUG':
-        return 'gray';
+        return 'var(--ion-color-medium)';
       case 'ERROR':
-        return 'red';
+        return 'var(--ion-color-danger)';
     };
-    return 'black';
+    return 'var(--ion-color-dark)';
   }
 
   public unsubscribe() {

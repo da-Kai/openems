@@ -162,16 +162,12 @@ table {
 }
 
 .underline {
-    border-bottom: 1pt solid lightgray;
-}
-
-.gray_color {
-    color: gray;
+    border-bottom: 1pt solid var(--ion-color-medium);
 }
 
 button.activated {
-    color: black;
-    background-color: lightgreen;
+    color: var(--ion-text-color);
+    background-color: var(--ion-color-enviromental);
 }
 
 #toast-container {
