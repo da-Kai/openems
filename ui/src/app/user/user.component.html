@@ -1,6 +1,22 @@
+<style>
+  .user-component ion-col {
+    padding-top: 0;
+    padding-bottom: 0;
+    margin: 0;
+  }
+
+  .user-component ion-card {
+    margin-top: 20pt;
+    margin-bottom: 0;
+  }
+
+  .user-component ion-row {
+    padding-bottom: 20pt;
+  }
+</style>
 <header></header>
 <ion-content>
-  <ion-grid>
+  <ion-grid class="user-component">
     <ion-row class="ion-justify-content-center">
       <ion-col size="12" size-md="8" size-xl="4">
         <ion-card *ngIf="(service.metadata | async)?.user as user">
@@ -59,7 +75,7 @@
         </ion-card>
 
         <!-- Show and Edit UserInformation -->
-        <ion-card *ngIf="showInformation" style="margin-top: 5%;">
+        <ion-card *ngIf="showInformation">
           <ion-item lines="full" color="light">
             <ion-icon slot="start" size="large" color="primary" name="person-outline"></ion-icon>
             <ion-label class="ion-text-wrap" translate>

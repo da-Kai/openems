@@ -124,6 +124,16 @@ html.md {
     white-space: initial !important;
 }
 
+ion-icon.flip-horizontal {
+    -webkit-transform: scaleY(-1);
+    transform: scaleY(-1);
+}
+
+ion-icon.flip-vertical {
+    -webkit-transform: scaleX(-1);
+    transform: scaleX(-1);
+}
+
 ion-label {
     font-family: Arial, Helvetica, sans-serif;
 }
@@ -235,6 +245,30 @@ formly-input-section {
 }
 
 :root {
+    --oe-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.18), 0 3px 10px 0 rgba(0, 0, 0, 0.06);
+
+    ion-card {
+        box-shadow: var(--oe-shadow) !important;
+        border-radius: 10px;
+    }
+
+    ion-header::after {
+        background-image: none !important;
+    }
+
+    ion-header {
+        box-shadow: var(--oe-shadow) !important;
+    }
+
+    ion-searchbar {
+        --box-shadow: var(var(--oe-shadow)) !important;
+        --background: var(--ion-item-background);
+        color: var(--ion-text-color);
+    }
+
+    ion-searchbar .searchbar-input {
+        border-radius: 20px;
+    }
 
     // Used in IBN, dynamicFeedInLimitation
     formly-field-ion-select {
@@ -315,6 +349,20 @@ ion-modal.auto-height {
 
 ion-modal.full-width {
     --width: 100%;
+}
+
+ion-avatar.iconify {
+    margin-inline-end: 32px;
+    margin-top: 12px;
+    margin-bottom: 12px;
+    --border-radius: 0;
+    max-height: 24px;
+    max-width: 24px;
+}
+
+on-avatar.iconify.icon-large {
+    max-height: 32px;
+    max-width: 32px;
 }
 
 /** SVG Variables **/

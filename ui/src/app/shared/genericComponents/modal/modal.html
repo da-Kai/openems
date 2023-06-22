@@ -9,7 +9,9 @@
                     *ngIf="((toolbarButtons | typeof) !== 'Object') && toolbarButtons.length > 0, else singleButton">
                     <ion-button *ngFor="let button of toolbarButtons" [href]="button.url" target="_blank">
                         <ion-icon [name]="button.icon?.name ?? 'help-circle-outline'"
-                            [color]="button.icon?.color ?? 'light'" [size]="button.icon?.size ??'medium'">
+                            [color]="button.icon?.color ?? 'light'" 
+                            [size]="button.icon?.size ??'medium'"
+                            [class]="button.icon?.cssClass ?? null">
                         </ion-icon>
                     </ion-button>
                 </ng-container>
@@ -18,7 +20,8 @@
                     <ion-button [href]="toolbarButtons.url" target="_blank">
                         <ion-icon [name]="toolbarButtons.icon?.name ?? 'help-circle-outline'"
                             [color]="toolbarButtons.icon?.color ?? 'light'"
-                            [size]="toolbarButtons.icon?.size ?? 'medium'">
+                            [size]="toolbarButtons.icon?.size ?? 'medium'"
+                            [class]="toolbarButtons.icon?.cssClass ?? null">
                         </ion-icon>
                     </ion-button>
                 </ng-template>

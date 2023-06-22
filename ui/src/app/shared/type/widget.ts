@@ -40,6 +40,13 @@ export type Icon = {
     color: string;
     size: string;
     name: string;
+    caaClass?: string;
+}
+
+export type ImageIcon = {
+    src: string;
+    large: boolean;
+    cssClass?: string;
 }
 
 export class Widget {

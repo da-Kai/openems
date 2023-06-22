@@ -1,5 +1,5 @@
 <ion-header>
-  <ion-toolbar color="primary" mode="md">
+  <ion-toolbar color="primary" mode="md" style="--padding-end: 10pt;">
     <ion-buttons *ngIf="backUrl" slot="start">
       <ion-button [routerLink]="backUrl">
         <ion-icon name="arrow-back-outline"></ion-icon>
@@ -42,13 +42,14 @@
           <ng-container *ngIf="currentData.summary.system as sum">
             <ion-button (click)="presentSingleStatusModal()"
               *ngIf="currentPage === 'IndexLive' || currentPage === 'IndexHistory' || currentPage === 'EdgeSettings'"
-              color="light" fill="solid" shape="round">
+              color="light" fill="solid" shape="round" style="min-width: 36px; min-height: 36px;">
               <ng-container [ngSwitch]="sum.state">
                 <ion-icon *ngSwitchCase="0" color="success" name="checkmark-circle-outline"></ion-icon>
                 <ion-icon *ngSwitchCase="1" color="success"
                   [name]="edge.roleIsAtLeast('admin') ? 'information-outline' : 'checkmark-circle-outline'"></ion-icon>
                 <ion-icon *ngSwitchCase="2" color="warning" name="alert-outline"></ion-icon>
                 <ion-icon *ngSwitchCase="3" color="danger" name="alert-outline"></ion-icon>
+                <ion-icon *ngSwitchDefault color="medium" name="help-outline"></ion-icon>
               </ng-container>
             </ion-button>
           </ng-container>
