@@ -1,5 +1,5 @@
 <ion-header>
-  <ion-toolbar color="primary" mode="md" style="--padding-end: 10pt;">
+  <ion-toolbar color="primary" mode="md">
     <ion-buttons *ngIf="backUrl" slot="start">
       <ion-button [routerLink]="backUrl">
         <ion-icon name="arrow-back-outline"></ion-icon>
@@ -22,10 +22,10 @@
         <ion-buttons>
           <ion-segment mode="md" (ionChange)="segmentChanged($event)" [(ngModel)]="currentPage"
             class="ion-justify-content-center">
-            <ion-segment-button value="IndexLive">
+            <ion-segment-button value="IndexLive" style="width:50%;">
               <ion-label>Live</ion-label>
             </ion-segment-button>
-            <ion-segment-button value="IndexHistory">
+            <ion-segment-button value="IndexHistory" style="width:50%;">
               <ion-label>Historie</ion-label>
             </ion-segment-button>
           </ion-segment>
@@ -37,19 +37,20 @@
     <ion-title class="ion-hide-md-down" slot="end">
     </ion-title>
     <ng-container *ngIf="service.currentEdge | async as edge">
-      <ion-buttons slot="end">
+      <!-- style button to match size and margin of the menu-button -->
+      <ion-buttons slot="end" style="margin-inline-end: 4px; height: 48px; width: 48px;">
         <ng-container *ngIf="edge.currentData | async as currentData">
           <ng-container *ngIf="currentData.summary.system as sum">
             <ion-button (click)="presentSingleStatusModal()"
               *ngIf="currentPage === 'IndexLive' || currentPage === 'IndexHistory' || currentPage === 'EdgeSettings'"
-              color="light" fill="solid" shape="round" style="min-width: 36px; min-height: 36px;">
+              color="light" fill="solid" shape="round" style="min-width: 36px; min-height: 36px; margin: auto;">
               <ng-container [ngSwitch]="sum.state">
                 <ion-icon *ngSwitchCase="0" color="success" name="checkmark-circle-outline"></ion-icon>
                 <ion-icon *ngSwitchCase="1" color="success"
                   [name]="edge.roleIsAtLeast('admin') ? 'information-outline' : 'checkmark-circle-outline'"></ion-icon>
                 <ion-icon *ngSwitchCase="2" color="warning" name="alert-outline"></ion-icon>
                 <ion-icon *ngSwitchCase="3" color="danger" name="alert-outline"></ion-icon>
-                <ion-icon *ngSwitchDefault color="medium" name="help-outline"></ion-icon>
+                <ion-icon *ngSwitchDefault color="medium" name="ban-outline"></ion-icon>
               </ng-container>
             </ion-button>
           </ng-container>

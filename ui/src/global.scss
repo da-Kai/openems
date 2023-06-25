@@ -245,11 +245,12 @@ formly-input-section {
 }
 
 :root {
+    --border-radius: 10px;
     --oe-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.18), 0 3px 10px 0 rgba(0, 0, 0, 0.06);
 
     ion-card {
         box-shadow: var(--oe-shadow) !important;
-        border-radius: 10px;
+        border-radius: var(--border-radius);
     }
 
     ion-header::after {
@@ -267,7 +268,7 @@ formly-input-section {
     }
 
     ion-searchbar .searchbar-input {
-        border-radius: 20px;
+        border-radius: var(--border-radius);
     }
 
     // Used in IBN, dynamicFeedInLimitation
