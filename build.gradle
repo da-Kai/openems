@@ -41,10 +41,6 @@ reporting {
 	}
 }
 
-tasks.named('check') {
-	dependsOn tasks.named('testCodeCoverageReport', JacocoReport) 
-}
-
 /*
  * disable report generation
  */
@@ -115,6 +111,8 @@ subprojects {
 				xml.required = false
 				html.required = false
 			}
+			minHeapSize = "256m"
+			maxHeapSize = "1g"
 		}
 	
 		tasks.withType(aQute.bnd.gradle.Export) {
