@@ -2,9 +2,6 @@ name: Build OpenEMS
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  push:
-    branches:
-      - develop
   
 jobs:
   build-java:     
@@ -64,22 +61,14 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "16"
-
-      - name: Setup Cache for Node.js
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.npm
-            ~/.ng
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: ${{ runner.os }}-node-
+          cache: 'npm'
+          cache-dependency-path: ui/package-lock.json
 
       - name: Build OpenEMS UI
         run: |
           cd ui
-          npm install 
-          npm ci --prefer-offline --cache ~/.npm
-          node_modules/.bin/ng config cli.cache.path "~/.ng"
+          npm ci --prefer-offline --cache .npm
+          node_modules/.bin/ng config cli.cache.path .ng
           node_modules/.bin/ng build -c "openems,openems-edge-prod,prod"
           node_modules/.bin/ng lint
           export CHROME_BIN=/usr/bin/google-chrome-stable
