@@ -1,4 +1,4 @@
-name: Build OpenEMS-Develop
+name: OpenEMS Build
 on:
   push:
     branches:

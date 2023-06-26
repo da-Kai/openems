@@ -1,4 +1,4 @@
-name: Build OpenEMS
+name: OpenEMS CI
 on:
   pull_request:
     types: [opened, synchronize, reopened]
