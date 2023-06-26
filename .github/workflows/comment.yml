@@ -39,7 +39,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             let fs = require('fs');
-            let comment = fs.readFileSync('./pr_badge');
+            let comment = fs.readFileSync('./pr_badge', { encoding: 'utf8', flag: 'r' });
             let issue_number = Number(fs.readFileSync('./pr_number'));
             await github.rest.issues.createComment({
               owner: context.repo.owner,
