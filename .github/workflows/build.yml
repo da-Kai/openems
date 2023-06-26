@@ -2,9 +2,9 @@ name: OpenEMS CI
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  
+
 jobs:
-  build-java:     
+  build-java:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -37,7 +37,7 @@ jobs:
         run: git diff --exit-code io.openems.edge.application/EdgeApp.bndrun
 
       #
-      # Is this a Tag? Prepare release assets 
+      # Is this a Tag? Prepare release assets
       #
       - name: Prepare Edge+Backend assets
         if: startsWith(github.ref, 'refs/tags/')
@@ -61,7 +61,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "16"
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: ui/package-lock.json
 
       - name: Build OpenEMS UI
@@ -134,7 +134,7 @@ jobs:
 
       - name: Generate JaCoCo Code-coverage-report
         run: ./gradlew test jacocoTestReport --build-cache
-        
+
       - name: Generate JaCoCo Report
         id: jacoco
         uses: cicirello/jacoco-badge-generator@v2
