@@ -6,7 +6,8 @@ on:
       - completed
 
 jobs:
-  download:
+  comment_jacoco:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: "Download artifact"
