@@ -16,17 +16,17 @@ jobs:
           distribution: "temurin"
           java-version: "17"
 
-      - name: Setup Gradle
+      - name: Build Javadocs
         uses: gradle/gradle-build-action@v2
         with:
-          gradle-version: 8.1.1
           cache-read-only: false
-
-      - name: Build Javadocs
-        run: ./gradlew buildAggregatedJavadocs --continue
+          arguments: buildAggregatedJavadocs --continue
 
       - name: Build Antora-docs for openems.io
-        run: ./gradlew buildAntoraDocs --continue
+        uses: gradle/gradle-build-action@v2
+        with:
+          cache-read-only: false
+          arguments: buildAntoraDocs --continue
 
       - name: Deploy to GitHub pages
         uses: peaceiris/actions-gh-pages@v3
@@ -48,17 +48,17 @@ jobs:
           java-version: "17"
           cache: "maven"
 
-      - name: Setup Gradle
+      - name: Build all Java packages
         uses: gradle/gradle-build-action@v2
         with:
-          gradle-version: 8.1.1
           cache-read-only: false
+          arguments: build --rerun-tasks
 
-      - name: Build all Java packages
-        run: ./gradlew build test --rerun-tasks
-         
       - name: Build JaCoCo Code-coverage-report
-        run: ./gradlew jacocoTestReport
+        uses: gradle/gradle-build-action@v2
+        with:
+          cache-read-only: false
+          arguments: jacocoTestReport
         
       - name: Summarize JaCoCo Report
         uses: cicirello/jacoco-badge-generator@v2
