@@ -1,0 +1,81 @@
+name: Develop Build
+on:
+  push:
+    branches:
+      - develop
+
+env:
+  JAVA_DISTRIBUTION: "temurin"
+  JAVA_VERSION: "17"
+
+jobs:
+  build-java:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Java ${{ env.JAVA_DISTRIBUTION}}-${{ env.JAVA_VERSION}}
+        uses: actions/setup-java@v3
+        with:
+          distribution:  ${{ env.JAVA_DISTRIBUTION}}
+          java-version:  ${{ env.JAVA_VERSION}}
+          cache: "maven"
+
+      - name: Restore Cache for Java/Gradle
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.gradle/native
+            ~/.gradle/notifications
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+
+      - name: Build all Java packages
+        run: ./gradlew build --rerun-tasks
+       
+      - name: Build JaCoCo Code-coverage-report
+        run: ./gradlew jacocoTestReport
+        
+      - name: Summarize JaCoCo Report
+        id: jacoco
+        uses: cicirello/jacoco-badge-generator@v2
+        with:
+          jacoco-csv-file: "io.openems.*/generated/reports/jacoco/**/*.csv"
+          generate-summary: true
+  
+  build-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Java ${{ env.JAVA_DISTRIBUTION}}-${{ env.JAVA_VERSION}}
+        uses: actions/setup-java@v3
+        with:
+          distribution:  ${{ env.JAVA_DISTRIBUTION}}
+          java-version:  ${{ env.JAVA_VERSION}}
+          cache: "maven"          
+
+      - name: Restore Cache for Java/Gradle
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.gradle/native
+            ~/.gradle/notifications
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+
+      - name: Build Javadocs
+        run: ./gradlew buildAggregatedJavadocs --continue
+  
+      - name: Build Antora-docs for openems.io
+        run: ./gradlew buildAntoraDocs --continue
+  
+      - name: Deploy to GitHub pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          personal_token: ${{ secrets.DOCS }}
+          external_repository: OpenEMS/openems.io
+          publish_branch: master
+          publish_dir: build/www

@@ -2,53 +2,52 @@ name: CI Build
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  push:
-    branches:
-      - develop
 
 env:
-  GRADLE_VERSION: 8.1.1
   JAVA_DISTRIBUTION: "temurin"
   JAVA_VERSION: "17"
-
-run-name: ${{ github.ref == 'refs/heads/develop' && 'Develop Build' || 'CI Build' }}
 
 jobs:
   build-java:
     runs-on: ubuntu-latest
-    if: ${{ github.ref != 'refs/heads/develop' }}
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Java 17
+      - name: Setup Java ${{ env.JAVA_DISTRIBUTION}}-${{ env.JAVA_VERSION}}
         uses: actions/setup-java@v3
         with:
           distribution:  ${{ env.JAVA_DISTRIBUTION}}
           java-version:  ${{ env.JAVA_VERSION}}
           cache: "maven"
 
-      - name: Build all Java packages
-        uses: gradle/gradle-build-action@v2
+      - name: Restore Cache for Java/Gradle
+        uses: actions/cache/restore@v3
         with:
-          gradle-version:  ${{ env.GRADLE_VERSION}}
-          arguments: build
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.gradle/native
+            ~/.gradle/notifications
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+
+      - uses: kiancross/checkstyle-annotations-action@v1
+
+      - name: Build all Java packages
+        run: ./gradlew build
 
       - name: Resolve OpenEMS bundles
-        uses: gradle/gradle-build-action@v2
-        with:
-          gradle-version:  ${{ env.GRADLE_VERSION}}
-          arguments: resolve
+        run: ./gradlew resolve
 
       - name: Validate Bndrun files
         run: |
           git diff --exit-code io.openems.edge.application/EdgeApp.bndrun
           git diff --exit-code io.openems.backend.application/BackendApp.bndrun
        
+      #
+      # Generate Code-coverage-report
+      #
       - name: Build JaCoCo Code-coverage-report
-        uses: gradle/gradle-build-action@v2
-        with:
-          gradle-version:  ${{ env.GRADLE_VERSION}}
-          arguments: jacocoTestReport
+        run: ./gradlew jacocoTestReport
         
       - name: Summarize JaCoCo Report
         id: jacoco
@@ -78,7 +77,6 @@ jobs:
           echo $PR_NUMBER > ./pr/pr_number
           
       - name: Save JaCoCo Report
-        if: ${{ github.ref != 'refs/heads/develop' }}
         uses: actions/upload-artifact@v3
         with:
           name: pr_comment
@@ -102,7 +100,6 @@ jobs:
 
   build-ui:
     runs-on: ubuntu-latest
-    if: ${{ github.ref != 'refs/heads/develop' }}
     steps:
       - uses: actions/checkout@v3
 
@@ -162,55 +159,3 @@ jobs:
             build/openems-edge.jar
             build/openems-backend.jar
             build/openems-ui.zip
-  
-  build-develop:
-    runs-on: ubuntu-latest
-    if: ${{ github.ref == 'refs/heads/develop' }}
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Java 17
-        uses: actions/setup-java@v3
-        with:
-          distribution:  ${{ env.JAVA_DISTRIBUTION}}
-          java-version:  ${{ env.JAVA_VERSION}}
-          cache: "maven"            
-      
-      - name: Build all Java packages
-        uses: gradle/gradle-build-action@v2
-        with:
-          gradle-version:  ${{ env.GRADLE_VERSION}}
-          cache-read-only: false
-          arguments: build --rerun-tasks
-
-      - name: Build JaCoCo Code-coverage-report
-        uses: gradle/gradle-build-action@v2
-        with:
-          gradle-version:  ${{ env.GRADLE_VERSION}}
-          arguments: jacocoTestReport
-          
-      - name: Summarize JaCoCo Report
-        uses: cicirello/jacoco-badge-generator@v2
-        with:
-          jacoco-csv-file: "io.openems.*/generated/reports/jacoco/**/*.csv"
-          generate-summary: true
-
-      - name: Build Javadocs
-        uses: gradle/gradle-build-action@v2
-        with:
-          gradle-version:  ${{ env.GRADLE_VERSION}}
-          arguments: buildAggregatedJavadocs --continue
-
-      - name: Build Antora-docs for openems.io
-        uses: gradle/gradle-build-action@v2
-        with:
-          gradle-version:  ${{ env.GRADLE_VERSION}}
-          arguments: buildAntoraDocs --continue
-
-      - name: Deploy to GitHub pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          personal_token: ${{ secrets.DOCS }}
-          external_repository: OpenEMS/openems.io
-          publish_branch: master
-          publish_dir: build/www
