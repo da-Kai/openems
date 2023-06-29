@@ -128,7 +128,7 @@ jobs:
           path: build/openems-ui.zip
 
   #
-  # Is this a Tag? Create a draft release 
+  # Is this a Tag? Create a draft release
   #
   release:
     runs-on: ubuntu-latest
