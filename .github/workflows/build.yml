@@ -11,6 +11,8 @@ env:
   JAVA_DISTRIBUTION: "temurin"
   JAVA_VERSION: "17"
 
+run-name: ${{ github.ref == 'refs/heads/develop' && 'Develop Build' || 'CI Build' }}
+
 jobs:
   build-java:
     runs-on: ubuntu-latest
