@@ -25,6 +25,7 @@ jobs:
       - name: Resolve OpenEMS bundles
         uses: gradle/gradle-build-action@v2
         with:
+          gradle-version: 8.1.1
           arguments: resolve
 
       - name: Validate Bndrun files
@@ -35,6 +36,7 @@ jobs:
       - name: Build JaCoCo Code-coverage-report
         uses: gradle/gradle-build-action@v2
         with:
+          gradle-version: 8.1.1
           arguments: jacocoTestReport
         
       - name: Summarize JaCoCo Report
