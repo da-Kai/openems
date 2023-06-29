@@ -187,7 +187,6 @@ jobs:
         uses: gradle/gradle-build-action@v2
         with:
           gradle-version: $GRADLE_VERSION
-          cache-read-only: false
           arguments: jacocoTestReport
           
       - name: Summarize JaCoCo Report
@@ -200,14 +199,12 @@ jobs:
         uses: gradle/gradle-build-action@v2
         with:
           gradle-version: $GRADLE_VERSION
-          cache-read-only: false
           arguments: buildAggregatedJavadocs --continue
 
       - name: Build Antora-docs for openems.io
         uses: gradle/gradle-build-action@v2
         with:
           gradle-version: $GRADLE_VERSION
-          cache-read-only: false
           arguments: buildAntoraDocs --continue
 
       - name: Deploy to GitHub pages
