@@ -19,6 +19,7 @@ jobs:
       - name: Build Javadocs
         uses: gradle/gradle-build-action@v2
         with:
+          gradle-executable: .gradle-wrapper/gradle-wrapper.jar
           cache-read-only: false
           arguments: buildAggregatedJavadocs --continue
 
@@ -51,6 +52,7 @@ jobs:
       - name: Build all Java packages
         uses: gradle/gradle-build-action@v2
         with:
+          gradle-executable: .gradle-wrapper/gradle-wrapper.jar
           cache-read-only: false
           arguments: build --rerun-tasks
 
