@@ -1,8 +1,8 @@
 <svg width="100%" height="24" overflow="visible">
-    <rect width="100%" rx="8" ry="8" height="24" fill="var(--ion-color-light)" />
-    <rect *ngIf="displayValue" x="3" y="3" rx="6" ry="6" height="18" ngClass="primary-color"
+    <rect width="100%" rx="7.3" ry="7.3" height="22" fill="var(--ion-color-light)" />
+    <rect *ngIf="displayValue" x="2" y="2" rx="6" ry="6" height="18" ngClass="primary-color"
         attr.width="calc({{ displayValue }}% - 6px)" />
-    <text x="50%" y="58%" dominant-baseline="middle" text-anchor="middle" style="font-weight: 500"
+    <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-weight: 500"
         ngClass="secondary-color">
         {{ displayValue | unitvalue: '%' }}
     </text>

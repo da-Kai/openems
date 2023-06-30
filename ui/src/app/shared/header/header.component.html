@@ -43,7 +43,7 @@
           <ng-container *ngIf="currentData.summary.system as sum">
             <ion-button (click)="presentSingleStatusModal()"
               *ngIf="currentPage === 'IndexLive' || currentPage === 'IndexHistory' || currentPage === 'EdgeSettings'"
-              color="light" fill="solid" shape="round" style="width: 48px; height: 48px; padding: 4px;">
+              color="light" fill="solid" shape="round" style="width: 48px; height: 48px; padding: 6px;">
               <ng-container [ngSwitch]="sum.state">
                 <ion-icon slot="icon-only" *ngSwitchCase="0" color="success" name="checkmark-circle-outline"></ion-icon>
                 <ion-icon slot="icon-only" *ngSwitchCase="1" color="success"
