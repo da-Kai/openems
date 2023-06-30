@@ -29,7 +29,7 @@ jobs:
             ~/.gradle/wrapper
             ~/.gradle/native
             ~/.gradle/notifications
-            ${{ github.workspace }}/.gradle
+            .gradle
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
 
       - name: Build all Java packages
