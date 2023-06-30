@@ -18,7 +18,7 @@ This project was generated with [angular-cli](https://github.com/angular/angular
 
       `ng build -c "openems,openems-edge-dev"`
 
-   - Build Production
+   - Build Production 
 
       `ng build -c "openems,openems-edge-prod,prod"`
 
