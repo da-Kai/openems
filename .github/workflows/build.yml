@@ -35,7 +35,7 @@ jobs:
       - uses: kiancross/checkstyle-annotations-action@v1
 
       - name: Build all Java packages
-        run: ./gradlew build --debug
+        run: ./gradlew build
 
       - name: Resolve OpenEMS bundles
         run: ./gradlew resolve
