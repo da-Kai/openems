@@ -20,8 +20,8 @@ jobs:
           distribution:  ${{ env.JAVA_DISTRIBUTION}}
           java-version:  ${{ env.JAVA_VERSION}}
           cache: "maven"
-
-      - name: Setup Cache for Java/Gradle
+      
+      - name: Restore Cache for Java/Gradle
         uses: actions/cache@v3
         with:
           path: |
@@ -29,14 +29,14 @@ jobs:
             ~/.gradle/wrapper
             ~/.gradle/native
             ~/.gradle/notifications
-            ~/.gradle-cache
+            .gradle
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
 
       - name: Build all Java packages
-        run: ./gradlew build --rerun-tasks --project-cache-dir ~/.gradle-cache
+        run: ./gradlew build --rerun-tasks
        
       - name: Build JaCoCo Code-coverage-report
-        run: ./gradlew jacocoTestReport --project-cache-dir ~/.gradle-cache
+        run: ./gradlew jacocoTestReport
         
       - name: Summarize JaCoCo Report
         id: jacoco
@@ -44,6 +44,14 @@ jobs:
         with:
           jacoco-csv-file: "io.openems.*/generated/reports/jacoco/**/*.csv"
           generate-summary: true
+
+      - name: Save build-artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: gradle-cache
+          path: |
+            ~/.gradle
+            .gradle
   
   build-docs:
     runs-on: ubuntu-latest
