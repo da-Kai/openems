@@ -28,7 +28,7 @@ jobs:
             ~/.gradle/wrapper
             ~/.gradle/native
             ~/.gradle/notifications
-            .gradle
+            ${{ github.workspace }}/.gradle
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: ${{ runner.os }}-gradle-
 
@@ -99,6 +99,14 @@ jobs:
           path: |
             build/openems-edge.jar
             build/openems-backend.jar
+
+      - name: Save build-artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: gradle-cache
+          path: |
+            ~/.gradle
+            .gradle
 
   build-ui:
     runs-on: ubuntu-latest
