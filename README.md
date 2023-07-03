@@ -83,7 +83,7 @@ Copyright (C) 2016-2022 OpenEMS Association e.V.
 This product includes software developed at FENECON GmbH: you can
 redistribute it and/or modify it under the terms of the [Eclipse Public License version 2.0](LICENSE-EPL-2.0). 
 
- * OpenEMS UI
+* OpenEMS UI
 
 Copyright (C) 2016-2022 OpenEMS Association e.V.
 
