@@ -22,6 +22,12 @@ plugins {
 	id 'biz.aQute.bnd.workspace'
 }
 
+buildCache {
+	local {
+		removeUnusedEntriesAfterDays = 30
+	}
+}
+
 rootProject.name = 'openems'
 
 include ":io.openems.edge.application"

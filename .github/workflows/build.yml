@@ -30,6 +30,7 @@ jobs:
             ~/.gradle/notifications
             .gradle
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
 
       - uses: kiancross/checkstyle-annotations-action@v1
 
