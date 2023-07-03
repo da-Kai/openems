@@ -19,7 +19,7 @@ jobs:
         with:
           distribution:  ${{ env.JAVA_DISTRIBUTION}}
           java-version:  ${{ env.JAVA_VERSION}}
-          cache: "maven"
+          cache: gradle
 
       - name: Build all Java packages
         run: ./gradlew build
@@ -33,25 +33,6 @@ jobs:
         with:
           jacoco-csv-file: "io.openems.*/generated/reports/jacoco/**/*.csv"
           generate-summary: true
-
-      - name: Save Cache for Java/Gradle
-        uses: actions/cache/save@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            ~/.gradle/native
-            ~/.gradle/notifications
-            ${{ github.workspace }}/.gradle
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-
-      - name: Save build-artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: gradle-cache
-          path: |
-            ~/.gradle
-            .gradle
   
   build-docs:
     runs-on: ubuntu-latest
@@ -63,18 +44,7 @@ jobs:
         with:
           distribution:  ${{ env.JAVA_DISTRIBUTION}}
           java-version:  ${{ env.JAVA_VERSION}}
-          cache: "maven"          
-
-      - name: Restore Cache for Java/Gradle
-        uses: actions/cache/restore@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            ~/.gradle/native
-            ~/.gradle/notifications
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: ${{ runner.os }}-gradle-
+          cache: gradle         
 
       - name: Build Javadocs
         run: ./gradlew buildAggregatedJavadocs --continue

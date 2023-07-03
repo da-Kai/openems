@@ -18,19 +18,7 @@ jobs:
         with:
           distribution:  ${{ env.JAVA_DISTRIBUTION}}
           java-version:  ${{ env.JAVA_VERSION}}
-          cache: "maven"
-
-      - name: Restore Cache for Java/Gradle
-        uses: actions/cache/restore@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            ~/.gradle/native
-            ~/.gradle/notifications
-            ${{ github.workspace }}/.gradle
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: ${{ runner.os }}-gradle-
+          cache: gradle
 
       - uses: kiancross/checkstyle-annotations-action@v1
 
@@ -99,14 +87,6 @@ jobs:
           path: |
             build/openems-edge.jar
             build/openems-backend.jar
-
-      - name: Save build-artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: gradle-cache
-          path: |
-            ~/.gradle
-            .gradle
 
   build-ui:
     runs-on: ubuntu-latest
