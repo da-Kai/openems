@@ -18,20 +18,8 @@ jobs:
         with:
           distribution:  ${{ env.JAVA_DISTRIBUTION}}
           java-version:  ${{ env.JAVA_VERSION}}
-          cache: maven
-  
-      - name: Restore Cache for Java/Gradle
-        uses: actions/cache/restore@v3
-        with:
-          path: ${{ github.workspace }}/gradle-caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-
-      - name: Setup Cache for Java/Gradle
-        run:
-          mkdir -p ~/.gradle ${{ github.workspace }}/.gradle
-          mv ${{ github.workspace }}/gradle-caches/global/{caches,wrapper,native,notifications} ~/.gradle/
-          mv ${{ github.workspace }}/gradle-caches/project/* ${{ github.workspace }}/.gradle/
-
+          cache: gradle
+          
       - uses: kiancross/checkstyle-annotations-action@v1
 
       - name: Build all Java packages
@@ -58,9 +46,10 @@ jobs:
           jacoco-csv-file: "io.openems.*/generated/reports/jacoco/**/*.csv"
           generate-summary: true
 
-      - name: Generate JaCoCo Badge
+      - name: Comment on Pull-Request
         id: jacoco-badge
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.number }}
         run: |
           coverage=$(echo "scale=2; ${{ steps.jacoco.outputs.coverage }} * 100" | bc | cut -c1-4);
@@ -74,16 +63,7 @@ jobs:
             color=yellow;
           fi;
 
-          mkdir -p ./pr
-          echo '![Code Coverage]'"(https://img.shields.io/badge/Code%20Coverage-${coverage}%25-${color}?style=flat)" > ./pr/pr_badge
-          echo $PR_NUMBER > ./pr/pr_number
-          
-      - name: Save JaCoCo Report
-        uses: actions/upload-artifact@v3
-        with:
-          name: pr_comment
-          path: pr/
-
+          gh pr comment ${{github.event.pull_request.number}} --body '![Code Coverage]'"(https://img.shields.io/badge/Code%20Coverage-${coverage}%25-${color}?style=flat)"
       #
       # Is this a Tag? Prepare release assets 
       #
