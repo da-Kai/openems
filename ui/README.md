@@ -12,7 +12,7 @@ This project was generated with [angular-cli](https://github.com/angular/angular
 
       `ng serve -o -c openems-edge-dev`
 
-   - Build Development 
+   - Build Development
 
       `ng build`
 
