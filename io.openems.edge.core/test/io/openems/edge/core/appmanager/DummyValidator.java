@@ -17,10 +17,11 @@ public class DummyValidator implements Validator {
 			boolean returnImmediate) {
 		var errors = new ArrayList<String>();
 		for (var check : checkableConfigs) {
-			var checkable = this.findCheckableByName(check.checkableComponentName);
-			checkable.setProperties(check.properties);
-			if (!checkable.check()) {
-				errors.add(checkable.getErrorMessage(language));
+			var checkable = this.findCheckableByName(check.checkableComponentName());
+			checkable.setProperties(check.properties());
+			if (checkable.check() == check.invertResult()) {
+				errors.add(check.invertResult() ? checkable.getInvertedErrorMessage(language)
+						: checkable.getErrorMessage(language));
 				return errors;
 			}
 
@@ -29,7 +30,9 @@ public class DummyValidator implements Validator {
 	}
 
 	private Checkable findCheckableByName(String name) {
-		return this.checkables.stream().filter(c -> c.getComponentName().equals(name)).findAny().get();
+		return this.checkables.stream() //
+				.filter(c -> c.getComponentName().equals(name)) //
+				.findAny().get();
 	}
 
 	public void setCheckables(List<Checkable> checkables) {
