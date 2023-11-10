@@ -1,4 +1,4 @@
-A### Build ui builder
+### Build ui builder
 FROM --platform=$BUILDPLATFORM alpine:latest AS ui_builder
 
 RUN apk update && apk upgrade
