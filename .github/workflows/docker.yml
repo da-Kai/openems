@@ -68,8 +68,6 @@ jobs:
           images: |
             ${{ matrix.repo }}
             ghcr.io/${{ matrix.repo }}
-          tags: |
-            type=ref,event=tag
           labels: |
             org.opencontainers.image.authors=OpenEMS.io
             org.opencontainers.image.title=OpenEMS ${{ matrix.image }}
