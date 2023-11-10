@@ -18,7 +18,7 @@ WORKDIR /src
 RUN --mount=type=bind,target=.,readwrite \
     --mount=type=cache,target=/root/.gradle \
         ./gradlew --build-cache buildEdge && \
-        cp build/* /opt
+        cp build/openems-edge.jar /opt
 
 
 ### Build jar container base
@@ -29,9 +29,7 @@ ARG JAVA_VERSION
 RUN apk update && apk upgrade
 
 RUN apk add --no-cache \
-    ${JAVA_VERSION}-jre-headless \
-    nginx \
-    openssl
+    ${JAVA_VERSION}-jre-headless
 
 ### Build edge container
 FROM base_container

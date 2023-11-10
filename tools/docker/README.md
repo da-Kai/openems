@@ -33,3 +33,8 @@ docker build -t openems_backend -f tools/docker/openems-backend/Dockerfile .
 
 For ui:
 docker build -t openems_ui -f tools/docker/openems-backend/Dockerfile .
+
+# Reference
+
+https://github.com/linuxserver/docker-baseimage-alpine
+https://github.com/just-containers/s6-overlay
