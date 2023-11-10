@@ -7,9 +7,6 @@ on:
       - 'workflow/**'
     tags:
       - "*.*.*"
-      
-env:
-  NAMESPACE: da-Kai
 
 jobs:
   docker:
@@ -22,16 +19,16 @@ jobs:
         include:
           - image: edge
             dockerfile: tools/docker/edge/openems/Dockerfile
-            repo: ${NAMESPACE}/edge
+            repo: da-Kai/edge
           - image: edge-ui
             dockerfile: tools/docker/edge/ui/Dockerfile
-            repo: ${NAMESPACE}/edge-ui
+            repo: da-Kai/edge-ui
           - image: backend
             dockerfile: tools/docker/backend/openems/Dockerfile
-            repo: ${NAMESPACE}/backend
+            repo: da-Kai}/backend
           - image: backend-ui
             dockerfile: tools/docker/backend/ui/Dockerfile
-            repo: ${NAMESPACE}/backend-ui
+            repo: da-Kai/backend-ui
     permissions:
         packages: write
         contents: read
