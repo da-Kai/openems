@@ -7,6 +7,9 @@ on:
       - 'workflow/**'
     tags:
       - "*.*.*"
+      
+env:
+  NAMESPACE: da-Kai
 
 jobs:
   docker:
@@ -19,16 +22,16 @@ jobs:
         include:
           - image: edge
             dockerfile: tools/docker/edge/openems/Dockerfile
-            repo: openems/edge
+            repo: ${NAMESPACE}/edge
           - image: edge-ui
             dockerfile: tools/docker/edge/ui/Dockerfile
-            repo: openems/edge-ui
+            repo: ${NAMESPACE}/edge-ui
           - image: backend
             dockerfile: tools/docker/backend/openems/Dockerfile
-            repo: openems/backend
+            repo: ${NAMESPACE}/backend
           - image: backend-ui
             dockerfile: tools/docker/backend/ui/Dockerfile
-            repo: openems/backend-ui
+            repo: ${NAMESPACE}/backend-ui
     permissions:
         packages: write
         contents: read
@@ -48,12 +51,13 @@ jobs:
         run: |
           REF_NAME=$(echo "${{ github.ref }}" | sed -e 's/refs\/heads\///' -e 's/refs\/tags\///' -e 's/release\/v//')
           echo "branch=${REF_NAME}-test" >> "$GITHUB_OUTPUT"
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      # Reset later
+      #- name: Login to Docker Hub
+      #  uses: docker/login-action@v3
+      #  with:
+      #    username: ${{ secrets.DOCKERHUB_USERNAME }}
+      #    password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
