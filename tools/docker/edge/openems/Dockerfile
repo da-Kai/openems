@@ -30,7 +30,7 @@ RUN apk update && apk upgrade
 
 RUN apk add --no-cache \
     ${JAVA_VERSION}-jre-headless \
-    nginx-light \
+    nginx \
     openssl
 
 ### Build edge container
