@@ -2,22 +2,22 @@
 # shellcheck shell=bash
 
 # copy default config files if they don't exist
-if [[ ! -f /config/nginx.conf ]]; then
-    cp /defaults/nginx/nginx.conf.sample /config/nginx.conf
+if [[ ! -f /etc/nginx/nginx.conf ]]; then
+    cp /defaults/nginx/nginx.conf.sample /etc/nginx/nginx.conf
 fi
 
-if [[ ! -f /config/ssl.conf ]]; then
-    cp /defaults/nginx/ssl.conf.sample /config/ssl.conf
+if [[ ! -f /etc/nginx/ssl.conf ]]; then
+    cp /defaults/nginx/ssl.conf.sample /etc/nginx/ssl.conf
 fi
 
-if [[ ! -f /config/site-confs/openems.conf ]]; then
-    cp /defaults/nginx/site-confs/openems.conf.sample /config/site-confs/openems.conf
+if [[ ! -f /etc/nginx/site-confs/openems.conf ]]; then
+    cp /defaults/nginx/site-confs/openems.conf.sample /etc/nginx/site-confs/openems.conf
 fi
 
 # copy pre-generated dhparams or generate if needed
-if [[ ! -f /config/dhparams.pem ]]; then
-    cp /defaults/nginx/dhparams.pem.sample /config/dhparams.pem
+if [[ ! -f /etc/nginx/dhparams.pem ]]; then
+    cp /defaults/nginx/dhparams.pem.sample /etc/nginx/dhparams.pem
 fi
-if ! grep -q 'PARAMETERS' "/config/dhparams.pem"; then
-    curl -o /config/dhparams.pem -L "https://ssl-config.mozilla.org/ffdhe4096.txt"
+if ! grep -q 'PARAMETERS' "/etc/nginx/dhparams.pem"; then
+    curl -o /etc/nginx/dhparams.pem -L "https://ssl-config.mozilla.org/ffdhe4096.txt"
 fi

@@ -35,12 +35,12 @@ RUN apk add --no-cache \
 ## Build ui container
 FROM ui_base
 
-COPY --from=build_ui /src/ui/target /app/www
+RUN mkdir -p /etc/nginx /var/log/nginx /var/www/html/openems
+
+COPY --from=build_ui /src/ui/target /var/www/html/openems
 COPY tools/docker/edge/ui/root/ /
 
-RUN mkdir -p /config /log
-
-VOLUME /config
-VOLUME /log
+VOLUME /etc/nginx
+VOLUME /var/log/nginx
 
 EXPOSE 80 443

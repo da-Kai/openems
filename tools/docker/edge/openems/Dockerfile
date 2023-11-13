@@ -34,12 +34,12 @@ RUN apk add --no-cache \
 ### Build edge container
 FROM base_container
 
-COPY --from=build_edge /opt /app
+RUN mkdir -p /opt/openems /var/opt/openems/config /var/opt/openems/data
+
+COPY --from=build_edge /opt /opt/openems
 COPY tools/docker/edge/openems/root/ /
 
-RUN mkdir -p /config /data
-
-VOLUME /config
-VOLUME /data
+VOLUME /var/opt/openems/config
+VOLUME /var/opt/openems/data
 
 EXPOSE 8080

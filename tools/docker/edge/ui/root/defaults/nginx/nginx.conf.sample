@@ -1,13 +1,17 @@
-### Based on alpine defaults
+# /etc/nginx/nginx.conf
+# Based on alpine defaults
 # https://git.alpinelinux.org/aports/tree/main/nginx/nginx.conf?h=3.15-stable
 
 user abc;
+
+# Set number of worker processes automatically based on number of CPU cores.
+worker_processes auto;
 
 # Enables the use of JIT for regular expressions to speed-up their processing.
 pcre_jit on;
 
 # Configures default error logger.
-error_log /log/nginx/error.log;
+error_log /var/log/nginx/error.log warn;
 
 # Includes files with directives to load dynamic modules.
 include /etc/nginx/modules/*.conf;
@@ -60,11 +64,11 @@ http {
     }
 
     # Sets the path, format, and configuration for a buffered log write.
-    access_log /log/nginx/access.log;
+    access_log /var/log/nginx/access.log main;
 
     # Includes virtual hosts configs.
-    include /config/site-confs/*.conf;
+    include /etc/nginx/site-confs/*.conf;
 }
 
-daemon off;
-pid /run/nginx.pid;
+# daemon off;
+# pid /run/nginx.pid;
