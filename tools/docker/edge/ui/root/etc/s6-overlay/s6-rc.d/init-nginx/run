@@ -2,8 +2,8 @@
 # shellcheck shell=bash
 
 # copy default config files if they don't exist
-if [[ ! -f /etc/nginx/nginx.conf ]]; then
-    cp /defaults/nginx/nginx.conf.sample /etc/nginx/nginx.conf
+if [[ ! -f /etc/nginx/openems-nginx.conf ]]; then
+    cp /defaults/nginx/openems-nginx.conf.sample /etc/nginx/openems-nginx.conf
 fi
 
 if [[ ! -f /etc/nginx/ssl.conf ]]; then
