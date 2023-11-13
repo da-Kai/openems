@@ -8,7 +8,7 @@ services:
     restart: unless-stopped
     volumes:
       - openems-edge-conf:/var/opt/openems/config:rw
-      - openems-edge-data:/var/opt/openems/data:ro
+      - openems-edge-data:/var/opt/openems/data:rw
     ports:
       - 8080:8080
 
@@ -19,7 +19,7 @@ services:
     restart: unless-stopped
     volumes:
       - openems-ui-conf:/etc/nginx:rw
-      - openems-ui-log:/var/log/nginx:ro
+      - openems-ui-log:/var/log/nginx:rw
     ports:
       - 80:80
 
