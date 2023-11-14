@@ -43,4 +43,4 @@ COPY tools/docker/backend/ui/root/ /
 VOLUME /etc/nginx
 VOLUME /var/log/nginx
 
-EXPOSE 80 443 8079
+EXPOSE 80 443
