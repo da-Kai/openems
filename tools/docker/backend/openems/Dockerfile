@@ -43,4 +43,4 @@ COPY tools/docker/backend/openems/root/ /
 VOLUME /var/opt/openems/config
 VOLUME /var/opt/openems/data
 
-EXPOSE 8079
+EXPOSE 8079 8081 8082

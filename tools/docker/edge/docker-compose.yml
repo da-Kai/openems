@@ -10,7 +10,8 @@ services:
       - openems-edge-conf:/var/opt/openems/config:rw
       - openems-edge-data:/var/opt/openems/data:rw
     ports:
-      - 8080:8080
+      - 8080:8080 # Apache-Felix
+      - 8085:8085 # UI-Websocket
 
   openems-ui:
     image: openems/edge-ui:latest
@@ -23,7 +24,6 @@ services:
     ports:
       - 80:80
       - 443:443
-      - 8085:8085
 
 volumes:
   openems-edge-conf:
