@@ -10,10 +10,12 @@ services:
       - openems-backend-conf:/var/opt/openems/config:rw
       - openems-backend-data:/var/opt/openems/data:rw
     ports:
-      - 8079:8079
+      - 8079:8079 # Apache-Felix
+      - 8081:8081 # Edge-Websocket
+      - 8082:8082 # UI-Websocket
 
   openems-ui:
-    image: openems/edge-ui:latest
+    image: openems/backend-ui:latest
     container_name: openems_ui
     hostname: openems_ui
     restart: unless-stopped
@@ -23,7 +25,6 @@ services:
     ports:
       - 80:80
       - 443:443
-      - 8085:8085
 
   openems_influxdb:
     image: influxdb:alpine
