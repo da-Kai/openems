@@ -43,4 +43,8 @@ COPY tools/docker/edge/ui/root/ /
 VOLUME /etc/nginx
 VOLUME /var/log/nginx
 
+ENV EDGE_HOST 127.0.0.1
+ENV EDGE_WEBSOCKET_PORT 8085
+ENV EDGE_REST_API_PORT 8084
+
 EXPOSE 80 443
