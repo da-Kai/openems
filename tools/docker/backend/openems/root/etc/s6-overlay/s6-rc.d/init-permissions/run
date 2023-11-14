@@ -3,6 +3,5 @@
 
 # permissions
 lsiown -R abc:abc \
-    /config \
-    /data \
-    /app
+    /var/opt/openems \
+    /opt/openems

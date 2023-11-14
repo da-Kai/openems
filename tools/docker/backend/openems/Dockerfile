@@ -17,8 +17,8 @@ FROM --platform=$BUILDPLATFORM jar_builder AS build_backend
 WORKDIR /src
 RUN --mount=type=bind,target=.,readwrite \
     --mount=type=cache,target=/root/.gradle \
-        ./gradlew --build-cache buildBackend && \
-        cp build/* /opt
+        ./gradlew --no-daemon buildBackend && \
+        cp build/openems-backend.jar /opt
 
 
 ### Build jar container base
@@ -35,12 +35,12 @@ RUN apk add --no-cache \
 ### Build backend container
 FROM base_container
 
-COPY --from=build_backend /opt /app
+RUN mkdir -p /opt/openems /var/opt/openems/config /var/opt/openems/data
+
+COPY --from=build_backend /opt /opt/openems
 COPY tools/docker/backend/openems/root/ /
 
-RUN mkdir -p /config /data
-
-VOLUME /config
-VOLUME /data
+VOLUME /var/opt/openems/config
+VOLUME /var/opt/openems/data
 
 EXPOSE 8079

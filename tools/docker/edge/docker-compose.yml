@@ -22,6 +22,8 @@ services:
       - openems-ui-log:/var/log/nginx:rw
     ports:
       - 80:80
+      - 443:443
+      - 8085:8085
 
 volumes:
   openems-edge-conf:

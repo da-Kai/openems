@@ -5,7 +5,6 @@
 lsiown -R abc:abc \
     /var/lib/nginx \
     /var/tmp/nginx \
-    /config \
-    /log \
     /etc/nginx \
-    /app
+    /var/log \
+    /var/www/html

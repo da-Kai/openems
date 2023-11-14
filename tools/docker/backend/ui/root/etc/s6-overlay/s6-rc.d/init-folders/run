@@ -3,9 +3,9 @@
 
 # make folders
 mkdir -p \
-    /config/keys \
-    /config/site-confs \
-    /log/nginx \
+    /etc/nginx/keys \
+    /etc/nginx/site-confs \
+    /var/log/nginx \
     /run \
     /var/lib/nginx/tmp/client_body \
     /var/tmp/nginx

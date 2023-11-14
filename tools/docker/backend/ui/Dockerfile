@@ -1,5 +1,3 @@
-ARG UI_VERSION=openems,openems-backend-prod,prod
-
 ### Build ui builder
 FROM --platform=$BUILDPLATFORM alpine:latest AS ui_builder
 
@@ -22,7 +20,7 @@ COPY tools/docker/backend/ui/src /src
 
 WORKDIR /src/ui
 RUN npm install
-RUN ng build -c "${UI_VERSION}"
+RUN ng build -c openems,openems-backend-prod,prod
 
 
 ### Build ui base
@@ -37,12 +35,12 @@ RUN apk add --no-cache \
 ## Build ui container
 FROM ui_base
 
-COPY --from=build_ui /src/ui/target /app/www
+RUN mkdir -p /etc/nginx /var/log/nginx /var/www/html/openems
+
+COPY --from=build_ui /src/ui/target /var/www/html/openems
 COPY tools/docker/backend/ui/root/ /
 
-RUN mkdir -p /config /log
+VOLUME /etc/nginx
+VOLUME /var/log/nginx
 
-VOLUME /config
-VOLUME /log
-
-EXPOSE 80 443
+EXPOSE 80 443 8079

@@ -7,21 +7,23 @@ services:
     hostname: openems_backend
     restart: unless-stopped
     volumes:
-      - openems-backend-conf:/config:rw
-      - openems-backend-data:/data:rw
+      - openems-backend-conf:/var/opt/openems/config:rw
+      - openems-backend-data:/var/opt/openems/data:rw
     ports:
       - 8079:8079
 
-  openems_ui:
-    image: openems/backend-ui:latest
+  openems-ui:
+    image: openems/edge-ui:latest
     container_name: openems_ui
     hostname: openems_ui
     restart: unless-stopped
     volumes:
-      - openems-ui-conf:/config:rw
-      - openems-ui-log:/log:rw
+      - openems-ui-conf:/etc/nginx:rw
+      - openems-ui-log:/var/log/nginx:rw
     ports:
       - 80:80
+      - 443:443
+      - 8085:8085
 
   openems_influxdb:
     image: influxdb:alpine
@@ -29,13 +31,13 @@ services:
     hostname: openems_influxdb
     restart: unless-stopped
     volumes:
-      - openems_influxdb:/var/lib/influxdb2:rw
+      - openems-influxdb:/var/lib/influxdb2:rw
     ports:
       - 8086:8086
 
 volumes:
-  openems-backend-conf:
-  openems-backend-data:
+  openems-edge-conf:
+  openems-edge-data:
   openems-ui-conf:
   openems-ui-log:
-  openems_influxdb:
+  openems-influxdb:
