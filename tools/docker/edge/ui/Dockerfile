@@ -1,3 +1,5 @@
+ARG UI_VERSION=openems,openems-edge-docker,prod
+
 ### Build ui builder
 FROM --platform=$BUILDPLATFORM alpine:latest AS ui_builder
 
@@ -19,7 +21,7 @@ COPY ./ /src
 
 WORKDIR /src/ui
 RUN npm install
-RUN ng build -c openems,openems-edge-prod,prod
+RUN ng build -c "${UI_VERSION}"
 
 
 ### Build ui base
