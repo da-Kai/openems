@@ -1,4 +1,4 @@
-ARG UI_VERSION=openems,openems-edge-docker,prod
+ARG UI_VERSION=openems,openems-edge-prod,prod
 
 ### Build ui builder
 FROM --platform=$BUILDPLATFORM alpine:latest AS ui_builder

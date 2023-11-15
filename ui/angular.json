@@ -121,18 +121,6 @@
                 }
               ]
             },
-            "openems-edge-docker": {
-              "fileReplacements": [
-                {
-                  "replace": "src/environments/theme.ts",
-                  "with": "src/themes/openems/environments/theme.ts"
-                },
-                {
-                  "replace": "src/environments/dummy.ts",
-                  "with": "src/themes/openems/environments/edge-docker.ts"
-                }
-              ]
-            },
             "openems-gitpod": {
               "fileReplacements": [
                 {
@@ -164,9 +152,6 @@
             },
             "openems-edge-prod": {
               "browserTarget": "app:build:openems,openems-edge-prod,prod"
-            },
-            "openems-edge-docker": {
-              "browserTarget": "app:build:openems,openems-edge-docker,prod"
             },
             "openems-gitpod": {
               "browserTarget": "app:build:openems,openems-gitpod"

@@ -27,7 +27,6 @@
         "ng2-charts": "^2.4.3",
         "ngx-cookie-service": "^15.0.0",
         "ngx-spinner": "^15.0.1",
-        "read-appsettings-json": "^1.0.98",
         "roboto-fontface": "^0.10.0",
         "rxjs": "~6.6.7",
         "tslib": "^2.5.0",
