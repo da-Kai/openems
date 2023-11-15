@@ -5,7 +5,9 @@
 cp -nrv /defaults/nginx/* /etc/nginx/
 
 # generate template configs
-find /etc/nginx/site-templates -type f -name "*.conf.template" -exec ./convert.sh {} \;
+script=/etc/s6-overlay/s6-rc.d/init-nginx/convert
+templates=/etc/nginx/site-templates
+find $templates -type f -name "*.conf.template" -exec $script {} \;
 
 # copy pre-generated dhparams or generate if needed
 if [[ ! -f /etc/nginx/dhparams.pem ]]; then
