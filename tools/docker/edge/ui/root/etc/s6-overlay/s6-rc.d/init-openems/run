@@ -1,0 +1,8 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+cat << EOF > /var/www/html/openems/appsettings.json
+{
+	"edgeWebsocket": http://${EDGE_HOST:-127.0.0.1}:${EDGE_WEBSOCKET_PORT:-8085};
+}
+EOF
