@@ -2,7 +2,7 @@
 # shellcheck shell=bash
 
 # copy default config files if they don't exist
-cp -nrv /defaults/nginx/* etc/nginx/
+cp -nrv /defaults/nginx/* /etc/nginx/
 
 # generate template configs
 find /etc/nginx/site-templates -type f -name "*.conf.template" -exec ./convert.sh {} \;
