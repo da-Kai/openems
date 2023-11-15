@@ -2,16 +2,10 @@
 # shellcheck shell=bash
 
 # copy default config files if they don't exist
-if [[ ! -f /etc/nginx/openems-nginx.conf ]]; then
-    cp /defaults/nginx/openems-nginx.conf.sample /etc/nginx/openems-nginx.conf
-fi
-
-if [[ ! -f /etc/nginx/ssl.conf ]]; then
-    cp /defaults/nginx/ssl.conf.sample /etc/nginx/ssl.conf
-fi
+cp -nrv /defaults/nginx/* etc/nginx/
 
 # generate template configs
-find /root/nginx-test/site-templates -type f -name "*.conf.template" -exec ./convert.sh {} \;
+find /etc/nginx/site-templates -type f -name "*.conf.template" -exec ./convert.sh {} \;
 
 # copy pre-generated dhparams or generate if needed
 if [[ ! -f /etc/nginx/dhparams.pem ]]; then
