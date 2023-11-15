@@ -7,7 +7,7 @@ import { DefaultTypes } from 'src/app/shared/service/defaulttypes';
 import { JsonrpcResponseSuccess } from '../jsonrpc/base';
 import { Base64PayloadResponse } from '../jsonrpc/response/base64PayloadResponse';
 import { QueryHistoricTimeseriesEnergyResponse } from '../jsonrpc/response/queryHistoricTimeseriesEnergyResponse';
-import { ChannelAddress, EdgeConfig } from '../shared';
+import { ChannelAddress } from '../shared';
 
 export class Utils {
 
@@ -392,17 +392,13 @@ export class Utils {
    */
   public static CONVERT_TIME_OF_USE_TARIFF_STATE = (translate: TranslateService) => {
     return (value: any): string => {
-      switch (value) {
-        case -1:
-          return translate.instant('Edge.Index.Widgets.TimeOfUseTariff.State.notStarted');
+      switch (Math.round(value)) {
         case 0:
-          return translate.instant('Edge.Index.Widgets.TimeOfUseTariff.State.delayed');
-        case 1:
-          return translate.instant('Edge.Index.Widgets.TimeOfUseTariff.State.allowsDischarge');
-        case 2:
-          return translate.instant('Edge.Index.Widgets.TimeOfUseTariff.State.standby');
+          return translate.instant('Edge.Index.Widgets.TIME_OF_USE_TARIFF.STATE.DELAY_DISCHARGE');
         case 3:
-          return translate.instant('Edge.Index.Widgets.TimeOfUseTariff.State.CHARGING');
+          return translate.instant('Edge.Index.Widgets.TIME_OF_USE_TARIFF.STATE.CHARGE');
+        default: // Usually "1"
+          return translate.instant('Edge.Index.Widgets.TIME_OF_USE_TARIFF.STATE.BALANCING');
       }
     };
   };
@@ -446,7 +442,7 @@ export class Utils {
       view[i] = binary.charCodeAt(i);
     }
     const data: Blob = new Blob([view], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8',
     });
 
     saveAs(data, filename + '.xlsx');
@@ -496,7 +492,7 @@ export class Utils {
       } else {
         return /* min 0 */ Math.max(0,
         /* max 100 */ Math.min(100,
-          /* calculate autarchy */(1 - buyFromGrid / consumptionActivePower) * 100
+          /* calculate autarchy */(1 - buyFromGrid / consumptionActivePower) * 100,
         ));
       }
 
@@ -545,20 +541,23 @@ export class Utils {
   }
 
   /**
-   * Returns the label based on component factory id.
+   * Converts a value in €/MWh to €Ct./kWh.
    * 
-   * @param component The Component.
-   * @param translate The Translate
-   * @returns the label.
+   * @param price the price value
+   * @returns  the converted price
    */
-  public static getTimeOfUseTariffStorageLabel(component: EdgeConfig.Component, translate: TranslateService): string {
-    if (component.factoryId === 'Controller.Ess.Time-Of-Use-Tariff.Discharge') {
-      return translate.instant('Edge.Index.Widgets.TimeOfUseTariff.STORAGE_DISCHARGE');
+  public static formatPrice(price: number): number {
+    if (price == null || Number.isNaN(price)) {
+      return null;
+    } else if (price == 0) {
+      return 0;
     } else {
-      return translate.instant('Edge.Index.Widgets.TimeOfUseTariff.STORAGE_STATUS');
+      price = (price / 10.0);
+      return Math.round(price * 10000) / 10000.0;
     }
   }
 }
+
 export enum YAxisTitle {
   PERCENTAGE,
   ENERGY,
@@ -585,7 +584,7 @@ export namespace HistoryUtils {
     return [{
       label: translate.instant("Edge.History.noData"),
       data: [],
-      hidden: false
+      hidden: false,
     }];
   }
 
