@@ -28,7 +28,12 @@ RUN apk update && apk upgrade
 
 RUN apk add --no-cache \
     nginx \
-    openssl
+    openssl \
+    npm \
+    nodejs
+
+RUN npm install -g @angular/cli
+
 	
 ## Build ui container
 FROM ui_base
