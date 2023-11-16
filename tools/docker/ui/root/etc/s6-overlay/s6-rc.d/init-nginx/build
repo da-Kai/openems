@@ -1,0 +1,33 @@
+#!/bin/bash -e
+
+built_ref="/var/www/html/openems/built"
+config="$TYPE:$HOST:$WEBSOCKET_PORT"
+
+if [[ -f $built_ref ]] && [[ "$config" == "$(cat $built_ref)" ]]; then
+	exit 0;
+fi;
+
+cd /opt/ui/src
+
+case $TYPE in
+  edge)
+    backend='OpenEMS Edge';
+    ;;
+  backend)
+    backend='OpenEMS Backend';
+    ;;
+  *)
+    backend='OpenEMS Edge';
+    ;;
+esac
+
+cat << EOF > /opt/ui/src/appsettings.json
+{
+	"backend": "$backend",
+	"url": "ws://$HOST:$WEBSOCKET_PORT"
+}
+EOF
+
+ng build --output-path /var/www/html/openems/ -c openems-docker;
+
+echo $config > $built_ref;

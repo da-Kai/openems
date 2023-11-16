@@ -15,20 +15,17 @@ jobs:
       # Reset later
       fail-fast: false
       matrix:
-        image: [edge, backend, edge-ui, backend-ui]
+        image: [edge, backend, ui]
         include:
           - image: edge
-            dockerfile: tools/docker/edge/openems/Dockerfile
+            dockerfile: tools/docker/edge/Dockerfile
             repo: da-Kai/edge
-          - image: edge-ui
-            dockerfile: tools/docker/edge/ui/Dockerfile
-            repo: da-Kai/edge-ui
           - image: backend
-            dockerfile: tools/docker/backend/openems/Dockerfile
+            dockerfile: tools/docker/backend/Dockerfile
             repo: da-Kai/backend
-          - image: backend-ui
-            dockerfile: tools/docker/backend/ui/Dockerfile
-            repo: da-Kai/backend-ui
+          - image: ui
+            dockerfile: tools/docker/ui/Dockerfile
+            repo: da-Kai/ui
     permissions:
         packages: write
         contents: read
