@@ -15,7 +15,7 @@ services:
       - 8082:8082 # UI-Websocket
 
   openems-ui:
-    image: openems/backend-ui:latest
+    image: openems/ui:latest
     container_name: openems_ui
     hostname: openems_ui
     restart: unless-stopped
@@ -25,6 +25,10 @@ services:
     ports:
       - 80:80
       - 443:443
+    environment:
+      TYPE: backend
+      HOST: openems_backend
+      WEBSOCKET_PORT: 8082
 
   openems_influxdb:
     image: influxdb:alpine
