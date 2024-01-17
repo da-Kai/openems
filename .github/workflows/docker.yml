@@ -8,10 +8,6 @@ on:
     tags:
       - "*.*.*"
 
-env:
-  DOCKER-REPO: da-Kai
-  DOCKER-AUTHOR: da-Kai
-
 jobs:
   docker:
     runs-on: ubuntu-latest
@@ -23,13 +19,13 @@ jobs:
         include:
           - image: edge
             dockerfile: tools/docker/edge/Dockerfile
-            repo: ${{ DOCKER-REPO }}/edge
+            repo: da-Kai/edge
           - image: backend
             dockerfile: tools/docker/backend/Dockerfile
-            repo: ${{ DOCKER-REPO }}/backend
+            repo: da-Kai/backend
           - image: ui
             dockerfile: tools/docker/ui/Dockerfile
-            repo: ${{ DOCKER-REPO }}/ui
+            repo: da-Kai/ui
     permissions:
         packages: write
         contents: read
@@ -71,9 +67,9 @@ jobs:
             ghcr.io/${{ matrix.repo }}
 #            ${{ matrix.repo }}
           labels: |
-            org.opencontainers.image.authors=${{ DOCKER-AUTHOR }}
-            org.opencontainers.image.title=${{ DOCKER-REPO }} ${{ matrix.image }}
-            org.opencontainers.image.vendor=${{ DOCKER-AUTHOR }}
+            org.opencontainers.image.authors=da-Kai
+            org.opencontainers.image.title=da-Kai ${{ matrix.image }}
+            org.opencontainers.image.vendor=da-Kai
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v6
