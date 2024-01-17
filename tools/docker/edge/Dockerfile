@@ -15,10 +15,12 @@ RUN apk add --no-cache \
 FROM --platform=$BUILDPLATFORM jar_builder AS build_edge
 
 WORKDIR /src
+
 RUN --mount=type=bind,target=.,readwrite \
-    --mount=type=cache,target=/root/.gradle \
-        ./gradlew --no-daemon buildEdge && \
-        cp build/openems-edge.jar /opt
+    --mount=type=cache,target=/root/.gradle
+	
+RUN	./gradlew --no-daemon clean build buildEdge
+RUN cp build/openems-edge.jar /opt
 
 
 ### Build jar container base
