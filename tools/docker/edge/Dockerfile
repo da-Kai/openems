@@ -19,7 +19,7 @@ WORKDIR /src
 RUN --mount=type=bind,target=.,readwrite \
     --mount=type=cache,target=/root/.gradle \
     ./gradlew --no-daemon clean build buildEdge && \
-    build/openems-edge.jar /opt
+    cp build/openems-edge.jar /opt
 
 
 ### Build jar container base
