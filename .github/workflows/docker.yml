@@ -8,6 +8,10 @@ on:
     tags:
       - "*.*.*"
 
+env:
+  DOCKER-REPO: da-Kai
+  DOCKER-AUTHOR: da-Kai
+
 jobs:
   docker:
     runs-on: ubuntu-latest
@@ -19,13 +23,13 @@ jobs:
         include:
           - image: edge
             dockerfile: tools/docker/edge/Dockerfile
-            repo: da-Kai/edge
+            repo: ${{ DOCKER-REPO }}/edge
           - image: backend
             dockerfile: tools/docker/backend/Dockerfile
-            repo: da-Kai/backend
+            repo: ${{ DOCKER-REPO }}/backend
           - image: ui
             dockerfile: tools/docker/ui/Dockerfile
-            repo: da-Kai/ui
+            repo: ${{ DOCKER-REPO }}/ui
     permissions:
         packages: write
         contents: read
@@ -67,15 +71,16 @@ jobs:
             ghcr.io/${{ matrix.repo }}
 #            ${{ matrix.repo }}
           labels: |
-            org.opencontainers.image.authors=OpenEMS.io
-            org.opencontainers.image.title=OpenEMS ${{ matrix.image }}
-            org.opencontainers.image.vendor=OpenEMS.io
+            org.opencontainers.image.authors=${{ DOCKER-AUTHOR }}
+            org.opencontainers.image.title=${{ DOCKER-REPO }} ${{ matrix.image }}
+            org.opencontainers.image.vendor=${{ DOCKER-AUTHOR }}
 
       - name: Build and push Docker images
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           file: ${{ matrix.dockerfile }}
-          platforms: linux/amd64, linux/arm64
+          multiPlatform: true
+          platforms: linux/amd64, linux/arm64, linux/arm/v7
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
