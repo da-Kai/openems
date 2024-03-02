@@ -1,27 +1,15 @@
-### Build ui builder
-FROM --platform=$BUILDPLATFORM alpine:latest AS ui_builder
-
-RUN apk update && apk upgrade
-
-RUN apk add --no-cache \
-    npm \
-    nodejs
-
-RUN npm install -g @angular/cli
-
+ARG NODE_VERSION=21
+ARG UI_VERSION=openems,openems-backend-prod,prod
 
 ### Build ui files
-FROM --platform=$BUILDPLATFORM ui_builder AS build_ui
+FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine AS build_ui
 
 ARG UI_VERSION
 
-COPY ./ /src
-COPY tools/docker/backend/ui/src /src
-
 WORKDIR /src/ui
-RUN npm install
-RUN ng build -c openems,openems-backend-prod,prod
 
+RUN npm ci
+RUN node_modules/.bin/ng build -c "${UI_VERSION}"
 
 ### Build ui base
 FROM ghcr.io/linuxserver/baseimage-alpine:edge AS ui_base
@@ -29,8 +17,7 @@ FROM ghcr.io/linuxserver/baseimage-alpine:edge AS ui_base
 RUN apk update && apk upgrade
 
 RUN apk add --no-cache \
-    nginx \
-    openssl
+    nginx openssl
 	
 ## Build ui container
 FROM ui_base

@@ -1,28 +1,15 @@
+ARG NODE_VERSION=21
 ARG UI_VERSION=openems,openems-edge-prod,prod
 
-### Build ui builder
-FROM --platform=$BUILDPLATFORM alpine:latest AS ui_builder
-
-RUN apk update && apk upgrade
-
-RUN apk add --no-cache \
-    npm \
-    nodejs
-
-RUN npm install -g @angular/cli
-
-
 ### Build ui files
-FROM --platform=$BUILDPLATFORM ui_builder AS build_ui
+FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine AS build_ui
 
 ARG UI_VERSION
 
-COPY ./ /src
-
 WORKDIR /src/ui
-RUN npm install
-RUN ng build -c "${UI_VERSION}"
 
+RUN npm ci
+RUN node_modules/.bin/ng build -c "${UI_VERSION}"
 
 ### Build ui base
 FROM ghcr.io/linuxserver/baseimage-alpine:edge AS ui_base
@@ -30,8 +17,7 @@ FROM ghcr.io/linuxserver/baseimage-alpine:edge AS ui_base
 RUN apk update && apk upgrade
 
 RUN apk add --no-cache \
-    nginx \
-    openssl
+    nginx openssl
 	
 ## Build ui container
 FROM ui_base
@@ -45,7 +31,7 @@ VOLUME /etc/nginx
 VOLUME /var/log/nginx
 
 ENV EDGE_HOST 127.0.0.1
-ENV EDGE_WEBSOCKET_PORT 8085
+ENV EDGE_WEBSOCKET_PORT 8075
 ENV EDGE_REST_API_PORT 8084
 
 EXPOSE 80 443

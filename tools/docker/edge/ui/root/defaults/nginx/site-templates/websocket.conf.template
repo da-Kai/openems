@@ -1,0 +1,14 @@
+server {
+    listen 8080;
+    server_name  localhost;
+
+    access_log  /var/log/nginx/websocket.log main;
+
+    location / {
+        proxy_pass http://${EDGE_HOST:-127.0.0.1}:${EDGE_WEBSOCKET_PORT:-8075};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
