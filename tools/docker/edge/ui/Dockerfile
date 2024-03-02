@@ -8,7 +8,7 @@ ARG UI_VERSION
 
 WORKDIR /src/ui
 
-RUN npm ci
+RUN npm install
 RUN node_modules/.bin/ng build -c "${UI_VERSION}"
 
 ### Build ui base

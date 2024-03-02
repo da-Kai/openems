@@ -8,7 +8,7 @@ ARG UI_VERSION
 
 WORKDIR /src/ui
 
-RUN npm ci
+RUN npm install
 RUN node_modules/.bin/ng build -c "${UI_VERSION}"
 
 ### Build ui base
@@ -29,5 +29,9 @@ COPY tools/docker/backend/ui/root/ /
 
 VOLUME /etc/nginx
 VOLUME /var/log/nginx
+
+ENV BACKEND_HOST 127.0.0.1
+ENV BACKEND_WEBSOCKET_PORT 8075
+ENV BACKEND_REST_API_PORT 8084
 
 EXPOSE 80 443
