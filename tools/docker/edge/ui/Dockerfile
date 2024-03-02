@@ -13,7 +13,7 @@ COPY ./tools/docker/edge/ui/edge.patch /src
 
 WORKDIR /src
 
-#RUN patch -p1 < edge.patch
+RUN patch -p1 < edge.patch
 RUN npm install
 RUN node_modules/.bin/ng build -c "${UI_VERSION}"
 
