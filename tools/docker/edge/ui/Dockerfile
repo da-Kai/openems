@@ -21,7 +21,7 @@ FROM ghcr.io/linuxserver/baseimage-alpine:edge AS ui_base
 RUN apk update && apk upgrade
 
 RUN apk add --no-cache \
-    nginx openssl
+    nginx openssl patch
 	
 ## Build ui container
 FROM ui_base
