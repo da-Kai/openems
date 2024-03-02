@@ -8,6 +8,10 @@ on:
     tags:
       - "*.*.*"
 
+env:
+  DOCKER_HUB_USER: daKai00
+  DOCKER_HUB_PREFIX: openems-
+
 jobs:
   docker:
     runs-on: ubuntu-latest
@@ -63,11 +67,11 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            daKai00/${{ matrix.image }}
+            ${{ DOCKER_HUB_USER }}/${{ DOCKER_HUB_PREFIX }}${{ matrix.image }}
             ghcr.io/${{ github.REPOSITORY_OWNER }}/${{ matrix.image }}
           labels: |
             org.opencontainers.image.authors=da-Kai
-            org.opencontainers.image.title=da-Kai ${{ matrix.image }}
+            org.opencontainers.image.title=OpenEMS ${{ matrix.image }}
             org.opencontainers.image.vendor=da-Kai
           tags: |
             type=schedule
