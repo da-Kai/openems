@@ -15,15 +15,15 @@ jobs:
       # Reset later
       fail-fast: false
       matrix:
-        image: [edge, backend, edge-ui, backend-ui]
+        image: [edge, backend, ui-edge, ui-backend]
         include:
           - image: edge
             dockerfile: tools/docker/edge/openems/Dockerfile
-          - image: edge-ui
+          - image: ui-edge
             dockerfile: tools/docker/edge/ui/Dockerfile
           - image: backend
             dockerfile: tools/docker/backend/openems/Dockerfile
-          - image: backend-ui
+          - image: ui-backend
             dockerfile: tools/docker/backend/ui/Dockerfile
     permissions:
         packages: write
@@ -63,12 +63,18 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
+            daKai00/${{ matrix.image }}
             ghcr.io/${{ github.REPOSITORY_OWNER }}/${{ matrix.image }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}
           labels: |
             org.opencontainers.image.authors=da-Kai
             org.opencontainers.image.title=da-Kai ${{ matrix.image }}
             org.opencontainers.image.vendor=da-Kai
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=tag
+            type=ref,event=pr
+            latest
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v5
