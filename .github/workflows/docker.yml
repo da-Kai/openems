@@ -9,7 +9,7 @@ on:
       - "*.*.*"
 
 env:
-  DOCKER_HUB_USER: daKai00
+  DOCKER_HUB_USER: dakai00
   DOCKER_HUB_PREFIX: openems-
 
 jobs:
@@ -67,7 +67,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ env.DOCKER_HUB_PREFIX }}${{ matrix.image }}
+            ${{ env.DOCKER_HUB_USER }}/${{ env.DOCKER_HUB_PREFIX }}${{ matrix.image }}
             ghcr.io/${{ github.REPOSITORY_OWNER }}/${{ matrix.image }}
           labels: |
             org.opencontainers.image.authors=da-Kai
