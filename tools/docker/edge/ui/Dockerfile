@@ -1,5 +1,5 @@
 ARG NODE_VERSION=21
-ARG UI_VERSION=openems,openems-edge-prod,prod
+ARG UI_VERSION=openems,openems-edge-dev,dev
 
 ### Build ui files
 FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine AS build_ui
