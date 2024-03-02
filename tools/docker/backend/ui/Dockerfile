@@ -6,6 +6,8 @@ FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine AS build_ui
 
 ARG UI_VERSION
 
+COPY ./ /src
+
 WORKDIR /src/ui
 
 RUN npm install
