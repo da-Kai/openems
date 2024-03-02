@@ -1,7 +1,7 @@
-Index: src/themes/openems/environments/edge-prod.ts
+Index: /src/themes/openems/environments/edge-prod.ts
 ===================================================================
---- src.orig/themes/openems/environments/edge-prod.ts
-+++ src/themes/openems/environments/edge-prod.ts
+--- /src.orig/themes/openems/environments/edge-prod.ts
++++ /src/themes/openems/environments/edge-prod.ts
 @@ -5,7 +5,7 @@ export const environment: Environment =
      ...theme, ...{
  
