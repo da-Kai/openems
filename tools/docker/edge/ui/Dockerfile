@@ -6,10 +6,12 @@ FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine AS build_ui
 
 ARG UI_VERSION
 
-COPY ./ /src
+COPY ./ui /src
+COPY ./tools/docker/edge/ui/edge.patch /src
 
-WORKDIR /src/ui
+WORKDIR /src
 
+RUN patch -p1 < edge.patch
 RUN npm install
 RUN node_modules/.bin/ng build -c "${UI_VERSION}"
 
@@ -26,7 +28,7 @@ FROM ui_base
 
 RUN mkdir -p /etc/nginx/site-templates /var/log/nginx /var/www/html/openems
 
-COPY --from=build_ui /src/ui/target /var/www/html/openems
+COPY --from=build_ui /src/target /var/www/html/openems
 COPY tools/docker/edge/ui/root/ /
 
 RUN find /etc/s6-overlay/s6-rc.d -type f -exec chmod +x {} \;

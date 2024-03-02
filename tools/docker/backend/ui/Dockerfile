@@ -10,6 +10,7 @@ COPY ./ /src
 
 WORKDIR /src/ui
 
+RUN patch -p1 < /src/tools/docker/backend/ui/backend.patch
 RUN npm install
 RUN node_modules/.bin/ng build -c "${UI_VERSION}"
 
