@@ -6,11 +6,14 @@ FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine AS build_ui
 
 ARG UI_VERSION
 
-COPY ./ /src
+RUN apk update && apk upgrade && apk add --no-cache patch
 
-WORKDIR /src/ui
+COPY ./ui /src
+COPY ./tools/docker/backend/ui/backend.patch /src
 
-RUN patch -p1 < /src/tools/docker/backend/ui/backend.patch
+WORKDIR /src
+
+RUN patch -p1 < backend.patch
 RUN npm install
 RUN node_modules/.bin/ng build -c "${UI_VERSION}"
 
@@ -20,14 +23,14 @@ FROM ghcr.io/linuxserver/baseimage-alpine:edge AS ui_base
 RUN apk update && apk upgrade
 
 RUN apk add --no-cache \
-    nginx openssl patch
+    nginx openssl
 	
 ## Build ui container
 FROM ui_base
 
 RUN mkdir -p /etc/nginx /var/log/nginx /var/www/html/openems
 
-COPY --from=build_ui /src/ui/target /var/www/html/openems
+COPY --from=build_ui /src/target /var/www/html/openems
 COPY tools/docker/backend/ui/root/ /
 
 RUN find /etc/s6-overlay/s6-rc.d -type f -exec chmod +x {} \;

@@ -6,6 +6,8 @@ FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine AS build_ui
 
 ARG UI_VERSION
 
+RUN apk update && apk upgrade && apk add --no-cache patch
+
 COPY ./ui /src
 COPY ./tools/docker/edge/ui/edge.patch /src
 
@@ -21,7 +23,7 @@ FROM ghcr.io/linuxserver/baseimage-alpine:edge AS ui_base
 RUN apk update && apk upgrade
 
 RUN apk add --no-cache \
-    nginx openssl patch
+    nginx openssl
 	
 ## Build ui container
 FROM ui_base
