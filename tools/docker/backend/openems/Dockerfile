@@ -31,6 +31,8 @@ RUN mkdir -p /opt/openems /var/opt/openems/config /var/opt/openems/data
 COPY --from=build_backend /opt /opt/openems
 COPY tools/docker/backend/openems/root/ /
 
+RUN find /etc/s6-overlay/s6-rc.d -type f -exec chmod +x {} \;
+
 VOLUME /var/opt/openems/config
 VOLUME /var/opt/openems/data
 

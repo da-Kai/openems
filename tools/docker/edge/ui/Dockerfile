@@ -29,6 +29,8 @@ RUN mkdir -p /etc/nginx/site-templates /var/log/nginx /var/www/html/openems
 COPY --from=build_ui /src/ui/target /var/www/html/openems
 COPY tools/docker/edge/ui/root/ /
 
+RUN find /etc/s6-overlay/s6-rc.d -type f -exec chmod +x {} \;
+
 VOLUME /etc/nginx
 VOLUME /var/log/nginx
 
