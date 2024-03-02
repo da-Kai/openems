@@ -63,7 +63,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ghcr.io/${{ GITHUB_REPOSITORY_OWNER }}/${{ matrix.image }}
+            ghcr.io/${{ github.REPOSITORY_OWNER }}/${{ matrix.image }}
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}
           labels: |
             org.opencontainers.image.authors=da-Kai
