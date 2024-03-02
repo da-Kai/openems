@@ -6,7 +6,7 @@ FROM --platform=$BUILDPLATFORM eclipse-temurin:${JAVA_VERSION}-alpine AS build_b
 WORKDIR /src
 RUN --mount=type=bind,target=.,readwrite \
     --mount=type=cache,target=/root/.gradle \
-        ./gradlew --no-build-cache build && \
+        ./gradlew --no-build-cache assemble && \
         ./gradlew --no-build-cache buildBackend && \
         cp build/openems-backend.jar /opt
 
