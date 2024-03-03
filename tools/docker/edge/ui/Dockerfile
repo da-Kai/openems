@@ -9,7 +9,8 @@ ARG UI_VERSION
 RUN apk update && apk upgrade && apk add --no-cache patch
 
 COPY ./ui /src
-COPY ./tools/docker/edge/ui/assets/* /src
+COPY ./tools/docker/edge/ui/assets/*.patch /src
+COPY ./tools/docker/edge/ui/assets/env.template.js /src/assets
 
 WORKDIR /src
 
