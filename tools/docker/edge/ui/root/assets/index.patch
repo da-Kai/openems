@@ -1,0 +1,21 @@
+Index: /src/index.html
+===================================================================
+--- /src.orig/index.html
++++ /src/index.html
+@@ -12,6 +12,9 @@
+   <!-- Workaround -> has to be removed, icons should be already included in materials -->
+   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+
++  <!-- Load environment variables -->
++  <script src="assets/env.js"></script>
++
+   <!-- favicon; generated using https://realfavicongenerator.net -->
+   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+@@ -27,4 +30,4 @@
+   <noscript>Please enable JavaScript to continue using this application.</noscript>
+ </body>
+
+-</html>
+\ No newline at end of file
++</html>

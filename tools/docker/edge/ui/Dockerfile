@@ -9,11 +9,12 @@ ARG UI_VERSION
 RUN apk update && apk upgrade && apk add --no-cache patch
 
 COPY ./ui /src
-COPY ./tools/docker/edge/ui/edge.patch /src
+COPY ./tools/docker/edge/ui/assets/* /src
 
 WORKDIR /src
 
 RUN patch -p1 < edge.patch
+RUN patch -p1 < index.patch
 RUN npm install
 RUN node_modules/.bin/ng build -c "${UI_VERSION}"
 
