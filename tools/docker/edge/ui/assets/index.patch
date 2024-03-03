@@ -12,10 +12,3 @@ Index: /src/index.html
    <!-- favicon; generated using https://realfavicongenerator.net -->
    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-@@ -27,4 +30,4 @@
-   <noscript>Please enable JavaScript to continue using this application.</noscript>
- </body>
-
--</html>
-\ No newline at end of file
-+</html>
