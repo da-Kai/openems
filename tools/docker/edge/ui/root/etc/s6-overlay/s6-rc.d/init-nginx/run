@@ -10,8 +10,8 @@ templates=/etc/nginx/site-templates
 find $templates -type f -name "*.conf.template" -exec $script {} \;
 
 # generate env file
-env_template="/var/www/html/openems/assets/env.template.ts"
-env_file="/var/www/html/openems/assets/env.ts"
+env_template="/var/www/html/openems/assets/env.template.js"
+env_file="/var/www/html/openems/assets/env.js"
 eval "cat <<< \"$(<$env_template)\"" 2> /dev/null >> $env_file;
 
 # copy pre-generated dhparams or generate if needed
