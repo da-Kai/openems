@@ -39,8 +39,8 @@ services:
       - 8086:8086
 
 volumes:
-  openems-edge-conf:
-  openems-edge-data:
+  openems-backend-conf:
+  openems-backend-data:
   openems-ui-conf:
   openems-ui-log:
   openems-influxdb:

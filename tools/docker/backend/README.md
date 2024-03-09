@@ -45,11 +45,36 @@ docker exec openems_influxdb influx auth list
 *⚠️ Note down **Token***
 
 ### Setup OpenEMS-Backend
+
+*see [OpenEMS docs](https://openems.github.io/openems.io/openems/latest/gettingstarted.html#_integrate_openems_backend)*
+
 Open Backend [Apache-Felix](http://localhost:8079/system/console/configMgr) Config
 
-For a minimal Backend setup see [OpenEMS docs](https://openems.github.io/openems.io/openems/latest/gettingstarted.html#_integrate_openems_backend)
-
 *⚠️ Values not specified can be left at their default values*
+
+| Edge.Websocket |      |
+| -------------- | ---- |
+| Port           | 8081 |
+
+| Ui.Websocket   |      |
+| -------------- | ---- |
+| Port           | 8082 |
+
+| Metadata.File |                                |
+| ------------- | ------------------------------ |
+| Path          | /var/opt/openems/metadata.json |
+
+| Timedata.InfluxDB |                              |
+| ----------------- | ---------------------------- |
+| Query Language    | INFLUX_QL                    |
+| URL               | http://openems_influxdb:8086 |
+| Org               | openems.io                   |
+| ApiKey            | *InfluxDB-Token*             |
+| Bucket            | openems                      |
+
+```bash
+docker restart openems_backend
+```
 
 ## Build your own docker image:
 
