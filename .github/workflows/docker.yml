@@ -23,12 +23,16 @@ jobs:
         include:
           - image: edge
             dockerfile: tools/docker/edge/Dockerfile
+            args: ""
           - image: ui-edge
-            dockerfile: tools/docker/ui/edge.Dockerfile
+            dockerfile: tools/docker/ui/Dockerfile
+            args: "ENV=edge"
           - image: backend
             dockerfile: tools/docker/backend/Dockerfile
+            args: ""
           - image: ui-backend
-            dockerfile: tools/docker/ui/backend.Dockerfile
+            dockerfile: tools/docker/ui/Dockerfile
+            args: "ENV=backend"
     permissions:
         packages: write
         contents: read
@@ -88,3 +92,4 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: ${{ matrix.args }}          

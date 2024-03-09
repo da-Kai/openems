@@ -2,5 +2,5 @@
     window[\"env\"] = window[\"env\"] || {};
   
     // Environment variables
-    window[\"env\"][\"websocket\"] = \"${EDGE_WEBSOCKET}\";
+    window[\"env\"][\"websocket\"] = \"${UI_WEBSOCKET}\";
 })(this);

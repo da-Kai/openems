@@ -15,13 +15,15 @@ services:
       - 8082:8082 # UI-Websocket
 
   openems-ui:
-    image: openems/backend-ui:latest
+    image: openems/ui-backend:latest
     container_name: openems_ui
     hostname: openems_ui
     restart: unless-stopped
     volumes:
       - openems-ui-conf:/etc/nginx:rw
       - openems-ui-log:/var/log/nginx:rw
+    environment:
+      - UI_WEBSOCKET=ws://localhost:8082
     ports:
       - 80:80
       - 443:443
