@@ -2,12 +2,15 @@ server {
 	listen 80 default_server;
     listen [::]:80 default_server;
 
-    server_name openems openems.local localhsot;
+	server_name openems openems.local localhost;
+
+	root /var/www/html/openems;
+
+    index	index.html;
 
 	# OpenEMS Web-Interface
 	location / {
-		root	/var/www/html/openems;
-		index	index.html index.htm;
+		try_files \$uri \$uri/ /index.html;
 		error_page	404 300 /index.html;
 	}
 }

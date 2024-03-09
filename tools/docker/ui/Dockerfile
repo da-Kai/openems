@@ -35,6 +35,6 @@ RUN find /etc/s6-overlay/s6-rc.d -type f -exec chmod +x {} \;
 VOLUME /etc/nginx
 VOLUME /var/log/nginx
 
-ENV UI_WEBSOCKET 'ws://localhost:8080'
+ENV UI_WEBSOCKET ws://localhost:8080
 
 EXPOSE 80 443
