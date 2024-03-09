@@ -1,4 +1,4 @@
-ARG NODE=21
+ARG NODE=20
 ARG VERSION
 
 ### Build ui files
@@ -6,15 +6,14 @@ FROM --platform=$BUILDPLATFORM node:${NODE}-alpine AS build_ui
 
 ARG VERSION
 
-RUN apk update && apk upgrade && apk add --no-cache patch
+RUN apk update && apk upgrade;
 
 COPY ./ui /src
 
 WORKDIR /src
 
-RUN echo "build ${VERSION}" && \
-    npm install && \
-    node_modules/.bin/ng build -c "${VERSION}";
+RUN npm install && \
+    node_modules/.bin/ng build -c "$VERSION";
 
 ### Build ui base
 FROM ghcr.io/linuxserver/baseimage-alpine:edge AS ui_base
@@ -27,10 +26,8 @@ RUN apk add --no-cache \
 ## Build ui container
 FROM ui_base
 
-RUN mkdir -p /etc/nginx/site-templates /var/log/nginx /var/www/html/openems
-
 COPY --from=build_ui /src/target /var/www/html/openems
-COPY tools/docker/ui/assets/env.template.js /var/www/html/openems/assets/
+COPY tools/docker/ui/assets/* /var/www/html/openems/assets/
 COPY tools/docker/ui/root/ /
 
 RUN find /etc/s6-overlay/s6-rc.d -type f -exec chmod +x {} \;
