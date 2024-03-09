@@ -121,7 +121,7 @@
                 }
               ]
             },
-            "openems-docker": {
+            "openems-edge-docker": {
               "fileReplacements": [
                 {
                   "replace": "src/environments/theme.ts",
@@ -129,7 +129,19 @@
                 },
                 {
                   "replace": "src/environments/dummy.ts",
-                  "with": "src/themes/openems/environments/docker.ts"
+                  "with": "src/themes/openems/environments/edge-docker.ts"
+                }
+              ]
+            },
+            "openems-backend-docker": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/theme.ts",
+                  "with": "src/themes/openems/environments/theme.ts"
+                },
+                {
+                  "replace": "src/environments/dummy.ts",
+                  "with": "src/themes/openems/environments/backend-docker.ts"
                 }
               ]
             },

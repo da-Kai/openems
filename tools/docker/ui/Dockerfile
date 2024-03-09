@@ -4,14 +4,17 @@ ARG VERSION
 ### Build ui files
 FROM --platform=$BUILDPLATFORM node:${NODE}-alpine AS build_ui
 
+ARG VERSION
+
 RUN apk update && apk upgrade && apk add --no-cache patch
 
 COPY ./ui /src
 
 WORKDIR /src
 
-RUN npm install
-RUN node_modules/.bin/ng build -c "${VERSION}"
+RUN echo "build ${VERSION}" && \
+    npm install && \
+    node_modules/.bin/ng build -c "${VERSION}";
 
 ### Build ui base
 FROM ghcr.io/linuxserver/baseimage-alpine:edge AS ui_base
