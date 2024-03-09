@@ -7,7 +7,6 @@ FROM --platform=$BUILDPLATFORM node:${NODE}-alpine AS build_ui
 RUN apk update && apk upgrade && apk add --no-cache patch
 
 COPY ./ui /src
-COPY ./tools/docker/ui/assets/*.patch /src
 
 WORKDIR /src
 
