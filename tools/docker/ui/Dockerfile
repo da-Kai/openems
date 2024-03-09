@@ -1,10 +1,8 @@
-ARG NODE_VERSION=21
-ARG OEM=openems
-ARG ENV=edge
-ARG UI_VERSION=${OEM}-${ENV}-docker
+ARG NODE=21
+ARG VERSION=openems-edge-docker
 
 ### Build ui files
-FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine AS build_ui
+FROM --platform=$BUILDPLATFORM node:${NODE}-alpine AS build_ui
 
 ARG UI_VERSION
 
@@ -16,7 +14,7 @@ COPY ./tools/docker/ui/assets/*.patch /src
 WORKDIR /src
 
 RUN npm install
-RUN node_modules/.bin/ng build -c "${UI_VERSION}"
+RUN node_modules/.bin/ng build -c "${VERSION}"
 
 ### Build ui base
 FROM ghcr.io/linuxserver/baseimage-alpine:edge AS ui_base

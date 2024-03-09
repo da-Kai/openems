@@ -26,13 +26,13 @@ jobs:
             args: ""
           - image: ui-edge
             dockerfile: tools/docker/ui/Dockerfile
-            args: "ENV=edge"
+            args: "VERSION=openems-edge-docker"
           - image: backend
             dockerfile: tools/docker/backend/Dockerfile
             args: ""
           - image: ui-backend
             dockerfile: tools/docker/ui/Dockerfile
-            args: "ENV=backend"
+            args: "VERSION=openems-backend-docker"
     permissions:
         packages: write
         contents: read
