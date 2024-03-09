@@ -1,10 +1,8 @@
 ARG NODE=21
-ARG VERSION=openems-edge-docker
+ARG VERSION
 
 ### Build ui files
 FROM --platform=$BUILDPLATFORM node:${NODE}-alpine AS build_ui
-
-ARG UI_VERSION
 
 RUN apk update && apk upgrade && apk add --no-cache patch
 
