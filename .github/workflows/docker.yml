@@ -22,13 +22,13 @@ jobs:
         image: [edge, backend, ui-edge, ui-backend]
         include:
           - image: edge
-            dockerfile: tools/docker/edge/openems/Dockerfile
+            dockerfile: tools/docker/edge/Dockerfile
           - image: ui-edge
-            dockerfile: tools/docker/edge/ui/Dockerfile
+            dockerfile: tools/docker/ui/edge.Dockerfile
           - image: backend
-            dockerfile: tools/docker/backend/openems/Dockerfile
+            dockerfile: tools/docker/backend/Dockerfile
           - image: ui-backend
-            dockerfile: tools/docker/backend/ui/Dockerfile
+            dockerfile: tools/docker/ui/backend.Dockerfile
     permissions:
         packages: write
         contents: read
