@@ -29,7 +29,7 @@ FROM base_container
 RUN mkdir -p /opt/openems /var/opt/openems/config /var/opt/openems/data
 
 COPY --from=build_edge /opt /opt/openems
-COPY tools/docker/edge/openems/root/ /
+COPY tools/docker/edge/root/ /
 
 RUN find /etc/s6-overlay/s6-rc.d -type f -exec chmod +x {} \;
 
