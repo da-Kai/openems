@@ -8,16 +8,11 @@ on:
     tags:
       - "*.*.*"
 
-env:
-  DOCKER_HUB_USER: dakai00
-  DOCKER_HUB_PREFIX: openems-
-
 jobs:
   docker:
     runs-on: ubuntu-latest
     strategy:
-      # Reset later
-      fail-fast: false
+      fail-fast: true
       matrix:
         image: [edge, backend, ui-edge, ui-backend]
         include:
@@ -71,17 +66,15 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ env.DOCKER_HUB_USER }}/${{ env.DOCKER_HUB_PREFIX }}${{ matrix.image }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}
             ghcr.io/${{ github.REPOSITORY_OWNER }}/${{ matrix.image }}
           labels: |
-            org.opencontainers.image.authors=da-Kai
+            org.opencontainers.image.authors=${{ github.REPOSITORY_OWNER }}
             org.opencontainers.image.title=OpenEMS ${{ matrix.image }}
-            org.opencontainers.image.vendor=da-Kai
+            org.opencontainers.image.vendor=${{ github.REPOSITORY_OWNER }}
           tags: |
             type=schedule
-            type=ref,event=branch
-            type=ref,event=tag
-            type=ref,event=pr
+            type=semver,pattern={{version}}
             latest
 
       - name: Build and push Docker images
