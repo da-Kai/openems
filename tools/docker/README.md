@@ -2,12 +2,12 @@
 
 ## Backend
 
-#### see [Backend docker README](./backend/README.md)
+### see [Backend/README.md](./backend/README.md)
 
 ## Edge
 
-### see [Edge docker README](./edge/README.md)
+### see [Edge/README.md](./edge/README.md)
 
 ## UI
 
-### see [UI docker README](./ui/README.md)
+### see [UI/README.md](./ui/README.md)

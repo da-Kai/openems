@@ -177,9 +177,6 @@
             "openems-edge-prod": {
               "browserTarget": "app:build:openems,openems-edge-prod,prod"
             },
-            "openems-docker": {
-              "browserTarget": "app:build:openems,openems-docker,prod"
-            },
             "openems-gitpod": {
               "browserTarget": "app:build:openems,openems-gitpod"
             }
