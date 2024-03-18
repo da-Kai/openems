@@ -2,26 +2,38 @@ image:
   file: .gitpod.Dockerfile
 
 tasks:
-  - init: |
-      touch /tmp/.gradle-lock
-      ./gradlew build buildBackend -x test
-      rm /tmp/.gradle-lock
+  - name: init
+    init: |
+      exec 100>/var/tmp/openems.lock || exit 1
+
+  - name: Setup Backend
+    init: |
+      flock -w 1200 100 || exit 1
+      ./gradlew build --no-build-cache -x test
+      ./gradlew buildBackend --no-build-cache -x test
     command: java 
       -Dfelix.cm.dir=$(pwd)/tools/gitpod/openems-backend/config.d
       -jar build/openems-backend.jar
-  - init: |
-      sleep 10 && while [ -f /tmp/.gradle-lock ]; do sleep 1; done
-      ./gradlew build buildEdge -x test
+
+  - name: Setup Edge
+    init: |
+      flock -w 1200 100 || exit 1
+      ./gradlew build --no-build-cache -x test
+      ./gradlew buildEdge --no-build-cache -x test
     command: java 
       -Dfelix.cm.dir=$(pwd)/tools/gitpod/openems-edge/config.d
       -Dopenems.data.dir=$(pwd)/tools/gitpod/openems-edge/data
       -jar build/openems-edge.jar
-  - init: cd ui && npm install
+
+  - name: Setup UI
+    init: cd ui && npm install
     command: ng serve 
       -c openems-gitpod
       --host 0.0.0.0
       --disable-host-check
-  - init: |
+
+  - name: Setup odoo
+    init: |
       mkdir -p /workspace/odoo
       cd /workspace/odoo
       mkdir -p addons-available addons-enabled
@@ -37,28 +49,39 @@ tasks:
 
 ports:
   # Backend
-  - port: 8075 # Backend-to-Backend JSON/REST Api
+  - description: Backend-to-Backend JSON/REST Api
+    port: 8075
     onOpen: ignore
-  - port: 8076 # Backend-to-Backend JSON/Websocket Api
+  - description: Backend-to-Backend JSON/Websocket Api
+    port: 8076
     onOpen: ignore
-  - port: 8079 # Apache Felix Web Console
+  - description: Apache Felix Web Console
+    port: 8079
     onOpen: ignore
-  - port: 8081 # Edge-Websocket
+  - description: Edge-Websocket
+    port: 8081
     onOpen: ignore
-  - port: 8082 # UI-Websocket
+  - description: UI-Websocket
+    port: 8082
     onOpen: ignore
   # Edge
-  - port: 8080 # Apache Felix Web Console
+  - description: Apache Felix Web Console
+    port: 8080
     onOpen: ignore
-  - port: 8084 # JSON/REST Api
+  - description: JSON/REST Api
+    port: 8084
     onOpen: ignore
-  - port: 8085 # JSON/Websocket Api
+  - description: JSON/Websocket Api
+    port: 8085
     onOpen: ignore
   # UI
-  - port: 4200
+  - description: UI Port
+    port: 4200
     onOpen: open-browser
-  # Odoo
-  - port: 8069
+  # odoo
+  - description: odoo Websocket
+    port: 8069
     onOpen: open-browser
-  - port: 5432
+  - description: Postgresql Database
+    port: 5432
     onOpen: ignore
