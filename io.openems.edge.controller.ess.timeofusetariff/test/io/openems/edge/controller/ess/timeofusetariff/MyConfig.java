@@ -8,10 +8,13 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 
 	protected static class Builder {
 		private String id;
+		private boolean enabled;
 		private String essId;
 		private Mode mode;
 		private ControlMode controlMode;
-		private int maxPower;
+		private int essMaxChargePower;
+		private int maxChargePowerFromGrid;
+		private boolean limitChargePowerFor14aEnWG;
 		private RiskLevel riskLevel;
 
 		private Builder() {
@@ -19,6 +22,11 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 
 		public Builder setId(String id) {
 			this.id = id;
+			return this;
+		}
+
+		public Builder setEnabled(boolean enabled) {
+			this.enabled = enabled;
 			return this;
 		}
 
@@ -37,13 +45,23 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 			return this;
 		}
 
-		public Builder setMaxPower(int maxPower) {
-			this.maxPower = maxPower;
+		public Builder setEssMaxChargePower(int essMaxChargePower) {
+			this.essMaxChargePower = essMaxChargePower;
+			return this;
+		}
+
+		public Builder setMaxChargePowerFromGrid(int maxChargePowerFromGrid) {
+			this.maxChargePowerFromGrid = maxChargePowerFromGrid;
 			return this;
 		}
 
 		public Builder setRiskLevel(RiskLevel riskLevel) {
 			this.riskLevel = riskLevel;
+			return this;
+		}
+
+		public Builder setLimitChargePowerFor14aEnWG(boolean limitChargePowerFor14aEnWG) {
+			this.limitChargePowerFor14aEnWG = limitChargePowerFor14aEnWG;
 			return this;
 		}
 
@@ -69,6 +87,11 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 	}
 
 	@Override
+	public boolean enabled() {
+		return this.builder.enabled;
+	}
+
+	@Override
 	public String ess_id() {
 		return this.builder.essId;
 	}
@@ -85,7 +108,12 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 
 	@Override
 	public int maxChargePowerFromGrid() {
-		return this.builder.maxPower;
+		return this.builder.maxChargePowerFromGrid;
+	}
+
+	@Override
+	public boolean limitChargePowerFor14aEnWG() {
+		return this.builder.limitChargePowerFor14aEnWG;
 	}
 
 	@Override

@@ -1,6 +1,7 @@
+// @ts-strict-ignore
 import { Utils } from "./utils";
 
-fdescribe('Utils', () => {
+describe('Utils', () => {
 
   it('#subtractSafely', () => {
     expect(Utils.subtractSafely(null, null)).toEqual(null);

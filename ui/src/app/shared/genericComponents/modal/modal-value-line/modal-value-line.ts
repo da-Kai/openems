@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { Component, Input } from "@angular/core";
 import { ChannelAddress, CurrentData } from "src/app/shared/shared";
 
@@ -5,7 +6,7 @@ import { AbstractModalLine } from "../abstract-modal-line";
 
 @Component({
   selector: 'oe-modal-value-line',
-  templateUrl: './modal-value-line.html'
+  templateUrl: './modal-value-line.html',
 })
 export class ModalValueLineComponent extends AbstractModalLine {
 

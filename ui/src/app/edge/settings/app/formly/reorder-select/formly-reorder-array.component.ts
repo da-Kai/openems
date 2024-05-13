@@ -1,10 +1,11 @@
+// @ts-strict-ignore
 import { Component, OnInit } from "@angular/core";
 import { ItemReorderEventDetail } from "@ionic/angular";
 import { FieldType, FieldTypeConfig, FormlyFieldConfig, FormlyFieldProps } from "@ngx-formly/core";
 
 @Component({
     selector: 'reorder-array',
-    templateUrl: './formly-reorder-array.component.html'
+    templateUrl: './formly-reorder-array.component.html',
 })
 export class FormlyReorderArrayComponent extends FieldType<FieldTypeConfig<FormlyFieldProps & {
     allowDuplicates?: boolean,
@@ -101,8 +102,8 @@ export class FormlyReorderArrayComponent extends FieldType<FieldTypeConfig<Forml
                 label: optionConfig.label,
                 value: optionConfig.value,
                 expressions: {
-                    locked: optionConfig.expressions?.locked?.(this.field) ?? false
-                }
+                    locked: optionConfig.expressions?.locked?.(this.field) ?? false,
+                },
             };
         }) ?? [];
     }

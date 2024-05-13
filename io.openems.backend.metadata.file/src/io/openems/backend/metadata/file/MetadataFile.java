@@ -32,14 +32,15 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import io.openems.backend.common.alerting.OfflineEdgeAlertingSetting;
+import io.openems.backend.common.alerting.SumStateAlertingSetting;
+import io.openems.backend.common.alerting.UserAlertingSettings;
 import io.openems.backend.common.metadata.AbstractMetadata;
-import io.openems.backend.common.metadata.AlertingSetting;
 import io.openems.backend.common.metadata.Edge;
 import io.openems.backend.common.metadata.EdgeHandler;
 import io.openems.backend.common.metadata.Metadata;
 import io.openems.backend.common.metadata.SimpleEdgeHandler;
 import io.openems.backend.common.metadata.User;
-import io.openems.common.OpenemsOEM;
 import io.openems.common.channel.Level;
 import io.openems.common.event.EventReader;
 import io.openems.common.exceptions.OpenemsError;
@@ -86,6 +87,7 @@ public class MetadataFile extends AbstractMetadata implements Metadata, EventHan
 	private static final String USER_ID = "admin";
 	private static final String USER_NAME = "Administrator";
 	private static final Role USER_GLOBAL_ROLE = Role.ADMIN;
+	private JsonObject settings = new JsonObject();
 
 	private static Language LANGUAGE = Language.DE;
 
@@ -227,7 +229,7 @@ public class MetadataFile extends AbstractMetadata implements Metadata, EventHan
 			if (previousUser.hasMultipleEdges() != hasMultipleEdges) {
 				this.user = new User(previousUser.getId(), previousUser.getName(), previousUser.getToken(),
 						previousUser.getLanguage(), previousUser.getGlobalRole(), previousUser.getEdgeRoles(),
-						hasMultipleEdges);
+						hasMultipleEdges, previousUser.getSettings());
 			}
 		}
 		this.setInitialized();
@@ -235,7 +237,7 @@ public class MetadataFile extends AbstractMetadata implements Metadata, EventHan
 
 	private User generateUser() {
 		return new User(MetadataFile.USER_ID, MetadataFile.USER_NAME, UUID.randomUUID().toString(),
-				MetadataFile.LANGUAGE, MetadataFile.USER_GLOBAL_ROLE, this.edges.size() > 1);
+				MetadataFile.LANGUAGE, MetadataFile.USER_GLOBAL_ROLE, this.edges.size() > 1, this.settings);
 	}
 
 	@Override
@@ -269,7 +271,7 @@ public class MetadataFile extends AbstractMetadata implements Metadata, EventHan
 	}
 
 	@Override
-	public void registerUser(JsonObject jsonObject, OpenemsOEM.Manufacturer oem) throws OpenemsNamedException {
+	public void registerUser(JsonObject jsonObject, String oem) throws OpenemsNamedException {
 		throw new UnsupportedOperationException("FileMetadata.registerUser() is not implemented");
 	}
 
@@ -305,17 +307,27 @@ public class MetadataFile extends AbstractMetadata implements Metadata, EventHan
 	}
 
 	@Override
-	public List<AlertingSetting> getUserAlertingSettings(String edgeId) {
+	public UserAlertingSettings getUserAlertingSettings(String edgeId, String userId) throws OpenemsException {
 		throw new UnsupportedOperationException("FileMetadata.getUserAlertingSettings() is not implemented");
 	}
 
 	@Override
-	public AlertingSetting getUserAlertingSettings(String edgeId, String userId) throws OpenemsException {
+	public List<UserAlertingSettings> getUserAlertingSettings(String edgeId) {
 		throw new UnsupportedOperationException("FileMetadata.getUserAlertingSettings() is not implemented");
 	}
 
 	@Override
-	public void setUserAlertingSettings(User user, String edgeId, List<AlertingSetting> users) {
+	public List<OfflineEdgeAlertingSetting> getEdgeOfflineAlertingSettings(String edgeId) throws OpenemsException {
+		throw new UnsupportedOperationException("FileMetadata.getEdgeOfflineAlertingSettings() is not implemented");
+	}
+
+	@Override
+	public List<SumStateAlertingSetting> getSumStateAlertingSettings(String edgeId) throws OpenemsException {
+		throw new UnsupportedOperationException("FileMetadata.getSumStateAlertingSettings() is not implemented");
+	}
+
+	@Override
+	public void setUserAlertingSettings(User user, String edgeId, List<UserAlertingSettings> users) {
 		throw new UnsupportedOperationException("FileMetadata.setUserAlertingSettings() is not implemented");
 	}
 
@@ -382,12 +394,22 @@ public class MetadataFile extends AbstractMetadata implements Metadata, EventHan
 	}
 
 	@Override
+	public Optional<Level> getSumState(String edgeId) {
+		throw new UnsupportedOperationException("FileMetadata.getSumState() is not implemented");
+	}
+
+	@Override
 	public void logGenericSystemLog(GenericSystemLog systemLog) {
 		this.logInfo(this.log,
 				"%s on %s executed %s [%s]".formatted(systemLog.user().getId(), systemLog.edgeId(), systemLog.teaser(),
 						systemLog.getValues().entrySet().stream() //
 								.map(t -> t.getKey() + "=" + t.getValue()) //
 								.collect(joining(", "))));
+	}
+
+	@Override
+	public void updateUserSettings(User user, JsonObject settings) {
+		this.settings = settings == null ? new JsonObject() : settings;
 	}
 
 }

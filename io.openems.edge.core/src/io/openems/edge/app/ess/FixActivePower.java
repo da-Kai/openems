@@ -16,6 +16,7 @@ import com.google.gson.JsonElement;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.function.ThrowingTriFunction;
+import io.openems.common.oem.OpenemsEdgeOem;
 import io.openems.common.session.Language;
 import io.openems.common.session.Role;
 import io.openems.common.types.EdgeConfig;
@@ -40,6 +41,7 @@ import io.openems.edge.core.appmanager.Type;
 import io.openems.edge.core.appmanager.Type.Parameter;
 import io.openems.edge.core.appmanager.Type.Parameter.BundleParameter;
 import io.openems.edge.core.appmanager.dependency.Tasks;
+import io.openems.edge.core.appmanager.dependency.aggregatetask.SchedulerByCentralOrderConfiguration.SchedulerComponent;
 
 /**
  * Describes a fix active power app.
@@ -105,8 +107,9 @@ public class FixActivePower extends AbstractOpenemsAppWithProps<FixActivePower, 
 	}
 
 	@Override
-	public AppDescriptor getAppDescriptor() {
+	public AppDescriptor getAppDescriptor(OpenemsEdgeOem oem) {
 		return AppDescriptor.create() //
+				.setWebsiteUrl(oem.getAppWebsiteUrl(this.getAppId())) //
 				.build();
 	}
 
@@ -132,7 +135,7 @@ public class FixActivePower extends AbstractOpenemsAppWithProps<FixActivePower, 
 					new EdgeConfig.Component(ctrlFixActivePowerId, alias, "Controller.Ess.FixActivePower", //
 							JsonUtils.buildJsonObject() //
 									.addProperty("enabled", true) //
-									.addProperty("ess_id", essId) //
+									.addProperty("ess.id", essId) //
 									.onlyIf(t == ConfigurationTarget.ADD, //
 											b -> b.addProperty("mode", "MANUAL_OFF") //
 													.addProperty("hybridEssMode", "TARGET_DC") //
@@ -142,16 +145,11 @@ public class FixActivePower extends AbstractOpenemsAppWithProps<FixActivePower, 
 									.build()) //
 			);
 
-			// TODO improve scheduler configuration
-			final var schedulerIds = Lists.newArrayList(//
-					ctrlFixActivePowerId, //
-					"ctrlPrepareBatteryExtension0", //
-					"ctrlEmergencyCapacityReserve0", //
-					"ctrlGridOptimizedCharge0" //
-			);
 			return AppConfiguration.create() //
 					.addTask(Tasks.component(components)) //
-					.addTask(Tasks.scheduler(schedulerIds)) //
+					.addTask(Tasks.schedulerByCentralOrder(//
+							new SchedulerComponent(ctrlFixActivePowerId, "Controller.Ess.FixActivePower",
+									this.getAppId()))) //
 					.build();
 		};
 	}
@@ -160,6 +158,7 @@ public class FixActivePower extends AbstractOpenemsAppWithProps<FixActivePower, 
 	public OpenemsAppPermissions getAppPermissions() {
 		return OpenemsAppPermissions.create() //
 				.setCanSee(Role.ADMIN) //
+				.setCanDelete(Role.ADMIN) //
 				.build();
 	}
 

@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { Component, EventEmitter, Output } from "@angular/core";
 import { TranslateService } from "@ngx-translate/core";
 import { TKeyValue } from "src/app/shared/service/defaulttypes";
@@ -7,7 +8,7 @@ import { Utils } from "src/app/shared/shared";
 
 @Component({
   selector: 'oe-filter',
-  templateUrl: './filter.component.html'
+  templateUrl: './filter.component.html',
 })
 export class FilterComponent {
 
@@ -18,14 +19,14 @@ export class FilterComponent {
   constructor(private translate: TranslateService) { }
 
   /**
-   * Collects the search params for a {@link GetEdgesRequest} 
-   * 
+   * Collects the search params for a {@link GetEdgesRequest}
+   *
    * @param event the event
    * @param filter the chosen filter
    */
   public searchOnChange(event, filter: Filter): void {
 
-    let value = event.target.value;
+    const value = event.target.value;
 
     // If no value provided
     if (!value) {

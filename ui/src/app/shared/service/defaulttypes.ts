@@ -1,7 +1,9 @@
+// @ts-strict-ignore
 import { TranslateService } from '@ngx-translate/core';
 import { endOfMonth, endOfYear, format, getDay, getMonth, getYear, isSameDay, isSameMonth, isSameYear, startOfMonth, startOfYear, subDays } from 'date-fns';
+
 import { QueryHistoricTimeseriesEnergyResponse } from '../jsonrpc/response/queryHistoricTimeseriesEnergyResponse';
-import { ChannelAddress } from '../shared';
+import { ChannelAddress, Service } from '../shared';
 
 export module DefaultTypes {
 
@@ -15,7 +17,7 @@ export module DefaultTypes {
 
   /**
    * CurrentData Summary
-   * 
+   *
    * ratio is [-1,1]
    */
   export interface Summary {
@@ -91,7 +93,10 @@ export module DefaultTypes {
     params?: string[]
   }
 
-  export enum PeriodString { DAY = 'day', WEEK = 'week', MONTH = 'month', YEAR = 'year', CUSTOM = 'custom' };
+  export enum PeriodString { DAY = 'day', WEEK = 'week', MONTH = 'month', YEAR = 'year', TOTAL = 'total', CUSTOM = 'custom' }
+
+  /** Values of {@link DefaultTypes.PeriodString} */
+  export type PeriodStringValues = Exclude<`${DefaultTypes.PeriodString}`, "custom">;
 
   export namespace History {
 
@@ -148,10 +153,15 @@ export module DefaultTypes {
 
     constructor(
       public from: Date = new Date(),
-      public to: Date = new Date()
+      public to: Date = new Date(),
     ) { }
 
-    public getText(translate: TranslateService): string {
+    public getText(translate: TranslateService, service: Service): string {
+
+      if (service.periodString === DefaultTypes.PeriodString.TOTAL) {
+        return translate.instant('Edge.History.TOTAL');
+      }
+
       if (isSameDay(this.from, this.to)) {
         if (isSameDay(this.from, new Date())) {
           // Selected TODAY
@@ -164,10 +174,9 @@ export module DefaultTypes {
         } else {
           // Selected one single day
           return HistoryPeriod.getTranslatedDayString(translate, this.from) + ", " + translate.instant('Edge.History.selectedDay', {
-            value: format(this.from, translate.instant('General.dateFormat'))
+            value: format(this.from, translate.instant('General.dateFormat')),
           });
         }
-
       } else if (isSameMonth(this.from, this.to) && isSameDay(this.from, startOfMonth(this.from)) && isSameDay(this.to, endOfMonth(this.to))) {
         // Selected one month
         return HistoryPeriod.getTranslatedMonthString(translate, this.from) + " " + getYear(this.from);
@@ -175,19 +184,20 @@ export module DefaultTypes {
       // Selected one year
       else if (isSameYear(this.from, this.to) && isSameDay(this.from, startOfYear(this.from)) && isSameDay(this.to, endOfYear(this.to))) {
         return getYear(this.from).toString();
+      }
 
-      } else {
+      else {
         return translate.instant(
           'General.periodFromTo', {
-          value1: format(this.from, translate.instant('General.dateFormatShort')),
-          value2: format(this.to, translate.instant('General.dateFormat'))
+          value1: format(this.from, translate.instant('General.dateFormat')),
+          value2: format(this.to, translate.instant('General.dateFormat')),
         });
       }
     }
 
     /**
      * Returns a translated weekday name.
-     * 
+     *
      * @param translate the TranslateService
      * @param date the Date
      */
@@ -205,7 +215,7 @@ export module DefaultTypes {
 
     /**
      * Returns a translated month name.
-     * 
+     *
      * @param translate the TranslateService
      * @param date the Date
      */

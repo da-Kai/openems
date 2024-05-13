@@ -14,6 +14,7 @@ import com.google.gson.JsonElement;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.function.ThrowingTriFunction;
+import io.openems.common.oem.OpenemsEdgeOem;
 import io.openems.common.session.Language;
 import io.openems.common.types.EdgeConfig;
 import io.openems.common.utils.JsonUtils;
@@ -80,7 +81,7 @@ public class MicrocareSdm630Meter
 		MODBUS_UNIT_ID(AppDef.copyOfGeneric(MeterProps.modbusUnitId(), def -> def //
 				.setRequired(true) //
 				.setAutoGenerateField(false) //
-				.setDefaultValue(10))), //
+				.setDefaultValue(6))), //
 		MODBUS_GROUP(CommunicationProps.modbusGroup(MODBUS_ID, MODBUS_ID.def(), //
 				MODBUS_UNIT_ID, MODBUS_UNIT_ID.def())), //
 		UNOFFICIAL_APP_WARNING(CommonProps.installationHintOfUnofficialApp()), //
@@ -155,8 +156,9 @@ public class MicrocareSdm630Meter
 	}
 
 	@Override
-	public AppDescriptor getAppDescriptor() {
+	public AppDescriptor getAppDescriptor(OpenemsEdgeOem oem) {
 		return AppDescriptor.create() //
+				.setWebsiteUrl(oem.getAppWebsiteUrl(this.getAppId())) //
 				.build();
 	}
 

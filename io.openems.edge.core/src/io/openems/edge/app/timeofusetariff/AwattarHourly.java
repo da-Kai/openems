@@ -1,5 +1,9 @@
 package io.openems.edge.app.timeofusetariff;
 
+import static io.openems.edge.app.common.props.CommonProps.alias;
+import static io.openems.edge.app.common.props.CommonProps.defaultDef;
+import static io.openems.edge.core.appmanager.validator.Checkables.checkHome;
+
 import java.util.Map;
 import java.util.function.Function;
 
@@ -13,10 +17,12 @@ import com.google.gson.JsonElement;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.function.ThrowingTriFunction;
+import io.openems.common.oem.OpenemsEdgeOem;
 import io.openems.common.session.Language;
 import io.openems.common.types.EdgeConfig;
 import io.openems.common.utils.JsonUtils;
-import io.openems.edge.app.common.props.CommonProps;
+import io.openems.edge.app.enums.OptionsFactory;
+import io.openems.edge.app.enums.TranslatableEnum;
 import io.openems.edge.app.timeofusetariff.AwattarHourly.Property;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.core.appmanager.AbstractOpenemsApp;
@@ -30,9 +36,13 @@ import io.openems.edge.core.appmanager.Nameable;
 import io.openems.edge.core.appmanager.OpenemsApp;
 import io.openems.edge.core.appmanager.OpenemsAppCardinality;
 import io.openems.edge.core.appmanager.OpenemsAppCategory;
+import io.openems.edge.core.appmanager.TranslationUtil;
 import io.openems.edge.core.appmanager.Type;
 import io.openems.edge.core.appmanager.Type.Parameter.BundleParameter;
 import io.openems.edge.core.appmanager.dependency.Tasks;
+import io.openems.edge.core.appmanager.dependency.aggregatetask.SchedulerByCentralOrderConfiguration.SchedulerComponent;
+import io.openems.edge.core.appmanager.formly.JsonFormlyUtil;
+import io.openems.edge.core.appmanager.validator.ValidatorConfig;
 
 /**
  * Describes a App for AwattarHourly.
@@ -46,7 +56,8 @@ import io.openems.edge.core.appmanager.dependency.Tasks;
     "properties":{
     	"CTRL_ESS_TIME_OF_USE_TARIFF_ID": "ctrlEssTimeOfUseTariff0",
     	"TIME_OF_USE_TARIFF_PROVIDER_ID": "timeOfUseTariff0",
-    	"CONTROL_MODE": {@link ControlMode}
+    	"CONTROL_MODE": {@link ControlMode},
+    	"ZONE": {@link Zone},
     },
     "appDescriptor": {
     	"websiteUrl": {@link AppDescriptor#getWebsiteUrl()}
@@ -64,7 +75,16 @@ public class AwattarHourly extends AbstractOpenemsAppWithProps<AwattarHourly, Pr
 		TIME_OF_USE_TARIFF_PROVIDER_ID(AppDef.componentId("timeOfUseTariff0")), //
 
 		// Properties
-		ALIAS(CommonProps.alias());
+		ALIAS(alias()),
+
+		ZONE(AppDef.copyOfGeneric(defaultDef(), def -> def //
+				.setTranslatedLabelWithAppPrefix(".zone.label") //
+				.setTranslatedDescriptionWithAppPrefix(".zone.description") //
+				.setRequired(true)//
+				.setDefaultValue(Zone.GERMANY)//
+				.setField(JsonFormlyUtil::buildSelectFromNameable, (app, property, l, parameter, field) -> {
+					field.setOptions(Zone.optionsFactory(), l);
+				})));
 
 		private final AppDef<? super AwattarHourly, ? super Property, ? super Type.Parameter.BundleParameter> def;
 
@@ -99,6 +119,7 @@ public class AwattarHourly extends AbstractOpenemsAppWithProps<AwattarHourly, Pr
 		return (t, p, l) -> {
 			final var timeOfUseTariffProviderId = this.getId(t, p, Property.TIME_OF_USE_TARIFF_PROVIDER_ID);
 			final var ctrlEssTimeOfUseTariffId = this.getId(t, p, Property.CTRL_ESS_TIME_OF_USE_TARIFF_ID);
+			final var zone = this.getEnum(p, Zone.class, Property.ZONE);
 
 			final var alias = this.getString(p, l, Property.ALIAS);
 
@@ -109,19 +130,23 @@ public class AwattarHourly extends AbstractOpenemsAppWithProps<AwattarHourly, Pr
 									.build()), //
 					new EdgeConfig.Component(timeOfUseTariffProviderId, this.getName(l), "TimeOfUseTariff.Awattar",
 							JsonUtils.buildJsonObject() //
+									.addProperty("zone", zone) //
 									.build())//
 			);
 
 			return AppConfiguration.create() //
 					.addTask(Tasks.component(components)) //
-					.addTask(Tasks.scheduler(ctrlEssTimeOfUseTariffId, "ctrlBalancing0")) //
+					.addTask(Tasks.schedulerByCentralOrder(new SchedulerComponent(ctrlEssTimeOfUseTariffId,
+							"Controller.Ess.Time-Of-Use-Tariff", this.getAppId()))) //
+					.addTask(Tasks.persistencePredictor("_sum/UnmanagedConsumptionActivePower")) //
 					.build();
 		};
 	}
 
 	@Override
-	public AppDescriptor getAppDescriptor() {
+	public AppDescriptor getAppDescriptor(OpenemsEdgeOem oem) {
 		return AppDescriptor.create() //
+				.setWebsiteUrl(oem.getAppWebsiteUrl(this.getAppId())) //
 				.build();
 	}
 
@@ -141,8 +166,43 @@ public class AwattarHourly extends AbstractOpenemsAppWithProps<AwattarHourly, Pr
 	}
 
 	@Override
+	protected ValidatorConfig.Builder getValidateBuilder() {
+		return ValidatorConfig.create() //
+				.setCompatibleCheckableConfigs(checkHome());
+	}
+
+	@Override
 	protected AwattarHourly getApp() {
 		return this;
+	}
+
+	public enum Zone implements TranslatableEnum {
+		GERMANY("germany"), //
+		AUSTRIA("austria"), //
+		;
+
+		private static final String TRANSLATION_PREFIX = "App.TimeOfUseTariff.Awattar.zone.option.";
+
+		private final String translationKey;
+
+		private Zone(String translationKey) {
+			this.translationKey = TRANSLATION_PREFIX + translationKey;
+		}
+
+		@Override
+		public final String getTranslation(Language l) {
+			final var bundle = AbstractOpenemsApp.getTranslationBundle(l);
+			return TranslationUtil.getTranslation(bundle, this.translationKey);
+		}
+
+		/**
+		 * Creates a {@link OptionsFactory} of this enum.
+		 * 
+		 * @return the {@link OptionsFactory}
+		 */
+		public static final OptionsFactory optionsFactory() {
+			return OptionsFactory.of(values());
+		}
 	}
 
 }

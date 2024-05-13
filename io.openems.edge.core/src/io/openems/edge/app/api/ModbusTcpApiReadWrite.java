@@ -16,6 +16,7 @@ import com.google.gson.JsonElement;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.function.ThrowingTriFunction;
+import io.openems.common.oem.OpenemsEdgeOem;
 import io.openems.common.session.Language;
 import io.openems.common.session.Role;
 import io.openems.common.types.EdgeConfig;
@@ -37,6 +38,7 @@ import io.openems.edge.core.appmanager.Type;
 import io.openems.edge.core.appmanager.Type.Parameter.BundleParameter;
 import io.openems.edge.core.appmanager.dependency.DependencyDeclaration;
 import io.openems.edge.core.appmanager.dependency.Tasks;
+import io.openems.edge.core.appmanager.dependency.aggregatetask.SchedulerByCentralOrderConfiguration.SchedulerComponent;
 import io.openems.edge.core.appmanager.formly.JsonFormlyUtil;
 
 /**
@@ -128,8 +130,9 @@ public class ModbusTcpApiReadWrite extends AbstractOpenemsAppWithProps<ModbusTcp
 	}
 
 	@Override
-	public AppDescriptor getAppDescriptor() {
+	public AppDescriptor getAppDescriptor(OpenemsEdgeOem oem) {
 		return AppDescriptor.create() //
+				.setWebsiteUrl(oem.getAppWebsiteUrl(this.getAppId())) //
 				.build();
 	}
 
@@ -162,15 +165,9 @@ public class ModbusTcpApiReadWrite extends AbstractOpenemsAppWithProps<ModbusTcp
 					new EdgeConfig.Component(controllerId, this.getName(l), "Controller.Api.ModbusTcp.ReadWrite",
 							JsonUtils.buildJsonObject() //
 									.addProperty("apiTimeout", apiTimeout) //
-									.add("component.ids", controllerIds).build()) //
-			);
-
-			final var schedulerIds = Lists.newArrayList(//
-					"ctrlEmergencyCapacityReserve0", //
-					controllerId, //
-					"ctrlGridOptimizedCharge0", //
-					"ctrlEssSurplusFeedToGrid0", //
-					"ctrlBalancing0" //
+									.add("component.ids", controllerIds) //
+									.addProperty("port", 502) //
+									.build()) //
 			);
 
 			final var dependencies = Lists.newArrayList(//
@@ -191,7 +188,9 @@ public class ModbusTcpApiReadWrite extends AbstractOpenemsAppWithProps<ModbusTcp
 
 			return AppConfiguration.create() //
 					.addTask(Tasks.component(components)) //
-					.addTask(Tasks.scheduler(schedulerIds)) //
+					.addTask(Tasks.schedulerByCentralOrder(//
+							new SchedulerComponent(controllerId, "Controller.Api.ModbusTcp.ReadWrite",
+									this.getAppId()))) //
 					.addDependencies(dependencies) //
 					.build();
 		};

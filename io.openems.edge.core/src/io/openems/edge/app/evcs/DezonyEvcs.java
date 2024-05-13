@@ -17,6 +17,7 @@ import com.google.gson.JsonElement;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.function.ThrowingTriFunction;
+import io.openems.common.oem.OpenemsEdgeOem;
 import io.openems.common.session.Language;
 import io.openems.common.types.EdgeConfig;
 import io.openems.common.utils.JsonUtils;
@@ -41,6 +42,7 @@ import io.openems.edge.core.appmanager.Type;
 import io.openems.edge.core.appmanager.Type.Parameter;
 import io.openems.edge.core.appmanager.Type.Parameter.BundleParameter;
 import io.openems.edge.core.appmanager.dependency.Tasks;
+import io.openems.edge.core.appmanager.dependency.aggregatetask.SchedulerByCentralOrderConfiguration.SchedulerComponent;
 
 /**
  * Describes a dezony IQ evcs App.
@@ -146,7 +148,8 @@ public class DezonyEvcs extends AbstractOpenemsAppWithProps<DezonyEvcs, Property
 
 			return AppConfiguration.create() //
 					.addTask(Tasks.component(components)) //
-					.addTask(Tasks.scheduler(ctrlEvcsId, "ctrlBalancing0")) //
+					.addTask(Tasks.schedulerByCentralOrder(
+							new SchedulerComponent(ctrlEvcsId, "Controller.Evcs", this.getAppId()))) //
 					.addDependencies(EvcsCluster.dependency(t, this.componentManager, this.componentUtil,
 							maxHardwarePowerPerPhase, evcsId)) //
 					.build();
@@ -154,8 +157,9 @@ public class DezonyEvcs extends AbstractOpenemsAppWithProps<DezonyEvcs, Property
 	}
 
 	@Override
-	public AppDescriptor getAppDescriptor() {
+	public AppDescriptor getAppDescriptor(OpenemsEdgeOem oem) {
 		return AppDescriptor.create() //
+				.setWebsiteUrl(oem.getAppWebsiteUrl(this.getAppId())) //
 				.build();
 	}
 

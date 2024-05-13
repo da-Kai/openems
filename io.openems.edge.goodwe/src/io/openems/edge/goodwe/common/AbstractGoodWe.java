@@ -4,6 +4,7 @@ import static io.openems.edge.bridge.modbus.api.ElementToChannelConverter.INVERT
 import static io.openems.edge.bridge.modbus.api.ElementToChannelConverter.SCALE_FACTOR_2;
 import static io.openems.edge.bridge.modbus.api.ElementToChannelConverter.SCALE_FACTOR_MINUS_1;
 import static io.openems.edge.bridge.modbus.api.ElementToChannelConverter.SCALE_FACTOR_MINUS_2;
+import static io.openems.edge.bridge.modbus.api.ModbusUtils.readElementOnce;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -17,11 +18,9 @@ import org.osgi.service.event.EventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.openems.common.exceptions.NotImplementedException;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.common.types.OpenemsType;
-import io.openems.edge.batteryinverter.api.HybridManagedSymmetricBatteryInverter;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.ChannelMetaInfoReadAndWrite;
 import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
@@ -51,11 +50,11 @@ import io.openems.edge.ess.api.SymmetricEss;
 import io.openems.edge.goodwe.charger.GoodWeCharger;
 import io.openems.edge.goodwe.charger.twostring.GoodWeChargerTwoString;
 import io.openems.edge.goodwe.common.enums.BatteryMode;
-import io.openems.edge.goodwe.common.enums.GoodWeHardwareType;
 import io.openems.edge.goodwe.common.enums.GoodWeType;
 import io.openems.edge.timedata.api.TimedataProvider;
 import io.openems.edge.timedata.api.utils.CalculateEnergyFromPower;
 
+@SuppressWarnings("deprecation")
 public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 		implements GoodWe, OpenemsComponent, TimedataProvider, EventHandler {
 
@@ -101,74 +100,14 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 	}
 
 	@Override
-	protected final ModbusProtocol defineModbusProtocol() throws OpenemsException {
+	protected final ModbusProtocol defineModbusProtocol() {
 		var protocol = new ModbusProtocol(this, //
 
 				new FC3ReadRegistersTask(35001, Priority.LOW, //
 						m(SymmetricEss.ChannelId.MAX_APPARENT_POWER, new UnsignedWordElement(35001)), //
 						new DummyRegisterElement(35002), //
-						m(GoodWe.ChannelId.SERIAL_NUMBER, new StringWordElement(35003, 8)), //
-						m(GoodWe.ChannelId.GOODWE_TYPE, new StringWordElement(35011, 5), new ElementToChannelConverter(
-								// element -> channel
-								value -> {
-									// Evaluate GoodweType
-									final GoodWeType result;
-									if (value == null) {
-										result = GoodWeType.UNDEFINED;
-									} else {
-										String stringValue = TypeUtils.<String>getAsType(OpenemsType.STRING, value);
-										switch (stringValue) {
-										// TODO add identification for FENECON branded inverter
-										case "GW10K-BT":
-											result = GoodWeType.GOODWE_10K_BT;
-											break;
-										case "GW8K-BT":
-											result = GoodWeType.GOODWE_8K_BT;
-											break;
-										case "GW5K-BT":
-											result = GoodWeType.GOODWE_5K_BT;
-											break;
-										case "GW10K-ET":
-											result = GoodWeType.GOODWE_10K_ET;
-											break;
-										case "GW8K-ET":
-											result = GoodWeType.GOODWE_8K_ET;
-											break;
-										case "GW5K-ET":
-											result = GoodWeType.GOODWE_5K_ET;
-											break;
-										case "FHI-10-DAH":
-											result = GoodWeType.FENECON_FHI_10_DAH;
-											break;
-										default:
-											this.logInfo(this.log, "Unable to identify GoodWe by name [" + value + "]");
-											result = GoodWeType.UNDEFINED;
-											break;
-										}
-									}
-									// Log on first occurrence
-									if (result != this.getGoodweType()) {
-										switch (result) {
-										case GOODWE_10K_BT:
-										case GOODWE_8K_BT:
-										case GOODWE_5K_BT:
-										case GOODWE_10K_ET:
-										case GOODWE_8K_ET:
-										case GOODWE_5K_ET:
-										case FENECON_FHI_10_DAH:
-											this.logInfo(this.log, "Identified " + result.getName());
-											break;
-										case UNDEFINED:
-											break;
-										}
-									}
-									return result;
-								}, //
-
-								// channel -> element
-								value -> value))
-
-				), //
+						m(GoodWe.ChannelId.SERIAL_NUMBER, new StringWordElement(35003, 8)) //
+				),
 
 				new FC3ReadRegistersTask(35016, Priority.LOW, //
 						m(GoodWe.ChannelId.DSP_FM_VERSION_MASTER, new UnsignedWordElement(35016)), //
@@ -1238,29 +1177,48 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 				) //
 		);
 
-		// Handles different GoodWe Types
-		ModbusUtils.readELementOnce(protocol, new StringWordElement(35003, 8), true) //
-				.thenAccept(serialNr -> {
-					var hardwareType = getHardwareTypeFromSerialNr(serialNr);
+		/*
+		 * Handles different GoodWe Types.
+		 * 
+		 * Register 35011: GoodWeType as String (Not supported for GoodWe 20 & 30)
+		 * Register 35003: Serial number as String (Fallback for GoodWe 20 & 30)
+		 */
+		readElementOnce(protocol, ModbusUtils::retryOnNull, new StringWordElement(35011, 5)) //
+				.thenAccept(value -> {
 
-					try {
-						switch (hardwareType) {
-						case GOODWE_20, GOODWE_29_9 -> this.handleMultipleStringChargers(protocol);
-						case GOODWE_10, UNDEFINED -> {
-						}
-						case OTHER ->
-							this.logWarn(this.log, "GoodWe Hardware Type not defined by Serial Nr.: " + serialNr);
-						}
+					/*
+					 * Evaluate GoodweType from GoodWe type register
+					 */
+					final var resultFromString = getGoodWeTypeFromStringValue(
+							TypeUtils.<String>getAsType(OpenemsType.STRING, value));
 
-						this._setGoodweHardwareType(hardwareType);
-
-					} catch (OpenemsException e) {
-						this.logError(this.log, "Unable to add charger tasks for modbus protocol");
+					if (resultFromString != GoodWeType.UNDEFINED) {
+						this.logInfo(this.log, "Identified " + resultFromString.getName());
+						this._setGoodweType(resultFromString);
+						return;
 					}
+
+					/*
+					 * Evaluate GoodweType from serial number
+					 */
+					readElementOnce(protocol, ModbusUtils::retryOnNull, new StringWordElement(35003, 8)) //
+							.thenAccept(serialNr -> {
+								final var hardwareType = getGoodWeTypeFromSerialNr(serialNr);
+								try {
+									this._setGoodweType(hardwareType);
+									if (hardwareType == GoodWeType.FENECON_FHI_20_DAH
+											|| hardwareType == GoodWeType.FENECON_FHI_29_9_DAH) {
+										this.handleMultipleStringChargers(protocol);
+									}
+
+								} catch (OpenemsException e) {
+									this.logError(this.log, "Unable to add charger tasks for modbus protocol");
+								}
+							});
 				});
 
 		// Handles different DSP versions
-		ModbusUtils.readELementOnce(protocol, new UnsignedWordElement(35016), true) //
+		readElementOnce(protocol, ModbusUtils::retryOnNull, new UnsignedWordElement(35016)) //
 				.thenAccept(dspVersion -> {
 					try {
 
@@ -1303,18 +1261,41 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 	}
 
 	/**
-	 * Get GoodWe hardware version by serial number.
+	 * Get GoodWe type from the GoodWe string representation.
+	 * 
+	 * @param stringValue GoodWe type as String
+	 * @return type as {@link GoodWeType}
+	 */
+	protected static GoodWeType getGoodWeTypeFromStringValue(String stringValue) {
+		if (stringValue == null || stringValue.isEmpty()) {
+			return GoodWeType.UNDEFINED;
+		}
+
+		return switch (stringValue) {
+		case "GW10K-BT" -> GoodWeType.GOODWE_10K_BT;
+		case "GW8K-BT" -> GoodWeType.GOODWE_8K_BT;
+		case "GW5K-BT" -> GoodWeType.GOODWE_5K_BT;
+		case "GW10K-ET" -> GoodWeType.GOODWE_10K_ET;
+		case "GW8K-ET" -> GoodWeType.GOODWE_8K_ET;
+		case "GW5K-ET" -> GoodWeType.GOODWE_5K_ET;
+		case "FHI-10-DAH" -> GoodWeType.FENECON_FHI_10_DAH;
+		default -> GoodWeType.UNDEFINED;
+		};
+	}
+
+	/**
+	 * Get GoodWe type from serial number.
 	 * 
 	 * @param serialNr Serial number
 	 * @return type as {@link GoodWeHardwareType}
 	 */
-	protected static GoodWeHardwareType getHardwareTypeFromSerialNr(String serialNr) {
-		if (serialNr.isEmpty()) {
-			return GoodWeHardwareType.UNDEFINED;
+	protected static GoodWeType getGoodWeTypeFromSerialNr(String serialNr) {
+		if (serialNr == null || serialNr.isEmpty()) {
+			return GoodWeType.UNDEFINED;
 		}
 
 		// Example serial numbers: default=9010KETT228W0004 float(29.9)=929K9ETT231W0159
-		return Stream.of(GoodWeHardwareType.values()) //
+		return Stream.of(GoodWeType.values()) //
 				.filter(t -> {
 					try {
 						return t.serialNrFilter.apply(serialNr);
@@ -1326,7 +1307,7 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 					}
 				}) //
 				.findFirst() //
-				.orElse(GoodWeHardwareType.OTHER);
+				.orElse(GoodWeType.UNDEFINED);
 	}
 
 	/**
@@ -1389,19 +1370,20 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 						m(GoodWe.ChannelId.TWO_S_PV6_I, new UnsignedWordElement(35307),
 								ElementToChannelConverter.SCALE_FACTOR_2), //
 						new DummyRegisterElement(35308, 35336),
-						m(GoodWe.ChannelId.TWO_S_MPPT1_P, new UnsignedWordElement(35337)),
-						m(GoodWe.ChannelId.TWO_S_MPPT2_P, new UnsignedWordElement(35338)),
-						m(GoodWe.ChannelId.TWO_S_MPPT3_P, new UnsignedWordElement(35339)),
+						m(GoodWe.ChannelId.MPPT1_P, new UnsignedWordElement(35337)),
+						m(GoodWe.ChannelId.MPPT2_P, new UnsignedWordElement(35338)),
+						m(GoodWe.ChannelId.MPPT3_P, new UnsignedWordElement(35339)),
 						new DummyRegisterElement(35340, 35344), // Power MPPT4 - MPPT8
-						m(GoodWe.ChannelId.TWO_S_MPPT1_I, new UnsignedWordElement(35345), //
+						m(GoodWe.ChannelId.MPPT1_I, new UnsignedWordElement(35345), //
 								ElementToChannelConverter.SCALE_FACTOR_2),
-						m(GoodWe.ChannelId.TWO_S_MPPT2_I, new UnsignedWordElement(35346), //
+						m(GoodWe.ChannelId.MPPT2_I, new UnsignedWordElement(35346), //
 								ElementToChannelConverter.SCALE_FACTOR_2),
-						m(GoodWe.ChannelId.TWO_S_MPPT3_I, new UnsignedWordElement(35347), //
+						m(GoodWe.ChannelId.MPPT3_I, new UnsignedWordElement(35347), //
 								ElementToChannelConverter.SCALE_FACTOR_2)) //
 		);
 	}
 
+	// TODO: Can be removed when GoodWeChargerTwoStringImpl has been deleted
 	private void setMultipleStringChannels() {
 
 		this.chargers.stream() //
@@ -1810,7 +1792,8 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 						m(GoodWe.ChannelId.DRED_CMD, new UnsignedWordElement(47007)), //
 						new DummyRegisterElement(47008), //
 						m(GoodWe.ChannelId.WIFI_OR_LAN_SWITCH, new UnsignedWordElement(47009)), //
-						new DummyRegisterElement(47010, 47011), //
+						m(GoodWe.ChannelId.RIPPLE_CONTROL_RECEIVER_ENABLE, new UnsignedWordElement(47010)), //
+						new DummyRegisterElement(47011), //
 						m(GoodWe.ChannelId.LED_BLINK_TIME, new UnsignedWordElement(47012)), //
 						m(GoodWe.ChannelId.WIFI_LED_STATE, new UnsignedWordElement(47013)), //
 						m(GoodWe.ChannelId.COM_LED_STATE, new UnsignedWordElement(47014)), //
@@ -1853,7 +1836,9 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 						new DummyRegisterElement(47008), //
 						// For wifi+Lan module, to switch to LAN or WiFi communicaiton
 						m(GoodWe.ChannelId.WIFI_OR_LAN_SWITCH, new UnsignedWordElement(47009)), //
-						new DummyRegisterElement(47010, 47011), //
+						// Ripple Control Receiver on/off
+						m(GoodWe.ChannelId.RIPPLE_CONTROL_RECEIVER_ENABLE, new UnsignedWordElement(47010)), //
+						new DummyRegisterElement(47011), //
 						m(GoodWe.ChannelId.LED_BLINK_TIME, new UnsignedWordElement(47012)), //
 						// 1: off, 2: on, 3: flash 1x, 4: flash 2x, 5: flash 4x
 						m(GoodWe.ChannelId.WIFI_LED_STATE, new UnsignedWordElement(47013)), //
@@ -1918,7 +1903,7 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 		);
 	}
 
-	protected ModbusElement getSocModbusElement(int address) throws NotImplementedException {
+	protected ModbusElement getSocModbusElement(int address) {
 		if (this instanceof HybridEss) {
 			return m(SymmetricEss.ChannelId.SOC, new UnsignedWordElement(address), new ElementToChannelConverter(
 					// element -> channel
@@ -1934,11 +1919,9 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 					},
 					// channel -> element
 					value -> value));
-		}
-		if (this instanceof HybridManagedSymmetricBatteryInverter) {
-			return new DummyRegisterElement(address);
+
 		} else {
-			throw new NotImplementedException("Wrong implementation of AbstractGoodWe");
+			return new DummyRegisterElement(address);
 		}
 	}
 

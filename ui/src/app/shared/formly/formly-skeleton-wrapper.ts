@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { Component, Input } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { FormlyFieldConfig } from '@ngx-formly/core';
@@ -20,7 +21,7 @@ import { FormlyFieldConfig } from '@ngx-formly/core';
   </ion-list>
   <formly-form *ngIf="show" [form]="form" [fields]="fields" [model]="model"></formly-form>
 </div>
-  `
+  `,
 })
 export class FormlyFieldWithLoadingAnimationComponent {
   @Input() public show: boolean = false;

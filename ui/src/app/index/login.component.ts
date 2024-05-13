@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { AfterContentChecked, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -9,7 +10,7 @@ import { Edge, Service, Utils, Websocket } from '../shared/shared';
 
 @Component({
   selector: 'login',
-  templateUrl: './login.component.html'
+  templateUrl: './login.component.html',
 })
 export class LoginComponent implements OnInit, AfterContentChecked, OnDestroy {
   public environment = environment;
@@ -24,7 +25,7 @@ export class LoginComponent implements OnInit, AfterContentChecked, OnDestroy {
     public utils: Utils,
     private router: Router,
     private route: ActivatedRoute,
-    private cdref: ChangeDetectorRef
+    private cdref: ChangeDetectorRef,
   ) { }
 
   ngAfterContentChecked() {
@@ -46,7 +47,7 @@ export class LoginComponent implements OnInit, AfterContentChecked, OnDestroy {
 
   async ionViewWillEnter() {
 
-    // Execute Login-Request if url path matches 'demo' 
+    // Execute Login-Request if url path matches 'demo'
     if (this.route.snapshot.routeConfig.path == 'demo') {
 
       await new Promise((resolve) => setTimeout(() => {
@@ -54,7 +55,7 @@ export class LoginComponent implements OnInit, AfterContentChecked, OnDestroy {
         // Wait for Websocket
         if (this.websocket.status == 'waiting for credentials') {
           this.service.startSpinner('loginspinner');
-          let lang = this.route.snapshot.queryParamMap.get('lang') ?? null;
+          const lang = this.route.snapshot.queryParamMap.get('lang') ?? null;
           if (lang) {
             localStorage.DEMO_LANGUAGE = lang;
           }
@@ -69,7 +70,7 @@ export class LoginComponent implements OnInit, AfterContentChecked, OnDestroy {
 
   /**
    * Trims credentials
-   * 
+   *
    * @param password the password
    * @param username the username
    * @returns trimmed credentials
@@ -77,13 +78,13 @@ export class LoginComponent implements OnInit, AfterContentChecked, OnDestroy {
   public static trimCredentials(password: string, username?: string): { password: string, username?: string } {
     return {
       password: password?.trim(),
-      ...(username && { username: username?.trim() })
+      ...(username && { username: username?.trim() }),
     };
   }
 
   /**
    * Login to OpenEMS Edge or Backend.
-   * 
+   *
    * @param param data provided in login form
    */
   public doLogin(param: { username?: string, password: string }) {
@@ -107,7 +108,7 @@ export class LoginComponent implements OnInit, AfterContentChecked, OnDestroy {
 
   /**
   * Login to OpenEMS Edge or Backend for demo user.
-  * 
+  *
   * @param param data provided in login form
   */
   public doDemoLogin(param: { username?: string, password: string }) {
@@ -129,7 +130,7 @@ export class LoginComponent implements OnInit, AfterContentChecked, OnDestroy {
         });
     }).finally(() => {
       this.service.stopSpinner('loginspinner');
-    }
+    },
     );
   }
 

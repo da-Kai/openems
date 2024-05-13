@@ -34,6 +34,19 @@
     --min-width: min-content;
 }
 
+.hide-empty-list-header {
+
+    // Guarantees evenly space between list-items
+    ion-list {
+        padding: 0;
+    }
+
+    ion-list-header {
+        display: none;
+    }
+
+}
+
 formly-wrapper-ion-form-field,
 formly-input-serial-number,
 formly-field-ion-radio {
@@ -74,6 +87,11 @@ formly-field-ion-radio {
 .custom-checkbox {
     --ripple-color: transparent;
     --background-hover: transparent;
+}
+
+.command-textbox {
+    font-family: monospace;
+    color: rgb(52, 52, 52);
 }
 
 .margin-top {
@@ -241,11 +259,7 @@ formly-input-section {
         width: 25% !important;
 
         .alert-button-group {
-            justify-content: center;
-            display: grid;
-            grid-template-columns: auto auto;
-            column-gap: 35%;
-
+            justify-content: space-between;
             .alert-button {
                 color: $primary-color;
                 font-size: small;
@@ -333,6 +347,11 @@ formly-input-section {
         left: 25%;
         width: 50%;
         color: var(--ion-color-primary);
+    }
+
+    // Used for notification component
+    .text-overflow-break {
+        line-break: anywhere;
     }
 }
 

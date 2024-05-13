@@ -16,6 +16,7 @@ import com.google.gson.JsonElement;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.function.ThrowingTriFunction;
+import io.openems.common.oem.OpenemsEdgeOem;
 import io.openems.common.session.Language;
 import io.openems.common.session.Role;
 import io.openems.common.types.EdgeConfig;
@@ -38,6 +39,7 @@ import io.openems.edge.core.appmanager.Type;
 import io.openems.edge.core.appmanager.Type.Parameter;
 import io.openems.edge.core.appmanager.Type.Parameter.BundleParameter;
 import io.openems.edge.core.appmanager.dependency.Tasks;
+import io.openems.edge.core.appmanager.dependency.aggregatetask.SchedulerByCentralOrderConfiguration.SchedulerComponent;
 import io.openems.edge.core.appmanager.formly.JsonFormlyUtil;
 
 /**
@@ -113,8 +115,9 @@ public class PrepareBatteryExtension
 	}
 
 	@Override
-	public AppDescriptor getAppDescriptor() {
+	public AppDescriptor getAppDescriptor(OpenemsEdgeOem oem) {
 		return AppDescriptor.create() //
+				.setWebsiteUrl(oem.getAppWebsiteUrl(this.getAppId())) //
 				.build();
 	}
 
@@ -144,7 +147,7 @@ public class PrepareBatteryExtension
 									.addProperty("targetSoc", targetSoc) //
 									.onlyIf(t == ConfigurationTarget.ADD, //
 											b -> b.addProperty("enabled", true) //
-													.addProperty("ess_id", "ess0") //
+													.addProperty("ess.id", "ess0") //
 													.addProperty("isRunning", false) //
 													.addProperty("targetTimeSpecified", false) //
 													.addProperty("targetTimeBuffer", 30) //
@@ -155,17 +158,11 @@ public class PrepareBatteryExtension
 									.build()) //
 			);
 
-			final var schedulerIds = Lists.newArrayList(//
-					ctrlPrepareBatteryExtensionId, //
-					"ctrlEmergencyCapacityReserve0", //
-					"ctrlGridOptimizedCharge0", //
-					"ctrlEssSurplusFeedToGrid0", //
-					"ctrlBalancing0" //
-			);
-
 			return AppConfiguration.create() //
 					.addTask(Tasks.component(components)) //
-					.addTask(Tasks.scheduler(schedulerIds)) //
+					.addTask(Tasks.schedulerByCentralOrder(//
+							new SchedulerComponent(ctrlPrepareBatteryExtensionId,
+									"Controller.Ess.PrepareBatteryExtension", this.getAppId()))) //
 					.build();
 		};
 	}
@@ -174,6 +171,7 @@ public class PrepareBatteryExtension
 	public OpenemsAppPermissions getAppPermissions() {
 		return OpenemsAppPermissions.create() //
 				.setCanSee(Role.ADMIN) //
+				.setCanDelete(Role.ADMIN) //
 				.build();
 	}
 

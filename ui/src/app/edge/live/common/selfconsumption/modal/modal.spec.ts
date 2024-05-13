@@ -11,19 +11,19 @@ export function expectView(testContext: TestContext, viewContext: OeFormlyViewTe
   const generatedView = OeFormlyViewTester.apply(ModalComponent.generateView(testContext.translate), viewContext);
 
   expect(generatedView).toEqual(view);
-};
+}
 
 describe('SelfConsumption - Modal', () => {
   let TEST_CONTEXT: TestContext;
-  beforeEach(() => TEST_CONTEXT = sharedSetup());
+  beforeEach(async () => TEST_CONTEXT = await sharedSetup());
 
   it('generateView()', () => {
     {
       expectView(TEST_CONTEXT, VIEW_CONTEXT, {
         title: "Eigenverbrauch",
         lines: [
-          LINE_INFO("Der Eigenverbrauch gibt an zu wie viel Prozent die aktuell erzeugte Leistung durch direkten Verbrauch und durch Speicherbeladung selbst genutzt wird.")
-        ]
+          LINE_INFO("Der Eigenverbrauch gibt an zu wie viel Prozent die aktuell erzeugte Leistung durch direkten Verbrauch und durch Speicherbeladung selbst genutzt wird."),
+        ],
       });
     }
   });

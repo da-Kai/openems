@@ -1,5 +1,7 @@
 package io.openems.backend.uiwebsocket.impl;
 
+import static java.util.Collections.emptyMap;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -9,6 +11,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.java_websocket.WebSocket;
 
+import io.openems.backend.common.alerting.UserAlertingSettings;
 import io.openems.backend.common.jsonrpc.request.AddEdgeToUserRequest;
 import io.openems.backend.common.jsonrpc.request.GetSetupProtocolDataRequest;
 import io.openems.backend.common.jsonrpc.request.GetSetupProtocolRequest;
@@ -17,12 +20,12 @@ import io.openems.backend.common.jsonrpc.request.GetUserInformationRequest;
 import io.openems.backend.common.jsonrpc.request.RegisterUserRequest;
 import io.openems.backend.common.jsonrpc.request.SetUserAlertingConfigsRequest;
 import io.openems.backend.common.jsonrpc.request.SetUserInformationRequest;
+import io.openems.backend.common.jsonrpc.request.SimulationRequest;
 import io.openems.backend.common.jsonrpc.request.SubmitSetupProtocolRequest;
 import io.openems.backend.common.jsonrpc.request.SubscribeEdgesRequest;
 import io.openems.backend.common.jsonrpc.response.AddEdgeToUserResponse;
 import io.openems.backend.common.jsonrpc.response.GetUserAlertingConfigsResponse;
 import io.openems.backend.common.jsonrpc.response.GetUserInformationResponse;
-import io.openems.backend.common.metadata.AlertingSetting;
 import io.openems.backend.common.metadata.Metadata.GenericSystemLog;
 import io.openems.backend.common.metadata.User;
 import io.openems.common.exceptions.OpenemsError;
@@ -41,6 +44,7 @@ import io.openems.common.jsonrpc.request.LogoutRequest;
 import io.openems.common.jsonrpc.request.SubscribeChannelsRequest;
 import io.openems.common.jsonrpc.request.SubscribeSystemLogRequest;
 import io.openems.common.jsonrpc.request.UpdateUserLanguageRequest;
+import io.openems.common.jsonrpc.request.UpdateUserSettingsRequest;
 import io.openems.common.jsonrpc.response.AuthenticateResponse;
 import io.openems.common.jsonrpc.response.Base64PayloadResponse;
 import io.openems.common.jsonrpc.response.EdgeRpcResponse;
@@ -78,50 +82,39 @@ public class OnRequest implements io.openems.common.websocket.OnRequest {
 		// should be authenticated
 		var user = this.parent.assertUser(wsData, request);
 
-		switch (request.getMethod()) {
-		case LogoutRequest.METHOD:
-			result = this.handleLogoutRequest(wsData, user, LogoutRequest.from(request));
-			break;
-		case EdgeRpcRequest.METHOD:
-			result = this.handleEdgeRpcRequest(wsData, user, EdgeRpcRequest.from(request));
-			break;
-		case AddEdgeToUserRequest.METHOD:
-			result = this.handleAddEdgeToUserRequest(user, AddEdgeToUserRequest.from(request));
-			break;
-		case GetUserInformationRequest.METHOD:
-			result = this.handleGetUserInformationRequest(user, GetUserInformationRequest.from(request));
-			break;
-		case SetUserInformationRequest.METHOD:
-			result = this.handleSetUserInformationRequest(user, SetUserInformationRequest.from(request));
-			break;
-		case GetSetupProtocolRequest.METHOD:
-			result = this.handleGetSetupProtocolRequest(user, GetSetupProtocolRequest.from(request));
-			break;
-		case SubmitSetupProtocolRequest.METHOD:
-			result = this.handleSubmitSetupProtocolRequest(user, SubmitSetupProtocolRequest.from(request));
-			break;
-		case UpdateUserLanguageRequest.METHOD:
-			result = this.handleUpdateUserLanguageRequest(user, UpdateUserLanguageRequest.from(request));
-			break;
-		case GetUserAlertingConfigsRequest.METHOD:
-			result = this.handleGetUserAlertingConfigsRequest(user, GetUserAlertingConfigsRequest.from(request));
-			break;
-		case SetUserAlertingConfigsRequest.METHOD:
-			result = this.handleSetUserAlertingConfigsRequest(user, SetUserAlertingConfigsRequest.from(request));
-			break;
-		case GetSetupProtocolDataRequest.METHOD:
-			result = this.handleGetSetupProtocolDataRequest(user, GetSetupProtocolDataRequest.from(request));
-			break;
-		case SubscribeEdgesRequest.METHOD:
-			result = this.handleSubscribeEdgesRequest(wsData, SubscribeEdgesRequest.from(request));
-			break;
-		case GetEdgesRequest.METHOD:
-			result = this.handleGetEdgesRequest(user, GetEdgesRequest.from(request));
-			break;
-		case GetEdgeRequest.METHOD:
-			result = this.handleGetEdgeRequest(user, GetEdgeRequest.from(request));
-			break;
-		}
+		result = switch (request.getMethod()) {
+		case LogoutRequest.METHOD -> //
+			this.handleLogoutRequest(wsData, user, LogoutRequest.from(request));
+		case EdgeRpcRequest.METHOD -> //
+			this.handleEdgeRpcRequest(wsData, user, EdgeRpcRequest.from(request));
+		case AddEdgeToUserRequest.METHOD -> //
+			this.handleAddEdgeToUserRequest(user, AddEdgeToUserRequest.from(request));
+		case GetUserInformationRequest.METHOD -> //
+			this.handleGetUserInformationRequest(user, GetUserInformationRequest.from(request));
+		case SetUserInformationRequest.METHOD -> //
+			this.handleSetUserInformationRequest(user, SetUserInformationRequest.from(request));
+		case GetSetupProtocolRequest.METHOD -> //
+			this.handleGetSetupProtocolRequest(user, GetSetupProtocolRequest.from(request));
+		case SubmitSetupProtocolRequest.METHOD -> //
+			this.handleSubmitSetupProtocolRequest(user, SubmitSetupProtocolRequest.from(request));
+		case UpdateUserLanguageRequest.METHOD -> //
+			this.handleUpdateUserLanguageRequest(user, UpdateUserLanguageRequest.from(request));
+		case GetUserAlertingConfigsRequest.METHOD -> //
+			this.handleGetUserAlertingConfigsRequest(user, GetUserAlertingConfigsRequest.from(request));
+		case SetUserAlertingConfigsRequest.METHOD -> //
+			this.handleSetUserAlertingConfigsRequest(user, SetUserAlertingConfigsRequest.from(request));
+		case GetSetupProtocolDataRequest.METHOD -> //
+			this.handleGetSetupProtocolDataRequest(user, GetSetupProtocolDataRequest.from(request));
+		case SubscribeEdgesRequest.METHOD -> //
+			this.handleSubscribeEdgesRequest(wsData, SubscribeEdgesRequest.from(request));
+		case GetEdgesRequest.METHOD -> //
+			this.handleGetEdgesRequest(user, GetEdgesRequest.from(request));
+		case GetEdgeRequest.METHOD -> //
+			this.handleGetEdgeRequest(user, GetEdgeRequest.from(request));
+		case UpdateUserSettingsRequest.METHOD -> //
+			this.handleUpdateUserSettingsRequest(user, UpdateUserSettingsRequest.from(request));
+		default -> null;
+		};
 
 		if (result != null) {
 			// was able to handle request directly
@@ -232,6 +225,9 @@ public class OnRequest implements io.openems.common.websocket.OnRequest {
 			this.handleSubscribeChannelsRequest(wsData, edgeId, user, SubscribeChannelsRequest.from(request));
 		case SubscribeSystemLogRequest.METHOD ->
 			this.handleSubscribeSystemLogRequest(wsData, edgeId, user, SubscribeSystemLogRequest.from(request));
+		case SimulationRequest.METHOD ->
+			this.handleSimulationRequest(edgeId, user, SimulationRequest.from(request));
+			
 		case ComponentJsonApiRequest.METHOD -> {
 			final var componentRequest = ComponentJsonApiRequest.from(request);
 			if (!"_host".equals(componentRequest.getComponentId())) {
@@ -251,6 +247,13 @@ public class OnRequest implements io.openems.common.websocket.OnRequest {
 			}
 			case "executeSystemUpdate" -> {
 				this.parent.metadata.logGenericSystemLog(new LogUpdateSystem(edgeId, user));
+			}
+			case "executeSystemRestart" -> {
+				final var executeSystemCommandRequest = componentRequest.getPayload();
+				final var p = executeSystemCommandRequest.getParams();
+				this.parent.metadata.logGenericSystemLog(new LogRestartSystem(edgeId, user, //
+						JsonUtils.getAsOptionalString(p, "type").orElse(null) //
+				));
 			}
 			}
 
@@ -279,6 +282,25 @@ public class OnRequest implements io.openems.common.websocket.OnRequest {
 			}
 		});
 		return result;
+	}
+
+	/**
+	 * Handles a {@link GetSimulationRequest}.
+	 * 
+	 * @param edgeId the Edge-ID
+	 * @param user the {@link User} - no specific level required
+	 * @param request the {@link GetSimulationRequest}
+	 * @return the JSON-RPC Success Response Future
+	 * @throws OpenemsNamedException on error
+	 */
+	private CompletableFuture<JsonrpcResponseSuccess> handleSimulationRequest(String edgeId, User user, SimulationRequest request) throws OpenemsNamedException {
+		
+		final var simulation = this.parent.simulation;
+		if (simulation == null) {
+			throw new OpenemsException("simulation unavailable");
+		}
+		
+		return simulation.handleRequest(edgeId, user, request);
 	}
 
 	private record LogSystemExecuteCommend(//
@@ -321,7 +343,30 @@ public class OnRequest implements io.openems.common.websocket.OnRequest {
 
 		@Override
 		public Map<String, String> getValues() {
-			return Map.of();
+			return emptyMap();
+		}
+
+	}
+
+	private record LogRestartSystem(//
+			String edgeId, // non-null
+			User user, // non-null
+			String type // null-able
+	) implements GenericSystemLog {
+
+		@Override
+		public String teaser() {
+			return "Systemrestart";
+		}
+
+		@Override
+		public Map<String, String> getValues() {
+			if (this.type == null) {
+				return emptyMap();
+			}
+			return Map.of(//
+					"type", this.type //
+			);
 		}
 
 	}
@@ -495,7 +540,7 @@ public class OnRequest implements io.openems.common.websocket.OnRequest {
 	/**
 	 * Handles a {@link GetUserAlertingConfigsRequest}.
 	 *
-	 * @param user    {@User} who called the request
+	 * @param user    {@link User} who called the request
 	 * @param request the {@link SetUserAlertingConfigsRequest}
 	 * @return the JSON-RPC Success Response Future
 	 * @throws OpenemsException on error
@@ -503,22 +548,37 @@ public class OnRequest implements io.openems.common.websocket.OnRequest {
 	private CompletableFuture<? extends JsonrpcResponseSuccess> handleGetUserAlertingConfigsRequest(User user,
 			GetUserAlertingConfigsRequest request) throws OpenemsException {
 		var edgeId = request.getEdgeId();
-		List<AlertingSetting> users;
 
-		if (user.getRole(edgeId).orElse(Role.GUEST).isLessThan(Role.ADMIN)) {
-			users = List.of(this.parent.metadata.getUserAlertingSettings(edgeId, user.getId()));
+		UserAlertingSettings currentUser = null;
+		List<UserAlertingSettings> otherUser = List.of();
+
+		if (userIsAdmin(user, edgeId)) {
+			var allSettings = this.parent.metadata.getUserAlertingSettings(edgeId);
+
+			var userOpt = allSettings.stream() //
+					.filter(s -> s.userLogin().equals(user.getId())) //
+					.findAny();
+			if (userOpt.isPresent()) {
+				allSettings.remove(userOpt.get());
+				currentUser = userOpt.get();
+			}
+			otherUser = allSettings;
 		} else {
-			users = this.parent.metadata.getUserAlertingSettings(edgeId);
+			currentUser = this.parent.metadata.getUserAlertingSettings(edgeId, user.getId());
+		}
+
+		if (currentUser == null) {
+			currentUser = new UserAlertingSettings(edgeId, user.getId());
 		}
 
 		return CompletableFuture.completedFuture(//
-				new GetUserAlertingConfigsResponse(request.getId(), users));
+				new GetUserAlertingConfigsResponse(request.getId(), currentUser, otherUser));
 	}
 
 	/**
 	 * Handles a {@link SetUserAlertingConfigsRequest}.
 	 *
-	 * @param user    {@User} who called the request
+	 * @param user    {@link User} who called the request
 	 * @param request the {@link SetUserAlertingConfigsRequest}
 	 * @return the JSON-RPC Success Response Future
 	 * @throws OpenemsException      on error
@@ -527,14 +587,13 @@ public class OnRequest implements io.openems.common.websocket.OnRequest {
 	private CompletableFuture<? extends JsonrpcResponseSuccess> handleSetUserAlertingConfigsRequest(User user,
 			SetUserAlertingConfigsRequest request) throws OpenemsException {
 		var edgeId = request.getEdgeId();
-		var role = user.getRole(edgeId).orElse(Role.GUEST);
 		var userId = user.getId();
 		var userSettings = request.getUserSettings();
 
 		var containsOtherUsersSettings = userSettings.stream() //
-				.anyMatch(u -> !Objects.equals(u.getUserId(), userId));
+				.anyMatch(u -> !Objects.equals(u.userLogin(), userId));
 
-		if (containsOtherUsersSettings && role.isLessThan(Role.ADMIN)) {
+		if (containsOtherUsersSettings && !userIsAdmin(user, edgeId)) {
 			throw new OpenemsException(
 					"Not allowed to update/set alerting information for other users as user [" + userId + "]");
 		}
@@ -542,6 +601,10 @@ public class OnRequest implements io.openems.common.websocket.OnRequest {
 		this.parent.metadata.setUserAlertingSettings(user, edgeId, request.getUserSettings());
 
 		return CompletableFuture.completedFuture(new GenericJsonrpcResponseSuccess(request.getId()));
+	}
+
+	private static boolean userIsAdmin(User user, String edgeId) {
+		return user.getRole(edgeId).map(role -> role.isAtLeast(Role.ADMIN)).orElse(false);
 	}
 
 	/**
@@ -579,6 +642,22 @@ public class OnRequest implements io.openems.common.websocket.OnRequest {
 
 		return CompletableFuture //
 				.completedFuture(new GetEdgeResponse(request.getId(), edgeMetadata));
+	}
+
+	/**
+	 * Handles a {@link UpdateUserSettingsRequest}.
+	 *
+	 * @param user    the authenticated {@link User}
+	 * @param request the {@link UpdateUserSettingsRequest}
+	 * @return the JSON-RPC Success Response Future
+	 * @throws OpenemsNamedException on error
+	 */
+	private CompletableFuture<? extends JsonrpcResponseSuccess> handleUpdateUserSettingsRequest(//
+			final User user, //
+			final UpdateUserSettingsRequest request //
+	) throws OpenemsNamedException {
+		this.parent.metadata.updateUserSettings(user, request.getSettings());
+		return CompletableFuture.completedFuture(new GenericJsonrpcResponseSuccess(request.getId()));
 	}
 
 }

@@ -9,25 +9,25 @@ import { ChartComponent } from "./chart";
 export function expectView(config: EdgeConfig, testContext: TestContext, chartType: 'line' | 'bar', channels: OeTester.Types.Channels, view: OeChartTester.View): void {
   expect(removeFunctions(OeChartTester
     .apply(ChartComponent
-      .getChartData(DummyConfig.convertDummyEdgeConfigToRealEdgeConfig(config), chartType, testContext.translate), chartType, channels, testContext)))
+      .getChartData(DummyConfig.convertDummyEdgeConfigToRealEdgeConfig(config), chartType, testContext.translate), chartType, channels, testContext, config)))
     .toEqual(removeFunctions(view));
-};
+}
 
 export const DATASET = (data: OeChartTester.Dataset.Data, labels: OeChartTester.Dataset.LegendLabel, options: OeChartTester.Dataset.Option) => ({
   data: data,
   labels: labels,
-  options: options
+  options: options,
 });
 
 export const DATA = (name: string, value: number[]): OeChartTester.Dataset.Data => ({
   type: "data",
   label: name,
-  value: value
+  value: value,
 });
 
 export const LABELS = (timestamps: string[]): OeChartTester.Dataset.LegendLabel => ({
   type: "label",
-  timestamps: timestamps.map(element => new Date(element))
+  timestamps: timestamps.map(element => new Date(element)),
 });
 
 export const OPTIONS = (options: OeChartTester.Dataset.Option): OeChartTester.Dataset.Option => options;

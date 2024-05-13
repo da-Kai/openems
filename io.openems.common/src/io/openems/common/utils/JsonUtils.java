@@ -1,5 +1,7 @@
 package io.openems.common.utils;
 
+import static io.openems.common.utils.EnumUtils.toEnum;
+
 import java.net.Inet4Address;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -487,6 +489,58 @@ public class JsonUtils {
 	 */
 	public static JsonObjectBuilder buildJsonObject(JsonObject j) {
 		return new JsonObjectBuilder(j);
+	}
+
+	/**
+	 * Creates a JsonElement from the {@link Number} value.
+	 *
+	 * @param number the {@link Number}
+	 * @return a {@link JsonPrimitive} or {@link JsonNull}
+	 */
+	public static JsonElement toJson(Number number) {
+		if (number == null) {
+			return JsonNull.INSTANCE;
+		}
+		return new JsonPrimitive(number);
+	}
+
+	/**
+	 * Creates a JsonElement from the {@link Boolean} value.
+	 *
+	 * @param bool the {@link Boolean}
+	 * @return a {@link JsonPrimitive} or {@link JsonNull}
+	 */
+	public static JsonElement toJson(Boolean bool) {
+		if (bool == null) {
+			return JsonNull.INSTANCE;
+		}
+		return new JsonPrimitive(bool);
+	}
+
+	/**
+	 * Creates a JsonElement from the {@link Boolean} value.
+	 *
+	 * @param c the {@link Character}
+	 * @return a {@link JsonPrimitive} or {@link JsonNull}
+	 */
+	public static JsonElement toJson(Character c) {
+		if (c == null) {
+			return JsonNull.INSTANCE;
+		}
+		return new JsonPrimitive(c);
+	}
+
+	/**
+	 * Creates a JsonElement from the {@link Boolean} value.
+	 *
+	 * @param string the {@link String}
+	 * @return a {@link JsonPrimitive} or {@link JsonNull}
+	 */
+	public static JsonElement toJson(String string) {
+		if (string == null) {
+			return JsonNull.INSTANCE;
+		}
+		return new JsonPrimitive(string);
 	}
 
 	/**
@@ -1699,6 +1753,21 @@ public class JsonUtils {
 	}
 
 	/**
+	 * Parses a string to a {@link Optional} {@link JsonElement}.
+	 * 
+	 * @param string to be parsed
+	 * @return the {@link Optional} of the result; {@link Optional#empty()} if the
+	 *         value can not be parsed
+	 */
+	public static Optional<JsonElement> parseOptional(String string) {
+		try {
+			return Optional.of(JsonParser.parseString(string));
+		} catch (JsonParseException e) {
+			return Optional.empty();
+		}
+	}
+
+	/**
 	 * Parses a string to a {@link JsonObject}.
 	 *
 	 * @param string the String
@@ -1737,7 +1806,7 @@ public class JsonUtils {
 	 *         {@link GsonBuilder#setPrettyPrinting()}
 	 */
 	public static String prettyToString(JsonElement j) {
-		return new GsonBuilder().setPrettyPrinting().create().toJson(j);
+		return new GsonBuilder().setPrettyPrinting().serializeNulls().create().toJson(j);
 	}
 
 	/**
@@ -2002,18 +2071,6 @@ public class JsonUtils {
 		}
 		if (jPrimitive.isString()) {
 			return jPrimitive.getAsString();
-		}
-		return null;
-	}
-
-	private static <E extends Enum<E>> E toEnum(Class<E> enumType, String name) {
-		if (name == null || name.isBlank()) {
-			return null;
-		}
-		try {
-			return Enum.valueOf(enumType, name.toUpperCase());
-		} catch (IllegalArgumentException e) {
-			// handled below
 		}
 		return null;
 	}

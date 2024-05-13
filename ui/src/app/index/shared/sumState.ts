@@ -40,7 +40,7 @@ export enum SumState {
   .sum-state-icon > ion-icon{
     font-size: 20pt !important;
 }
-  `]
+  `],
 })
 export class SumStateComponent implements OnInit {
 
@@ -52,7 +52,7 @@ export class SumStateComponent implements OnInit {
   constructor(private service: Service) { }
 
   ngOnInit() {
-    let user = this.service.metadata?.value?.user ?? null;
+    const user = this.service.metadata?.value?.user ?? null;
 
     if (user) {
       this.isAtLeastInstaller = Role.isAtLeast(user.globalRole, Role.INSTALLER);
@@ -66,23 +66,23 @@ export const SUM_STATES = (translate: TranslateService): Filter => ({
   options: [
     {
       name: 'Ok',
-      value: "ok"
+      value: "ok",
     },
     {
       name: translate.instant('General.info'),
-      value: "Info"
+      value: "Info",
     },
     {
       name: translate.instant('General.warning'),
-      value: "Warning"
+      value: "Warning",
     },
     {
       name: translate.instant("General.fault"),
-      value: "Fault"
-    }
+      value: "Fault",
+    },
   ],
   setAdditionalFilter: () => ({
     key: 'isOnline',
-    value: true
-  })
+    value: true,
+  }),
 });

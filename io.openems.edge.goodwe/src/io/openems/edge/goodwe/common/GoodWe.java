@@ -32,7 +32,6 @@ import io.openems.edge.goodwe.common.enums.ExternalEmsFlag;
 import io.openems.edge.goodwe.common.enums.EzloggerProCommStatus;
 import io.openems.edge.goodwe.common.enums.FeedInPowerSettings.FixedPowerFactor;
 import io.openems.edge.goodwe.common.enums.GoodWeGridMeterType;
-import io.openems.edge.goodwe.common.enums.GoodWeHardwareType;
 import io.openems.edge.goodwe.common.enums.GoodWeType;
 import io.openems.edge.goodwe.common.enums.GridProtect;
 import io.openems.edge.goodwe.common.enums.GridWaveCheckLevel;
@@ -106,9 +105,9 @@ public interface GoodWe extends OpenemsComponent {
 		 *
 		 * MPPT1
 		 */
-		TWO_S_MPPT1_P(Doc.of(OpenemsType.INTEGER) //
+		MPPT1_P(Doc.of(OpenemsType.INTEGER) //
 				.unit(Unit.WATT)),
-		TWO_S_MPPT1_I(Doc.of(OpenemsType.INTEGER) //
+		MPPT1_I(Doc.of(OpenemsType.INTEGER) //
 				.unit(Unit.MILLIAMPERE)), //
 		TWO_S_PV1_V(Doc.of(OpenemsType.INTEGER) //
 				.unit(Unit.VOLT)), //
@@ -121,9 +120,9 @@ public interface GoodWe extends OpenemsComponent {
 		/*
 		 * MPPT2
 		 */
-		TWO_S_MPPT2_P(Doc.of(OpenemsType.INTEGER) //
+		MPPT2_P(Doc.of(OpenemsType.INTEGER) //
 				.unit(Unit.WATT)),
-		TWO_S_MPPT2_I(Doc.of(OpenemsType.INTEGER) //
+		MPPT2_I(Doc.of(OpenemsType.INTEGER) //
 				.unit(Unit.MILLIAMPERE)), //
 		TWO_S_PV3_V(Doc.of(OpenemsType.INTEGER) //
 				.unit(Unit.VOLT)), //
@@ -136,9 +135,9 @@ public interface GoodWe extends OpenemsComponent {
 		/*
 		 * MPPT3
 		 */
-		TWO_S_MPPT3_P(Doc.of(OpenemsType.INTEGER) //
+		MPPT3_P(Doc.of(OpenemsType.INTEGER) //
 				.unit(Unit.WATT)),
-		TWO_S_MPPT3_I(Doc.of(OpenemsType.INTEGER) //
+		MPPT3_I(Doc.of(OpenemsType.INTEGER) //
 				.unit(Unit.MILLIAMPERE)), //
 		TWO_S_PV5_V(Doc.of(OpenemsType.INTEGER) //
 				.unit(Unit.VOLT)), //
@@ -195,7 +194,7 @@ public interface GoodWe extends OpenemsComponent {
 		V_BATTERY1(Doc.of(OpenemsType.INTEGER) //
 				.unit(Unit.VOLT)), //
 		I_BATTERY1(Doc.of(OpenemsType.INTEGER) //
-				.unit(Unit.VOLT)), //
+				.unit(Unit.AMPERE)), //
 		P_BATTERY1(Doc.of(OpenemsType.INTEGER) //
 				.unit(Unit.WATT)), //
 		BATTERY_MODE(Doc.of(BatteryMode.values())), //
@@ -1313,6 +1312,8 @@ public interface GoodWe extends OpenemsComponent {
 		FEED_POWER_PARA_SET(Doc.of(OpenemsType.INTEGER) //
 				.unit(Unit.WATT) //
 				.accessMode(AccessMode.READ_WRITE)), //
+		RIPPLE_CONTROL_RECEIVER_ENABLE(Doc.of(OpenemsType.BOOLEAN) //
+				.accessMode(AccessMode.READ_WRITE)), //
 
 		DEBUG_EMS_POWER_MODE(Doc.of(EmsPowerMode.values())), //
 		DEBUG_EMS_POWER_SET(Doc.of(OpenemsType.INTEGER)), //
@@ -1641,7 +1642,6 @@ public interface GoodWe extends OpenemsComponent {
 				.text("SMART mode does not work correctly with active PID filter")),
 		NO_SMART_METER_DETECTED(Doc.of(Level.WARNING) //
 				.text("No GoodWe Smart Meter detected. Only REMOTE mode can work correctly")),
-		GOODWE_HARDWARE_TYPE(Doc.of(GoodWeHardwareType.values())),
 		IMPOSSIBLE_FENECON_HOME_COMBINATION(Doc.of(Level.FAULT) //
 				.text("The installed inverter and battery combination is not authorised. Operation could cause hardware damages, so charging and discharging is blocked. Please install a complete Home 10, Home 20 or Home 30 system.")) //
 		;
@@ -1677,31 +1677,13 @@ public interface GoodWe extends OpenemsComponent {
 	}
 
 	/**
-	 * Gets the Channel for {@link ChannelId#GOODWE_HARDWARE_TYPE}.
-	 *
-	 * @return the Channel
-	 */
-	public default Channel<GoodWeHardwareType> getGoodweHardwareTypeChannel() {
-		return this.channel(GoodWe.ChannelId.GOODWE_HARDWARE_TYPE);
-	}
-
-	/**
-	 * Gets the Hardware Device Type. See {@link ChannelId#GOODWE_HARDWARE_TYPE}.
-	 *
-	 * @return the Channel {@link Value}
-	 */
-	public default GoodWeHardwareType getGoodweHardwareType() {
-		return this.getGoodweHardwareTypeChannel().value().asEnum();
-	}
-
-	/**
-	 * Internal method to set the 'nextValue' on
-	 * {@link ChannelId#GOODWE_HARDWARE_TYPE} Channel.
+	 * Internal method to set the 'nextValue' on {@link ChannelId#GOODWE_TYPE}
+	 * Channel.
 	 *
 	 * @param value the next value
 	 */
-	public default void _setGoodweHardwareType(GoodWeHardwareType value) {
-		this.getGoodweHardwareTypeChannel().setNextValue(value);
+	public default void _setGoodweType(GoodWeType value) {
+		this.getGoodweTypeChannel().setNextValue(value);
 	}
 
 	// TODO drop these methods

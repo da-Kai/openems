@@ -1,7 +1,5 @@
 package io.openems.edge.app.integratedsystem;
 
-import static io.openems.edge.core.appmanager.ConfigurationTarget.VALIDATE;
-
 import java.util.ResourceBundle;
 
 import io.openems.common.types.EdgeConfig;
@@ -76,13 +74,14 @@ public final class FeneconHomeComponents {
 								hasEmergencyReserve ? "ENABLE" : "DISABLE") //
 						.addProperty("controlMode", "SMART") //
 						.addProperty("feedPowerEnable",
-								feedInType == FeedInType.EXTERNAL_LIMITATION ? "DISABLE" : "ENABLE") //
+								feedInType == FeedInType.DYNAMIC_LIMITATION ? "ENABLE" : "DISABLE") //
 						.addProperty("feedPowerPara", maxFeedInPower) //
 						.addProperty("modbus.id", modbusIdExternal) //
 						.addProperty("modbusUnitId", 247) //
-						.addProperty("mpptForShadowEnable", shadowManagementDisabled ? "DISABLED" : "ENABLE") //
+						.addProperty("mpptForShadowEnable", shadowManagementDisabled ? "DISABLE" : "ENABLE") //
 						.addProperty("safetyCountry", safetyCountry) //
 						.addProperty("setfeedInPowerSettings", feedInSetting) //
+						.addProperty("rcrEnable", feedInType == FeedInType.EXTERNAL_LIMITATION ? "ENABLE" : "DISABLE") //
 						.build());
 	}
 
@@ -134,15 +133,19 @@ public final class FeneconHomeComponents {
 	/**
 	 * Creates a default grid meter component for a FENECON Home.
 	 * 
-	 * @param bundle           the translation bundle
-	 * @param gridMeterId      the id of the grid meter
-	 * @param modbusIdExternal the id of the external modbus bridge
+	 * @param bundle            the translation bundle
+	 * @param gridMeterId       the id of the grid meter
+	 * @param modbusIdExternal  the id of the external modbus bridge
+	 * @param gridMeterCategory the type of the Grid-Meter
+	 * @param ctRatioFirst      the first value of the CT-Ratio
 	 * @return the {@link Component}
 	 */
 	public static EdgeConfig.Component gridMeter(//
 			final ResourceBundle bundle, //
 			final String gridMeterId, //
-			final String modbusIdExternal //
+			final String modbusIdExternal, //
+			final GoodWeGridMeterCategory gridMeterCategory, //
+			final Integer ctRatioFirst //
 	) {
 		return new EdgeConfig.Component(gridMeterId, //
 				TranslationUtil.getTranslation(bundle, "gridMeterId.label"), "GoodWe.Grid-Meter", //
@@ -150,6 +153,11 @@ public final class FeneconHomeComponents {
 						.addProperty("enabled", true) //
 						.addProperty("modbus.id", modbusIdExternal) //
 						.addProperty("modbusUnitId", 247) //
+						.addProperty("goodWeMeterCategory", gridMeterCategory) //
+						.onlyIf(gridMeterCategory == GoodWeGridMeterCategory.COMMERCIAL_METER, t -> {
+							t.addProperty("externalMeterRatioValueA", ctRatioFirst);
+							t.addProperty("externalMeterRatioValueB", 5 /* Default to 5 A */);
+						}) //
 						.build());
 	}
 
@@ -208,23 +216,55 @@ public final class FeneconHomeComponents {
 	}
 
 	/**
+	 * Creates a default external modbus component for external meters for a FENECON
+	 * Home.
+	 * 
+	 * @param bundle           the translation bundle
+	 * @param t                the current {@link ConfigurationTarget}
+	 * @param modbusIdExternal the id of the external modbus bridge
+	 * @return the {@link Component}
+	 */
+	public static EdgeConfig.Component modbusForExternalMeters(//
+			final ResourceBundle bundle, //
+			final ConfigurationTarget t, //
+			final String modbusIdExternal //
+	) {
+		return new EdgeConfig.Component(modbusIdExternal,
+				TranslationUtil.getTranslation(bundle, "App.IntegratedSystem.modbus2.alias"), "Bridge.Modbus.Serial", //
+				JsonUtils.buildJsonObject() //
+						.addProperty("enabled", true) //
+						.addProperty("baudRate", 9600) //
+						.addProperty("databits", 8) //
+						.addProperty("parity", Parity.NONE) //
+						.addProperty("portName", "/dev/bus0") //
+						.addProperty("stopbits", "ONE") //
+						.onlyIf(t == ConfigurationTarget.ADD, b -> {
+							b.addProperty("invalidateElementsAfterReadErrors", 1) //
+									.addProperty("logVerbosity", "NONE");
+						}).build());
+	}
+
+	/**
 	 * Creates a default predictor component for a FENECON Home.
 	 * 
 	 * @param bundle the translation bundle
+	 * @param t      the current {@link ConfigurationTarget}
 	 * @return the {@link Component}
 	 */
 	public static EdgeConfig.Component predictor(//
-			final ResourceBundle bundle //
+			final ResourceBundle bundle, //
+			final ConfigurationTarget t //
 	) {
 		return new EdgeConfig.Component("predictor0",
 				TranslationUtil.getTranslation(bundle, "App.IntegratedSystem.predictor0.alias"),
 				"Predictor.PersistenceModel", //
 				JsonUtils.buildJsonObject() //
 						.addProperty("enabled", true) //
-						.add("channelAddresses", JsonUtils.buildJsonArray() //
-								.add("_sum/ProductionActivePower") //
-								.add("_sum/ConsumptionActivePower") //
-								.build()) //
+						.onlyIf(t == ConfigurationTarget.ADD, b -> b//
+								.add("channelAddresses", JsonUtils.buildJsonArray() //
+										.add("_sum/ProductionActivePower") //
+										.add("_sum/ConsumptionActivePower") //
+										.build())) //
 						.build());
 	}
 
@@ -315,15 +355,14 @@ public final class FeneconHomeComponents {
 	 * @param chargerId         the id of the charger
 	 * @param chargerAlias      the alias of the charger
 	 * @param batteryInverterId the id of the battery inverter
-	 * @param modbusIdExternal  the id of the external modbus bridge
 	 * @param i                 the index of the pv-port
 	 * @return the {@link Component}
 	 */
-	public static EdgeConfig.Component charger(//
+	// @Deprecated(since = "2024.2.2", forRemoval = true)
+	public static EdgeConfig.Component chargerOld(//
 			final String chargerId, //
 			final String chargerAlias, //
 			final String batteryInverterId, //
-			final String modbusIdExternal, //
 			final int i //
 	) {
 		return new EdgeConfig.Component(chargerId, chargerAlias, //
@@ -331,9 +370,31 @@ public final class FeneconHomeComponents {
 				JsonUtils.buildJsonObject() //
 						.addProperty("enabled", true) //
 						.addProperty("essOrBatteryInverter.id", batteryInverterId) //
-						.addProperty("modbus.id", modbusIdExternal) //
-						.addProperty("modbusUnitId", 247) //
 						.addProperty("pvPort", "PV_" + (i + 1)) //
+						.build());
+	}
+
+	/**
+	 * Creates a default charger component for a FENECON Home 20/30.
+	 * 
+	 * @param chargerId         the id of the charger
+	 * @param chargerAlias      the alias of the charger
+	 * @param batteryInverterId the id of the battery inverter
+	 * @param mpptPort          the zero-based index of the mppt-port
+	 * @return the {@link Component}
+	 */
+	public static EdgeConfig.Component charger(//
+			final String chargerId, //
+			final String chargerAlias, //
+			final String batteryInverterId, //
+			final int mpptPort //
+	) {
+		return new EdgeConfig.Component(chargerId, chargerAlias, //
+				"GoodWe.Charger.Mppt.Two-String", //
+				JsonUtils.buildJsonObject() //
+						.addProperty("enabled", true) //
+						.addProperty("essOrBatteryInverter.id", batteryInverterId) //
+						.addProperty("mpptPort", "MPPT_" + (mpptPort + 1)) //
 						.build());
 	}
 
@@ -360,12 +421,13 @@ public final class FeneconHomeComponents {
 						.setAppId("App.PvSelfConsumption.GridOptimizedCharge") //
 						.setProperties(JsonUtils.buildJsonObject() //
 								.addProperty(GridOptimizedCharge.Property.SELL_TO_GRID_LIMIT_ENABLED.name(),
-										feedInType != FeedInType.EXTERNAL_LIMITATION) //
-								.onlyIf(t != VALIDATE, //
-										j -> j.addProperty(GridOptimizedCharge.Property.MODE.name(),
-												feedInType != FeedInType.EXTERNAL_LIMITATION ? "AUTOMATIC" : "OFF")) //
-								.addProperty(GridOptimizedCharge.Property.MAXIMUM_SELL_TO_GRID_POWER.name(),
-										maxFeedInPower) //
+										feedInType == FeedInType.DYNAMIC_LIMITATION) //
+								.onlyIf(t == ConfigurationTarget.ADD, //
+										j -> j.addProperty(GridOptimizedCharge.Property.MODE.name(), "AUTOMATIC")) //
+								.onlyIf(feedInType == FeedInType.DYNAMIC_LIMITATION,
+										b -> b.addProperty(
+												GridOptimizedCharge.Property.MAXIMUM_SELL_TO_GRID_POWER.name(),
+												maxFeedInPower)) //
 								.build())
 						.build());
 	}

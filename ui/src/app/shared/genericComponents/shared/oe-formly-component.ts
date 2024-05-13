@@ -25,19 +25,19 @@ export abstract class AbstractFormlyComponent {
       edge.getConfig(service.websocket)
         .pipe(filter(config => !!config))
         .subscribe((config) => {
-          var view = this.generateView(config, edge.role, this.translate);
+          const view = this.generateView(config, edge.role, this.translate);
 
           this.fields = [{
             type: "input",
 
             templateOptions: {
               attributes: {
-                title: view.title
+                title: view.title,
               },
               required: true,
-              options: [{ lines: view.lines }]
+              options: [{ lines: view.lines }],
             },
-            wrappers: ['formly-field-modal']
+            wrappers: ['formly-field-modal'],
           }];
         });
     });
@@ -45,7 +45,7 @@ export abstract class AbstractFormlyComponent {
 
   /**
     * Generate the View.
-    * 
+    *
     * @param config the Edge-Config
     * @param role  the Role of the User for this Edge
     * @param translate the Translate-Service

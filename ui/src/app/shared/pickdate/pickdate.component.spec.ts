@@ -1,21 +1,22 @@
 import { endOfMonth, endOfWeek, endOfYear, startOfDay, startOfMonth, startOfWeek, startOfYear, subDays, subMonths, subWeeks, subYears } from "date-fns";
+
 import { DefaultTypes } from "../service/defaulttypes";
-import { TestContext, sharedSetup } from "../test/utils.spec";
+import { sharedSetup, TestContext } from "../test/utils.spec";
 import { PickDateComponent } from "./pickdate.component";
 
 export function expectPreviousPeriod(testContext: TestContext, firstSetupProtocol: Date, expectToBe: boolean): void {
   expect(PickDateComponent.isPreviousPeriodAllowed(testContext.service, firstSetupProtocol)).toBe(expectToBe);
-};
+}
 
 export function expectNextPeriod(testContext: TestContext, expectToBe: boolean): void {
   expect(PickDateComponent.isNextPeriodAllowed(testContext.service)).toBe(expectToBe);
-};
+}
 
 describe('Pickdate', () => {
 
   let TEST_CONTEXT: TestContext;
-  beforeEach(() =>
-    TEST_CONTEXT = sharedSetup()
+  beforeEach(async () =>
+    TEST_CONTEXT = await sharedSetup(),
   );
 
   it('#isPreviousPeriodAllowed && #isNextPeriodAllowed - Day-View: firstSetupProtocol = today', () => {
@@ -127,6 +128,15 @@ describe('Pickdate', () => {
     const firstSetupProtocol = startOfYear(subYears(new Date(), 2));
 
     expectPreviousPeriod(TEST_CONTEXT, firstSetupProtocol, true);
+    expectNextPeriod(TEST_CONTEXT, false);
+  });
+
+  it('#isPreviousPeriodAllowed && #isNextPeriodAllowed - Total-View', () => {
+    const firstSetupProtocol = startOfYear(subYears(new Date(), 2));
+    TEST_CONTEXT.service.historyPeriod.next(new DefaultTypes.HistoryPeriod(firstSetupProtocol, new Date()));
+    TEST_CONTEXT.service.periodString = DefaultTypes.PeriodString.TOTAL;
+
+    expectPreviousPeriod(TEST_CONTEXT, firstSetupProtocol, false);
     expectNextPeriod(TEST_CONTEXT, false);
   });
 });

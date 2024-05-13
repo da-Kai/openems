@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { Component } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { AbstractHistoryChart } from 'src/app/shared/genericComponents/chart/abstracthistorychart';
@@ -8,7 +9,7 @@ import { ChannelAddress, EdgeConfig } from 'src/app/shared/shared';
 
 @Component({
   selector: 'gridchart',
-  templateUrl: '../../../../../shared/genericComponents/chart/abstracthistorychart.html'
+  templateUrl: '../../../../../shared/genericComponents/chart/abstracthistorychart.html',
 })
 export class ChartComponent extends AbstractHistoryChart {
 
@@ -18,26 +19,26 @@ export class ChartComponent extends AbstractHistoryChart {
 
   public static getChartData(config: EdgeConfig, chartType: 'line' | 'bar', translate: TranslateService, showPhases: boolean): HistoryUtils.ChartData {
 
-    let input: DefaultTypes.History.InputChannel[] = [
+    const input: DefaultTypes.History.InputChannel[] = [
       {
         name: 'GridSell',
         powerChannel: ChannelAddress.fromString('_sum/GridActivePower'),
         energyChannel: ChannelAddress.fromString('_sum/GridSellActiveEnergy'),
-        ...(chartType === 'line' && { converter: HistoryUtils.ValueConverter.ONLY_NEGATIVE_AND_NEGATIVE_AS_POSITIVE })
+        ...(chartType === 'line' && { converter: HistoryUtils.ValueConverter.ONLY_NEGATIVE_AND_NEGATIVE_AS_POSITIVE }),
       },
       {
         name: 'GridBuy',
         powerChannel: ChannelAddress.fromString('_sum/GridActivePower'),
         energyChannel: ChannelAddress.fromString('_sum/GridBuyActiveEnergy'),
-        converter: HistoryUtils.ValueConverter.NEGATIVE_AS_ZERO
-      }
+        converter: HistoryUtils.ValueConverter.NEGATIVE_AS_ZERO,
+      },
     ];
 
     if (showPhases) {
       ['L1', 'L2', 'L3'].forEach(phase => {
         input.push({
           name: 'GridActivePower' + phase,
-          powerChannel: ChannelAddress.fromString('_sum/GridActivePower' + phase)
+          powerChannel: ChannelAddress.fromString('_sum/GridActivePower' + phase),
         });
       });
     }
@@ -46,7 +47,7 @@ export class ChartComponent extends AbstractHistoryChart {
       input: input,
       output: (data: DefaultTypes.History.ChannelData) => {
 
-        let datasets: DefaultTypes.History.DisplayValues[] = [
+        const datasets: DefaultTypes.History.DisplayValues[] = [
           {
             name: translate.instant('General.gridSellAdvanced'),
             nameSuffix: (energyValues: QueryHistoricTimeseriesEnergyResponse) => {
@@ -57,7 +58,7 @@ export class ChartComponent extends AbstractHistoryChart {
             },
             // TODO create Color class
             color: 'rgba(0,0,200)',
-            stack: 1
+            stack: 1,
           },
 
           {
@@ -69,7 +70,7 @@ export class ChartComponent extends AbstractHistoryChart {
               return data['GridBuy'];
             },
             color: 'rgb(0,0,0)',
-            stack: 0
+            stack: 0,
           }];
 
 
@@ -87,20 +88,20 @@ export class ChartComponent extends AbstractHistoryChart {
               return data['GridActivePower' + phase] ?? null;
             },
             color: AbstractHistoryChart.phaseColors[index],
-            stack: 3
+            stack: 3,
           });
         });
 
         return datasets;
       },
       tooltip: {
-        formatNumber: '1.0-2'
+        formatNumber: '1.0-2',
       },
       yAxes: [{
         unit: YAxisTitle.ENERGY,
         position: 'left',
-        yAxisId: ChartAxis.LEFT
-      }]
+        yAxisId: ChartAxis.LEFT,
+      }],
     };
   }
 }

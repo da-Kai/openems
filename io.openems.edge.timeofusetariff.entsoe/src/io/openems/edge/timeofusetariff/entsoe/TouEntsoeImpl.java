@@ -1,7 +1,12 @@
 package io.openems.edge.timeofusetariff.entsoe;
 
+import static io.openems.common.utils.StringUtils.definedOrElse;
+import static io.openems.edge.timeofusetariff.api.utils.TimeOfUseTariffUtils.generateDebugLog;
+import static io.openems.edge.timeofusetariff.entsoe.ExchangeRateApi.getExchangeRate;
+import static io.openems.edge.timeofusetariff.entsoe.Utils.parseCurrency;
+import static io.openems.edge.timeofusetariff.entsoe.Utils.parsePrices;
+
 import java.io.IOException;
-import java.time.Clock;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -25,10 +30,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-import com.google.common.collect.ImmutableSortedMap;
-
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
+import io.openems.common.oem.OpenemsEdgeOem;
 import io.openems.common.utils.ThreadPoolUtils;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
@@ -37,7 +41,6 @@ import io.openems.edge.common.currency.Currency;
 import io.openems.edge.common.meta.Meta;
 import io.openems.edge.timeofusetariff.api.TimeOfUsePrices;
 import io.openems.edge.timeofusetariff.api.TimeOfUseTariff;
-import io.openems.edge.timeofusetariff.api.utils.TimeOfUseTariffUtils;
 
 @Designate(ocd = Config.class, factory = true)
 @Component(//
@@ -51,15 +54,17 @@ public class TouEntsoeImpl extends AbstractOpenemsComponent implements TouEntsoe
 
 	private final Logger log = LoggerFactory.getLogger(TouEntsoeImpl.class);
 	private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-	private final AtomicReference<ImmutableSortedMap<ZonedDateTime, Float>> prices = new AtomicReference<>(
-			ImmutableSortedMap.of());
+	private final AtomicReference<TimeOfUsePrices> prices = new AtomicReference<>(TimeOfUsePrices.EMPTY_PRICES);
 
 	@Reference
 	private Meta meta;
 
+	@Reference
+	private OpenemsEdgeOem oem;
+
 	private Config config = null;
-	private String securityToken = "";
-	private ZonedDateTime updateTimeStamp = null;
+	private String securityToken = null;
+	private String exchangerateAccesskey = null;
 	private ScheduledFuture<?> future = null;
 
 	public TouEntsoeImpl() {
@@ -81,9 +86,15 @@ public class TouEntsoeImpl extends AbstractOpenemsComponent implements TouEntsoe
 			return;
 		}
 
-		this.securityToken = Token.parseOrNull(config.securityToken());
+		this.securityToken = definedOrElse(config.securityToken(), this.oem.getEntsoeToken());
 		if (this.securityToken == null) {
 			this.logError(this.log, "Please configure Security Token to access ENTSO-E");
+			return;
+		}
+
+		this.exchangerateAccesskey = definedOrElse(config.exchangerateAccesskey(), this.oem.getExchangeRateAccesskey());
+		if (this.exchangerateAccesskey == null) {
+			this.logError(this.log, "Please configure personal Access key to access Exchange rate host API");
 			return;
 		}
 		this.config = config;
@@ -116,6 +127,7 @@ public class TouEntsoeImpl extends AbstractOpenemsComponent implements TouEntsoe
 
 	private final Runnable task = () -> {
 		var token = this.securityToken;
+		var exchangerateAccesskey = this.exchangerateAccesskey;
 		var areaCode = this.config.biddingZone().code;
 		var fromDate = ZonedDateTime.now().truncatedTo(ChronoUnit.HOURS);
 		var toDate = fromDate.plusDays(1);
@@ -123,21 +135,17 @@ public class TouEntsoeImpl extends AbstractOpenemsComponent implements TouEntsoe
 
 		try {
 			final var result = EntsoeApi.query(token, areaCode, fromDate, toDate);
-			final var entsoeCurrency = Utils.parseCurrency(result);
+			final var entsoeCurrency = parseCurrency(result);
 			final var globalCurrency = this.meta.getCurrency();
 			if (globalCurrency == Currency.UNDEFINED) {
 				throw new OpenemsException("Global Currency is UNDEFINED. Please configure it in Core.Meta component");
 			}
 
 			final var exchangeRate = globalCurrency.name().equals(entsoeCurrency) //
-					? 1 // No need to fetch exchange rate from API.
-					: Utils.exchangeRateParser(ExchangeRateApi.getExchangeRates(), globalCurrency);
-
+					? 1. // No need to fetch exchange rate from API.
+					: getExchangeRate(exchangerateAccesskey, entsoeCurrency, globalCurrency);
 			// Parse the response for the prices
-			this.prices.set(Utils.parsePrices(result, "PT60M", exchangeRate));
-
-			// store the time stamp
-			this.updateTimeStamp = ZonedDateTime.now();
+			this.prices.set(parsePrices(result, "PT60M", exchangeRate));
 
 		} catch (IOException | ParserConfigurationException | SAXException | OpenemsNamedException e) {
 			this.logWarn(this.log, "Unable to Update Entsoe Time-Of-Use Price: " + e.getMessage());
@@ -166,13 +174,11 @@ public class TouEntsoeImpl extends AbstractOpenemsComponent implements TouEntsoe
 
 	@Override
 	public TimeOfUsePrices getPrices() {
-		// return empty TimeOfUsePrices if data is not yet available.
-		if (!this.config.enabled() || this.updateTimeStamp == null) {
-			return TimeOfUsePrices.empty(ZonedDateTime.now());
-		}
-
-		return TimeOfUseTariffUtils.getNext24HourPrices(Clock.systemDefaultZone() /* can be mocked for testing */,
-				this.prices.get(), this.updateTimeStamp);
+		return TimeOfUsePrices.from(ZonedDateTime.now(), this.prices.get());
 	}
 
+	@Override
+	public String debugLog() {
+		return generateDebugLog(this, this.meta.getCurrency());
+	}
 }

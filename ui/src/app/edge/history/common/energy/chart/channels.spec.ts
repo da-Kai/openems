@@ -1,4 +1,5 @@
 import { TimeUnit } from "chart.js";
+import { ChartConstants } from "src/app/shared/genericComponents/chart/chart.constants";
 import { OeTester } from "src/app/shared/genericComponents/shared/testing/common";
 import { OeChartTester } from "src/app/shared/genericComponents/shared/testing/tester";
 import { QueryHistoricTimeseriesDataResponse } from "src/app/shared/jsonrpc/response/queryHistoricTimeseriesDataResponse";
@@ -7,189 +8,48 @@ import { QueryHistoricTimeseriesEnergyResponse } from "src/app/shared/jsonrpc/re
 
 export namespace History {
 
-  export const LINE_CHART_OPTIONS = (period: string): OeChartTester.Dataset.Option => ({
+  export const LINE_CHART_OPTIONS = (period: string, chartType: 'line' | 'bar', options: { [key: string]: { scale: { min: number, max: number }, ticks: { stepSize: number } } }): OeChartTester.Dataset.Option => ({
     type: 'option',
     options: {
-      "maintainAspectRatio": false,
-      "legend": {
-        "labels": {},
-        "position": "bottom"
-      },
-      "elements": {
-        "point": {
-          "radius": 0,
-          "hitRadius": 0,
-          "hoverRadius": 0
+      "responsive": true, "maintainAspectRatio": false, "elements": { "point": { "radius": 0, "hitRadius": 0, "hoverRadius": 0 }, "line": { "stepped": false, "fill": true } }, "datasets": { "bar": {}, "line": {} }, "plugins": { "colors": { "enabled": false }, "legend": { "display": true, "position": "bottom", "labels": { "color": '' } }, "tooltip": { "intersect": false, "mode": "index", "callbacks": {} } }, "scales": {
+        "x": { "stacked": true, "offset": false, "type": "time", "ticks": { "source": "auto", "maxTicksLimit": 31 }, "bounds": "ticks", "adapters": { "date": { "locale": { "code": "de", "formatLong": {}, "localize": {}, "match": {}, "options": { "weekStartsOn": 1, "firstWeekContainsDate": 4 } } } }, "time": { "unit": period as TimeUnit, "displayFormats": { "datetime": "yyyy-MM-dd HH:mm:ss", "millisecond": "SSS [ms]", "second": "HH:mm:ss a", "minute": "HH:mm", "hour": "HH:00", "day": "dd", "week": "ll", "month": "MM", "quarter": "[Q]Q - YYYY", "year": "yyyy" } } },
+        "left": {
+          ...options["left"]?.scale, ...(chartType === 'line' ? { stacked: false } : {}), "title": { "text": "kW", "display": true, "padding": 5, "font": { "size": 11 } }, "position": "left", "grid": { "display": true },
+          "ticks": { ...options["left"]?.ticks, "color": '', "padding": 5, "maxTicksLimit": ChartConstants.NUMBER_OF_Y_AXIS_TICKS },
         },
-        "line": {
-          "borderWidth": 2,
-          "tension": 0.1
-        },
-        "rectangle": {
-          "borderWidth": 2
-        }
-      },
-      "hover": {
-        "mode": "point",
-        "intersect": true
-      },
-      "scales": {
-        "yAxes": [
-          {
-            "id": "left",
-            "position": "left",
-            "scaleLabel": {
-              "display": true,
-              "labelString": "kW",
-              "padding": 5,
-              "fontSize": 11
-            },
-            "gridLines": {
-              "display": true
-            },
-            "ticks": {
-              "beginAtZero": false
-            }
+        "right": {
+          ...options["right"]?.scale, ...(chartType === 'line' ? { stacked: false } : {}), "beginAtZero": true, "max": 100, "min": 0, "type": "linear", "title": { "text": "%", "display": true, "font": { "size": 11 }, "padding": 5 }, "position": "right", "grid": { "display": false },
+          "ticks": {
+            ...options["right"]?.ticks,
+            "color": '',
+            "padding": 5,
+            "maxTicksLimit": ChartConstants.NUMBER_OF_Y_AXIS_TICKS,
           },
-          {
-            "id": "right",
-            "position": "right",
-            "scaleLabel": {
-              "display": true,
-              "labelString": "%",
-              "padding": 10
-            },
-            "gridLines": {
-              "display": false
-            },
-            "ticks": {
-              "beginAtZero": true,
-              "max": 100,
-              "padding": 5,
-              "stepSize": 20
-            }
-          }
-        ],
-        "xAxes": [
-          {
-            "ticks": {},
-            "stacked": false,
-            "type": "time",
-            "time": {
-              "minUnit": "hour",
-              "displayFormats": {
-                "millisecond": "SSS [ms]",
-                "second": "HH:mm:ss a",
-                "minute": "HH:mm",
-                "hour": "HH:[00]",
-                "day": "DD",
-                "week": "ll",
-                "month": "MM",
-                "quarter": "[Q]Q - YYYY",
-                "year": "YYYY"
-              },
-              "unit": period as TimeUnit
-            },
-            "bounds": "ticks"
-          }
-        ]
+        },
       },
-      "tooltips": {
-        "mode": "index",
-        "intersect": false,
-        "axis": "x",
-        "callbacks": {}
-      },
-      "responsive": true
-    }
+    },
   });
-  export const BAR_CHART_OPTIONS = (period: string): OeChartTester.Dataset.Option => ({
+  export const BAR_CHART_OPTIONS = (period: string, chartType: 'line' | 'bar', options: { [key: string]: { scale: { min?: number, max?: number }, ticks: { stepSize?: number } } }): OeChartTester.Dataset.Option => ({
     type: 'option',
     options: {
-      "maintainAspectRatio": false,
-      "legend": {
-        "labels": {},
-        "position": "bottom"
-      },
-      "elements": {
-        "point": {
-          "radius": 0,
-          "hitRadius": 0,
-          "hoverRadius": 0
+      "responsive": true, "maintainAspectRatio": false, "elements": { "point": { "radius": 0, "hitRadius": 0, "hoverRadius": 0 }, "line": { "stepped": false, "fill": true } }, "datasets": { "bar": { "barPercentage": 1 }, "line": {} }, "plugins": { "colors": { "enabled": false }, "legend": { "display": true, "position": "bottom", "labels": { "color": '' } }, "tooltip": { "intersect": false, "mode": "x", "callbacks": {} } }, "scales": {
+        "x": { "stacked": true, "offset": true, "type": "time", "ticks": { "source": "auto", "maxTicksLimit": 31 }, "bounds": "ticks", "adapters": { "date": { "locale": { "code": "de", "formatLong": {}, "localize": {}, "match": {}, "options": { "weekStartsOn": 1, "firstWeekContainsDate": 4 } } } }, "time": { "unit": period as TimeUnit, "displayFormats": { "datetime": "yyyy-MM-dd HH:mm:ss", "millisecond": "SSS [ms]", "second": "HH:mm:ss a", "minute": "HH:mm", "hour": "HH:00", "day": "dd", "week": "ll", "month": "MM", "quarter": "[Q]Q - YYYY", "year": "yyyy" } } },
+        "left": {
+          ...options["left"]?.scale, ...(chartType === 'line' ? { stacked: false } : {}), "title": { "text": "kWh", "display": true, "padding": 5, "font": { "size": 11 } }, "position": "left", "grid": { "display": true },
+          "ticks": {
+            ...options["left"]?.ticks,
+            "color": '',
+            "padding": 5,
+            "maxTicksLimit": ChartConstants.NUMBER_OF_Y_AXIS_TICKS,
+          },
         },
-        "line": {
-          "borderWidth": 2,
-          "tension": 0.1
-        },
-        "rectangle": {
-          "borderWidth": 2
-        }
       },
-      "hover": {
-        "mode": "point",
-        "intersect": true
-      },
-      "scales": {
-        "yAxes": [
-          {
-            "id": "left",
-            "position": "left",
-            "scaleLabel": {
-              "display": true,
-              "labelString": "kWh",
-              "padding": 5,
-              "fontSize": 11
-            },
-            "gridLines": {
-              "display": true
-            },
-            "ticks": {
-              "beginAtZero": false
-            },
-            "stacked": true
-          }
-        ],
-        "xAxes": [
-          {
-            "ticks": {
-              "maxTicksLimit": 12,
-              "source": "data"
-            },
-            "stacked": true,
-            "type": "time",
-            "time": {
-              "minUnit": "hour",
-              "displayFormats": {
-                "millisecond": "SSS [ms]",
-                "second": "HH:mm:ss a",
-                "minute": "HH:mm",
-                "hour": "HH:[00]",
-                "day": "DD",
-                "week": "ll",
-                "month": "MM",
-                "quarter": "[Q]Q - YYYY",
-                "year": "YYYY"
-              },
-              "unit": period as TimeUnit
-            },
-            "offset": true,
-            "bounds": "ticks"
-          }
-        ]
-      },
-      "tooltips": {
-        "mode": "x",
-        "intersect": false,
-        "axis": "x",
-        "callbacks": {}
-      },
-      "responsive": true
-    }
+    },
   });
 
-  /** 
+  /**
    * up to 288 datapoints (5 min aggregated values) from a
-   * 
+   *
    * {@link Day.energyPerPeriodChannelWithValues} and {@link Day.dataChannelWithValues}
    * */
   export const DAY: OeTester.Types.Channels = ({
@@ -200,8 +60,8 @@ export namespace History {
         '_sum/EssDcChargeEnergy': 15766,
         '_sum/EssDcDischargeEnergy': 7209,
         '_sum/GridSellActiveEnergy': 15615,
-        '_sum/ProductionActiveEnergy': 47597
-      }
+        '_sum/ProductionActiveEnergy': 47597,
+      },
     }),
     dataChannelWithValues: new QueryHistoricTimeseriesDataResponse("0", {
       data: {
@@ -1646,7 +1506,7 @@ export namespace History {
           null,
           null,
           null,
-          null]
+          null],
       },
       timestamps: [
         "2023-07-02T22:00:00Z",
@@ -1936,12 +1796,12 @@ export namespace History {
         "2023-07-03T21:40:00Z",
         "2023-07-03T21:45:00Z",
         "2023-07-03T21:50:00Z",
-        "2023-07-03T21:55:00Z"
-      ]
-    })
+        "2023-07-03T21:55:00Z",
+      ],
+    }),
   });
 
-  /** 
+  /**
    * up to 164 datapoints(1 hour values) from a {@link Day.energyPerPeriodChannelWithValues} and {@link Day.dataChannelWithValues}
    * */
   export const WEEK: OeTester.Types.Channels = {
@@ -1952,8 +1812,8 @@ export namespace History {
         '_sum/EssDcChargeEnergy': 38671,
         '_sum/EssDcDischargeEnergy': 31809,
         '_sum/GridSellActiveEnergy': 119692,
-        '_sum/ProductionActiveEnergy': 200875
-      }
+        '_sum/ProductionActiveEnergy': 200875,
+      },
     }),
     dataChannelWithValues: new QueryHistoricTimeseriesDataResponse("0", {
       data: {
@@ -2965,7 +2825,7 @@ export namespace History {
           156.1,
           61.5,
           0.6,
-          0]
+          0],
       },
       timestamps: [
         "2023-06-25T22:00:00Z",
@@ -3135,12 +2995,12 @@ export namespace History {
         "2023-07-02T18:00:00Z",
         "2023-07-02T19:00:00Z",
         "2023-07-02T20:00:00Z",
-        "2023-07-02T21:00:00Z"
-      ]
-    })
+        "2023-07-02T21:00:00Z",
+      ],
+    }),
   };
 
-  /** 
+  /**
   * up to 31 datapoints(1 day values) from a {@link Day.energyPerPeriodChannelWithValues} and {@link Day.dataChannelWithValues}*/
   export const MONTH: OeTester.Types.Channels = {
     energyChannelWithValues: new QueryHistoricTimeseriesEnergyResponse("0", {
@@ -3150,8 +3010,8 @@ export namespace History {
         '_sum/EssDcChargeEnergy': 3944328,
         '_sum/EssDcDischargeEnergy': 3394430,
         '_sum/GridSellActiveEnergy': 12738000,
-        '_sum/ProductionActiveEnergy': 22491000
-      }
+        '_sum/ProductionActiveEnergy': 22491000,
+      },
     }),
     energyPerPeriodChannelWithValues:
       new QueryHistoricTimeseriesEnergyPerPeriodResponse("0", {
@@ -3216,7 +3076,7 @@ export namespace History {
             247673,
             157410,
             104249,
-            null
+            null,
           ],
           "_sum/EssDcDischargeEnergy": [
             112818,
@@ -3248,7 +3108,7 @@ export namespace History {
             242102,
             130546,
             59571,
-            null
+            null,
           ],
           "_sum/GridBuyActiveEnergy": [
             16000,
@@ -3280,7 +3140,7 @@ export namespace History {
             72000,
             28000,
             84000,
-            null
+            null,
           ],
           "_sum/GridSellActiveEnergy": [
             603000,
@@ -3312,7 +3172,7 @@ export namespace History {
             776000,
             425000,
             574000,
-            null
+            null,
           ],
           "_sum/ProductionActiveEnergy": [
             908000,
@@ -3344,8 +3204,8 @@ export namespace History {
             1466000,
             808000,
             906000,
-            null
-          ]
+            null,
+          ],
         },
         timestamps: [
           "2023-05-31T22:00:00Z",
@@ -3377,12 +3237,12 @@ export namespace History {
           "2023-06-26T22:00:00Z",
           "2023-06-27T22:00:00Z",
           "2023-06-28T22:00:00Z",
-          "2023-06-29T22:00:00Z"
-        ]
-      })
+          "2023-06-29T22:00:00Z",
+        ],
+      }),
   };
 
-  /** 
+  /**
   * up to 12 datapoints(1 month values) from a {@link Day.energyPerPeriodChannelWithValues} and {@link Day.dataChannelWithValues}*/
   export const YEAR: OeTester.Types.Channels = {
     energyChannelWithValues: new QueryHistoricTimeseriesEnergyResponse("0", {
@@ -3392,8 +3252,8 @@ export namespace History {
         '_sum/EssDcChargeEnergy': 15296815,
         '_sum/EssDcDischargeEnergy': 12898209,
         '_sum/GridSellActiveEnergy': 30703000,
-        '_sum/ProductionActiveEnergy': 68466000
-      }
+        '_sum/ProductionActiveEnergy': 68466000,
+      },
     }),
     energyPerPeriodChannelWithValues:
       new QueryHistoricTimeseriesEnergyPerPeriodResponse("0", {
@@ -3422,7 +3282,7 @@ export namespace History {
             null,
             null,
             null,
-            null
+            null,
           ],
           "_sum/EssDcDischargeEnergy": [
             208491,
@@ -3436,7 +3296,7 @@ export namespace History {
             null,
             null,
             null,
-            null
+            null,
           ],
           "_sum/GridBuyActiveEnergy": [9829000,
             4812000,
@@ -3473,7 +3333,7 @@ export namespace History {
             null,
             null,
             null,
-            null]
+            null],
         },
         timestamps: [
           "2022-12-31T23:00:00Z",
@@ -3487,8 +3347,8 @@ export namespace History {
           "2023-08-31T22:00:00Z",
           "2023-09-30T22:00:00Z",
           "2023-10-31T23:00:00Z",
-          "2023-11-30T23:00:00Z"
-        ]
-      })
+          "2023-11-30T23:00:00Z",
+        ],
+      }),
   };
 }
