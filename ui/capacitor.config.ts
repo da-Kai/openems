@@ -14,7 +14,7 @@ const baseConfig: CapacitorConfig = {
       launchShowDuration: 1000,
       launchAutoHide: false,
       launchFadeOutDuration: 1000,
-      backgroundColor: "#ffffffff",
+      backgroundColor: "var(--ion-color-dark)",
       androidSplashResourceName: "splash",
       androidScaleType: "CENTER_INSIDE",
       splashFullScreen: false,

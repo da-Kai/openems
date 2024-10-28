@@ -55,7 +55,7 @@ export class StorageSectionComponent extends AbstractSection implements OnInit, 
         protected override service: Service,
         unitpipe: UnitvaluePipe,
     ) {
-        super("Edge.Index.Energymonitor.storage", "down", "#009846", translate, service, "Storage");
+        super("Edge.Index.Energymonitor.storage", "down", "var(--ion-color-success)", translate, service, "Storage");
         this.unitpipe = unitpipe;
     }
 

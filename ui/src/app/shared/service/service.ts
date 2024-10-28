@@ -416,7 +416,7 @@ export class Service extends AbstractService {
       fullScreen: false,
       bdColor: "rgba(0, 0, 0, 0.8)",
       size: "medium",
-      color: "#fff",
+      color: "var(--ion-text-color)",
     });
   }
 
