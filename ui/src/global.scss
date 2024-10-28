@@ -271,6 +271,31 @@ formly-input-section {
 }
 
 :root {
+    --oe-border-radius: 8px;
+    --oe-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.1), 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+
+    ion-card {
+        box-shadow: var(--oe-shadow) !important;
+        border-radius: var(--oe-border-radius);
+    }
+
+    ion-header::after {
+        background-image: none !important;
+    }
+
+    ion-header {
+        box-shadow: var(--oe-shadow) !important;
+    }
+
+    ion-searchbar {
+        --box-shadow: var(--oe-shadow) !important;
+        --background: var(--ion-item-background);
+        color: var(--ion-text-color);
+    }
+
+    ion-searchbar .searchbar-input {
+        border-radius: var(--oe-border-radius);
+    }
 
     // Used in IBN, dynamicFeedInLimitation
     formly-field-ion-select {
