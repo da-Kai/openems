@@ -5,11 +5,14 @@ import static io.openems.edge.bridge.modbus.api.ElementToChannelConverter.SCALE_
 import static io.openems.edge.bridge.modbus.api.ElementToChannelConverter.SCALE_FACTOR_MINUS_1;
 import static io.openems.edge.bridge.modbus.api.ElementToChannelConverter.SCALE_FACTOR_MINUS_2;
 import static io.openems.edge.bridge.modbus.api.ModbusUtils.readElementOnce;
+import static io.openems.edge.common.type.TypeUtils.fitWithin;
 
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -247,6 +250,20 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 						}),
 
 						m(new BitsWordElement(35220, this) //
+								.bit(0, GoodWe.ChannelId.DIAG_STATUS_BMS_OVER_TEMPERATURE)//
+								.bit(1, GoodWe.ChannelId.DIAG_STATUS_BMS_OVERCHARGE)//
+								.bit(2, GoodWe.ChannelId.DIAG_STATUS_BMS_CHARGE_DISABLE)//
+								.bit(3, GoodWe.ChannelId.DIAG_STATUS_SELF_USE_OFF)//
+								.bit(4, GoodWe.ChannelId.DIAG_STATUS_SOC_DELTA_OVER_RANGE)//
+								.bit(5, GoodWe.ChannelId.DIAG_STATUS_BATTERY_SELF_DISCHARGE)//
+								.bit(6, GoodWe.ChannelId.DIAG_STATUS_OFFGRID_SOC_LOW)//
+								.bit(7, GoodWe.ChannelId.DIAG_STATUS_GRID_WAVE_UNSTABLE)//
+								.bit(8, GoodWe.ChannelId.DIAG_STATUS_FEED_POWER_LIMIT)//
+								.bit(9, GoodWe.ChannelId.DIAG_STATUS_PF_VALUE_SET)//
+								.bit(10, GoodWe.ChannelId.DIAG_STATUS_REAL_POWER_LIMIT)//
+								.bit(12, GoodWe.ChannelId.DIAG_STATUS_SOC_PROTECT_OFF)), //
+
+						m(new BitsWordElement(35221, this) //
 								.bit(0, GoodWe.ChannelId.DIAG_STATUS_BATTERY_VOLT_LOW)//
 								.bit(1, GoodWe.ChannelId.DIAG_STATUS_BATTERY_SOC_LOW)//
 								.bit(2, GoodWe.ChannelId.DIAG_STATUS_BATTERY_SOC_IN_BACK)//
@@ -264,26 +281,28 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 								.bit(14, GoodWe.ChannelId.DIAG_STATUS_BATTERY_DISCONNECT)//
 								.bit(15, GoodWe.ChannelId.DIAG_STATUS_BATTERY_OVERCHARGE)), //
 
-						m(new BitsWordElement(35221, this) //
-								.bit(0, GoodWe.ChannelId.DIAG_STATUS_BMS_OVER_TEMPERATURE)//
-								.bit(1, GoodWe.ChannelId.DIAG_STATUS_BMS_OVERCHARGE)//
-								.bit(2, GoodWe.ChannelId.DIAG_STATUS_BMS_CHARGE_DISABLE)//
-								.bit(3, GoodWe.ChannelId.DIAG_STATUS_SELF_USE_OFF)//
-								.bit(4, GoodWe.ChannelId.DIAG_STATUS_SOC_DELTA_OVER_RANGE)//
-								.bit(5, GoodWe.ChannelId.DIAG_STATUS_BATTERY_SELF_DISCHARGE)//
-								.bit(6, GoodWe.ChannelId.DIAG_STATUS_OFFGRID_SOC_LOW)//
-								.bit(7, GoodWe.ChannelId.DIAG_STATUS_GRID_WAVE_UNSTABLE)//
-								.bit(8, GoodWe.ChannelId.DIAG_STATUS_FEED_POWER_LIMIT)//
-								.bit(9, GoodWe.ChannelId.DIAG_STATUS_PF_VALUE_SET)//
-								.bit(10, GoodWe.ChannelId.DIAG_STATUS_REAL_POWER_LIMIT)//
-								.bit(12, GoodWe.ChannelId.DIAG_STATUS_SOC_PROTECT_OFF)), //
 						new DummyRegisterElement(35222, 35224), //
 						m(GoodWe.ChannelId.EH_BATTERY_FUNCTION_ACTIVE, new UnsignedWordElement(35225)), //
 						m(GoodWe.ChannelId.ARC_SELF_CHECK_STATUS, new UnsignedWordElement(35226)) //
 				),
 
 				new FC3ReadRegistersTask(35250, Priority.LOW, //
-						m(new BitsWordElement(35250, this) //
+
+						/*
+						 * Table 8-30 Grid Detailed WARNING (35250 - 35253, U64)
+						 */
+						new DummyRegisterElement(35250, 35251), //
+						m(new BitsWordElement(35252, this) //
+								.bit(0, GoodWe.ChannelId.STATE_86) //
+								.bit(1, GoodWe.ChannelId.STATE_87) //
+								.bit(2, GoodWe.ChannelId.STATE_88) //
+								.bit(3, GoodWe.ChannelId.STATE_89) //
+								.bit(4, GoodWe.ChannelId.STATE_90) //
+								.bit(5, GoodWe.ChannelId.STATE_91) //
+								.bit(6, GoodWe.ChannelId.STATE_92) //
+								.bit(7, GoodWe.ChannelId.STATE_93) //
+						), //
+						m(new BitsWordElement(35253, this) //
 								.bit(0, GoodWe.ChannelId.STATE_70) //
 								.bit(1, GoodWe.ChannelId.STATE_71) //
 								.bit(2, GoodWe.ChannelId.STATE_72) //
@@ -300,18 +319,21 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 								.bit(13, GoodWe.ChannelId.STATE_83) //
 								.bit(14, GoodWe.ChannelId.STATE_84) //
 								.bit(15, GoodWe.ChannelId.STATE_85)), //
-						m(new BitsWordElement(35251, this) //
-								.bit(0, GoodWe.ChannelId.STATE_86) //
-								.bit(1, GoodWe.ChannelId.STATE_87) //
-								.bit(2, GoodWe.ChannelId.STATE_88) //
-								.bit(3, GoodWe.ChannelId.STATE_89) //
-								.bit(4, GoodWe.ChannelId.STATE_90) //
-								.bit(5, GoodWe.ChannelId.STATE_91) //
-								.bit(6, GoodWe.ChannelId.STATE_92) //
-								.bit(7, GoodWe.ChannelId.STATE_93) //
+
+						/*
+						 * Table 8-31 Inverter detailed error (35254 - 35257, U64)
+						 */
+						new DummyRegisterElement(35254, 35255), //
+						m(new BitsWordElement(35256, this) //
+								.bit(0, GoodWe.ChannelId.STATE_110) //
+								.bit(1, GoodWe.ChannelId.STATE_111) //
+								.bit(2, GoodWe.ChannelId.STATE_112) //
+								.bit(3, GoodWe.ChannelId.STATE_113) //
+								.bit(4, GoodWe.ChannelId.STATE_114) //
+								.bit(5, GoodWe.ChannelId.STATE_115) //
+								.bit(6, GoodWe.ChannelId.STATE_116) //
 						), //
-						new DummyRegisterElement(35252, 35253), //
-						m(new BitsWordElement(35254, this) //
+						m(new BitsWordElement(35257, this) //
 								.bit(0, GoodWe.ChannelId.STATE_94) //
 								.bit(1, GoodWe.ChannelId.STATE_95) //
 								.bit(2, GoodWe.ChannelId.STATE_96) //
@@ -328,17 +350,19 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 								.bit(13, GoodWe.ChannelId.STATE_107) //
 								.bit(14, GoodWe.ChannelId.STATE_108) //
 								.bit(15, GoodWe.ChannelId.STATE_109)), //
-						m(new BitsWordElement(35255, this) //
-								.bit(0, GoodWe.ChannelId.STATE_110) //
-								.bit(1, GoodWe.ChannelId.STATE_111) //
-								.bit(2, GoodWe.ChannelId.STATE_112) //
-								.bit(3, GoodWe.ChannelId.STATE_113) //
-								.bit(4, GoodWe.ChannelId.STATE_114) //
-								.bit(5, GoodWe.ChannelId.STATE_115) //
-								.bit(6, GoodWe.ChannelId.STATE_116) //
+
+						/*
+						 * Table 8-32 Inverter detailed status (35258 - 35261, U64)
+						 */
+						new DummyRegisterElement(35258, 35259), //
+						m(new BitsWordElement(35260, this) //
+								.bit(0, GoodWe.ChannelId.STATE_133) //
+								.bit(1, GoodWe.ChannelId.STATE_134) //
+								.bit(2, GoodWe.ChannelId.STATE_135) //
+								.bit(3, GoodWe.ChannelId.STATE_136) //
+								.bit(4, GoodWe.ChannelId.STATE_137) //
 						), //
-						new DummyRegisterElement(35256, 35257), //
-						m(new BitsWordElement(35258, this) //
+						m(new BitsWordElement(35261, this) //
 								.bit(0, GoodWe.ChannelId.STATE_117) //
 								.bit(1, GoodWe.ChannelId.STATE_118) //
 								.bit(2, GoodWe.ChannelId.STATE_119) //
@@ -355,14 +379,7 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 								.bit(13, GoodWe.ChannelId.STATE_130) //
 								.bit(14, GoodWe.ChannelId.STATE_131) //
 								.bit(15, GoodWe.ChannelId.STATE_132)), //
-						m(new BitsWordElement(35259, this) //
-								.bit(0, GoodWe.ChannelId.STATE_133) //
-								.bit(1, GoodWe.ChannelId.STATE_134) //
-								.bit(2, GoodWe.ChannelId.STATE_135) //
-								.bit(3, GoodWe.ChannelId.STATE_136) //
-								.bit(4, GoodWe.ChannelId.STATE_137) //
-						), //
-						new DummyRegisterElement(35260, 35267), //
+						new DummyRegisterElement(35262, 35267), //
 						m(GoodWe.ChannelId.MAX_GRID_FREQ_WITHIN_1_MINUTE, new UnsignedWordElement(35268),
 								SCALE_FACTOR_MINUS_2), //
 						m(GoodWe.ChannelId.MIN_GRID_FREQ_WITHIN_1_MINUTE, new UnsignedWordElement(35269),
@@ -1178,10 +1195,12 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 		);
 
 		/*
-		 * Handles different GoodWe Types.
+		 * Handle different GoodWe Types.
 		 * 
-		 * Register 35011: GoodWeType as String (Not supported for GoodWe 20 & 30)
-		 * Register 35003: Serial number as String (Fallback for GoodWe 20 & 30)
+		 * GoodweType Firmware is differing from Type ET-Plus to ETT.
+		 * 
+		 * Register 35011: GoodWeType as String (Not supported for GoodWe 20 & 30 - ETT)
+		 * Register 35003: Serial number as String (Fallback for GoodWe 20 & 30 - ETT)
 		 */
 		readElementOnce(protocol, ModbusUtils::retryOnNull, new StringWordElement(35011, 5)) //
 				.thenAccept(value -> {
@@ -1193,8 +1212,30 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 							TypeUtils.<String>getAsType(OpenemsType.STRING, value));
 
 					if (resultFromString != GoodWeType.UNDEFINED) {
+
+						/*
+						 * ET-Plus
+						 */
 						this.logInfo(this.log, "Identified " + resultFromString.getName());
 						this._setGoodweType(resultFromString);
+
+						// Handles different ET-Plus DSP versions
+						ModbusUtils.readElementOnce(protocol, ModbusUtils::retryOnNull, new UnsignedWordElement(35016)) //
+								.thenAccept(dspVersion -> {
+									try {
+										if (dspVersion >= 5) {
+											this.handleDspVersion5(protocol);
+										}
+										if (dspVersion >= 6) {
+											this.handleDspVersion6(protocol);
+										}
+										if (dspVersion >= 7) {
+											this.handleDspVersion7(protocol);
+										}
+									} catch (OpenemsException e) {
+										this.logError(this.log, "Unable to add task for modbus protocol");
+									}
+								});
 						return;
 					}
 
@@ -1203,44 +1244,21 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 					 */
 					readElementOnce(protocol, ModbusUtils::retryOnNull, new StringWordElement(35003, 8)) //
 							.thenAccept(serialNr -> {
+
 								final var hardwareType = getGoodWeTypeFromSerialNr(serialNr);
 								try {
 									this._setGoodweType(hardwareType);
+									this.handleDspVersion5(protocol);
+									this.handleDspVersion6(protocol);
+									this.handleDspVersion7(protocol);
 									if (hardwareType == GoodWeType.FENECON_FHI_20_DAH
 											|| hardwareType == GoodWeType.FENECON_FHI_29_9_DAH) {
 										this.handleMultipleStringChargers(protocol);
 									}
-
 								} catch (OpenemsException e) {
 									this.logError(this.log, "Unable to add charger tasks for modbus protocol");
 								}
 							});
-				});
-
-		// Handles different DSP versions
-		readElementOnce(protocol, ModbusUtils::retryOnNull, new UnsignedWordElement(35016)) //
-				.thenAccept(dspVersion -> {
-					try {
-
-						// GoodWe 30 has DspFmVersionMaster=0 & DspBetaVersion=80
-						if (dspVersion == 0) {
-							this.handleDspVersion5(protocol);
-							this.handleDspVersion6(protocol);
-							this.handleDspVersion7(protocol);
-							return;
-						}
-						if (dspVersion >= 5) {
-							this.handleDspVersion5(protocol);
-						}
-						if (dspVersion >= 6) {
-							this.handleDspVersion6(protocol);
-						}
-						if (dspVersion >= 7) {
-							this.handleDspVersion7(protocol);
-						}
-					} catch (OpenemsException e) {
-						this.logError(this.log, "Unable to add task for modbus protocol");
-					}
 				});
 
 		return protocol;
@@ -1312,7 +1330,7 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 
 	/**
 	 * Handle multiple string chargers.
-	 * 
+	 *
 	 * <p>
 	 * For MPPT connectors e.g. two string on one MPPT the power information is
 	 * spread over several registers that should be read as complete blocks.
@@ -1950,9 +1968,19 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 	}
 
 	protected void updatePowerAndEnergyChannels() {
-		var productionPower = this.calculatePvProduction();
+		final var productionPower = this.calculatePvProduction();
 		final Channel<Integer> pBattery1Channel = this.channel(GoodWe.ChannelId.P_BATTERY1);
 		var dcDischargePower = pBattery1Channel.value().get();
+		final IntegerReadChannel dcDischargePowerChannel = this.channel(this.dcDischargePowerChannelId);
+
+		/*
+		 * Ignore impossible values of P_BATTERY
+		 */
+		dcDischargePower = postprocessPBattery1(dcDischargePower, this.getWbmsVoltage().get(),
+				this.getGoodweType().maxDcCurrent,
+				state -> this.channel(GoodWe.ChannelId.IGNORE_IMPOSSIBLE_P_BATTERY_VALUE).setNextValue(state),
+				dcDischargePowerChannel.value().asOptional());
+
 		var acActivePower = TypeUtils.sum(productionPower, dcDischargePower);
 
 		/*
@@ -1981,7 +2009,6 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 		/*
 		 * Update DC Discharge Power
 		 */
-		IntegerReadChannel dcDischargePowerChannel = this.channel(this.dcDischargePowerChannelId);
 		dcDischargePowerChannel.setNextValue(dcDischargePower);
 
 		/*
@@ -2000,6 +2027,43 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 			this.calculateDcChargeEnergy.update(dcDischargePower * -1);
 			this.calculateDcDischargeEnergy.update(0);
 		}
+	}
+
+	/**
+	 * Postprocess PBattery1 value.
+	 * 
+	 * <p>
+	 * Impossible battery power values will be ignored.
+	 * 
+	 * <p>
+	 * The total max DC current including a buffer of 10A is used to identify an
+	 * impossible power value, as WBMS_VOLTAGE has lower priority than pBattery and
+	 * the battery could charge even if the BmsChargeMaxCurrent is 0.
+	 * 
+	 * @param pBattery     battery power
+	 * @param dcVoltage    dc voltage
+	 * @param maxDcCurrent max dc current
+	 * @param setState     consume state
+	 * @param prevPBattery previous battery power
+	 * @return possible battery power
+	 */
+	protected static Integer postprocessPBattery1(Integer pBattery, Integer dcVoltage, Integer maxDcCurrent,
+			Consumer<Boolean> setState, Optional<Integer> prevPBattery) {
+
+		var stateIgnoreImpossiblePBatteryValue = false;
+		if (pBattery != null && dcVoltage != null && maxDcCurrent != null) {
+
+			var impossibleDcChargePower = (maxDcCurrent + 10) * dcVoltage;
+			var impossibleDcDischargePower = (maxDcCurrent + 10) * dcVoltage;
+
+			if (pBattery < impossibleDcChargePower * -1 || pBattery > impossibleDcDischargePower) {
+				stateIgnoreImpossiblePBatteryValue = true;
+				pBattery = prevPBattery
+						.orElse(fitWithin(maxDcCurrent * dcVoltage * -1, maxDcCurrent * dcVoltage, pBattery));
+			}
+		}
+		setState.accept(stateIgnoreImpossiblePBatteryValue);
+		return pBattery;
 	}
 
 	/**

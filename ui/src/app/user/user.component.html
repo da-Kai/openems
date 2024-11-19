@@ -1,20 +1,3 @@
-<style>
-  .user-component ion-col {
-    padding-top: 0;
-    padding-bottom: 0;
-    margin: 0;
-  }
-
-  .user-component ion-card {
-    margin-top: 20pt;
-    margin-bottom: 0;
-  }
-
-  .user-component ion-row {
-    padding-bottom: 20pt;
-  }
-</style>
-<header></header>
 <ion-content>
   <ion-grid class="user-component">
     <ion-row class="ion-justify-content-center">
@@ -33,9 +16,11 @@
                 Menu.name
               </ion-label>
               <ion-label>
-                {{ this.form?.model ? ((this.form?.model?.firstname ?? '') + ' ' + (this.form?.model?.lastname ?? '')).trim() : user.name }}
-                <!-- <ion-icon style="cursor: pointer;" color="primary" name="create-outline">
-                </ion-icon> -->
+                {{
+                this.form?.model
+                ? ((this.form?.model?.firstname ?? '') + ' ' + (this.form?.model?.lastname ?? '')).trim()
+                : user.name
+                }}
               </ion-label>
             </ion-item>
             <ion-item lines="inset">
@@ -77,16 +62,26 @@
         <!-- Show and Edit UserInformation -->
         <ion-card>
           <ion-item lines="full" color="light">
-            <ion-icon slot="start" size="large" color="primary" name="list-outline"></ion-icon>
-            <ion-label class="ion-text-wrap" translate>
-              Register.Form.contactDetails
-            </ion-label>
+            <<<<<<< HEAD <ion-icon slot="start" size="large" color="primary" name="list-outline"></ion-icon>
+              <ion-label class="ion-text-wrap" translate>
+                Register.Form.contactDetails
+                =======
+                <ion-icon slot="start" size="large" color="primary" name="person-outline"></ion-icon>
+                <ion-label class="ion-text-wrap">
+                  <span translate>
+                    Register.Form.contactDetails
+                  </span>
+                  <ng-container *ngIf="companyInformationFields.length > 0">
+                    (<span translate>Register.Form.PRIVATE</span>)
+                  </ng-container>
+                  >>>>>>> upstream/develop
+                </ion-label>
           </ion-item>
           <ion-card-content>
 
-            <formly-skeleton-wrapper [show]="showInformation" [form]="form?.formGroup" [fields]="userInformationFields"
-              [model]="form?.model">
-            </formly-skeleton-wrapper>
+            <oe-formly-skeleton-wrapper [show]="showInformation" [form]="form?.formGroup"
+              [fields]="userInformationFields" [model]="form?.model">
+            </oe-formly-skeleton-wrapper>
 
             <ion-item lines="none">
               <ion-button slot="start" (click)="enableAndDisableEditMode()"
@@ -100,6 +95,23 @@
               </ion-button>
             </ion-item>
 
+          </ion-card-content>
+        </ion-card>
+
+        <ion-card *ngIf="companyInformationFields.length > 0">
+          <ion-item lines="full" color="light">
+            <ion-icon slot="start" size="large" color="primary" name="person-outline"></ion-icon>
+            <ion-label class="ion-text-wrap">
+              <span translate>
+                Register.Form.contactDetails
+              </span>
+              (<span translate>Register.Form.company</span>)
+            </ion-label>
+          </ion-item>
+          <ion-card-content>
+            <oe-formly-skeleton-wrapper [show]="showInformation" [form]="form?.formGroup"
+              [fields]="companyInformationFields" [model]="form?.model">
+            </oe-formly-skeleton-wrapper>
           </ion-card-content>
         </ion-card>
       </ion-col>
@@ -132,11 +144,6 @@
             <p class="ion-padding">
               <span [innerHTML]="'About.contact' | translate:{value: 'info@openems.io'}"></span>
             </p>
-            <ion-item lines="none">
-              <ion-checkbox slot="end" (ionChange)="toggleDebugMode($event)" [(ngModel)]="environment.debugMode">
-              </ion-checkbox>
-              <ion-label translate>Debug-Mode</ion-label>
-            </ion-item>
           </ion-card-content>
         </ion-card>
         <ion-card>
@@ -159,6 +166,12 @@
                 The language can not be changed permanently in the local online-monitoring for technical
                 reasons.</small>
             </ion-note>
+
+            <ion-item lines="none" *ngIf="isAtLeastAdmin">
+              <ion-checkbox slot="end" (ionChange)="toggleDebugMode($event)" [(ngModel)]="environment.debugMode">
+              </ion-checkbox>
+              <ion-label translate>Debug-Mode</ion-label>
+            </ion-item>
           </ion-card-content>
         </ion-card>
       </ion-col>
