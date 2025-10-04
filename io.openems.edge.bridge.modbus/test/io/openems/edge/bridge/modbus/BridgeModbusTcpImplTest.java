@@ -30,11 +30,10 @@ public class BridgeModbusTcpImplTest {
 
 	private static final int UNIT_ID = 1;
 	private static final int CYCLE_TIME = 100;
-	private static final int CYCLE_SLEEP = CYCLE_TIME + 20;
 
 	@Test
 	public void test() throws Exception {
-		final ThrowingRunnable<Exception> sleep = () -> TimeUnit.MILLISECONDS.sleep(CYCLE_SLEEP);
+		final ThrowingRunnable<Exception> sleep = () -> TimeUnit.MILLISECONDS.sleep(CYCLE_TIME);
 
 		var port = findRandomOpenPortOnAllLocalInterfaces();
 		ModbusSlave slave = null;
@@ -72,6 +71,8 @@ public class BridgeModbusTcpImplTest {
 					.next(new TestCase() //
 							.onAfterProcessImage(sleep)) //
 					.next(new TestCase() //
+							.onAfterProcessImage(sleep)) //
+					.next(new TestCase() //
 							.onAfterProcessImage(sleep) //
 							.output("device0", MyModbusComponent.ChannelId.REGISTER_100, 123) //
 							.output("device0", MODBUS_COMMUNICATION_FAILED, false)); //
@@ -82,6 +83,8 @@ public class BridgeModbusTcpImplTest {
 			sut.removeProtocol("device0");
 
 			test //
+					.next(new TestCase() //
+							.onAfterProcessImage(sleep)) //
 					.next(new TestCase() //
 							.onAfterProcessImage(sleep)) //
 					.next(new TestCase() //
