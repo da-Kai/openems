@@ -3,6 +3,8 @@ package io.openems.edge.bridge.modbus;
 import static io.openems.common.test.TestUtils.findRandomOpenPortOnAllLocalInterfaces;
 import static io.openems.edge.bridge.modbus.api.ModbusComponent.ChannelId.MODBUS_COMMUNICATION_FAILED;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.Test;
 
 import com.ghgande.j2mod.modbus.procimg.Register;
@@ -28,10 +30,11 @@ public class BridgeModbusTcpImplTest {
 
 	private static final int UNIT_ID = 1;
 	private static final int CYCLE_TIME = 100;
+	private static final int CYCLE_SLEEP = CYCLE_TIME + 20;
 
 	@Test
 	public void test() throws Exception {
-		final ThrowingRunnable<Exception> sleep = () -> Thread.sleep(CYCLE_TIME + 1);
+		final ThrowingRunnable<Exception> sleep = () -> TimeUnit.MILLISECONDS.sleep(CYCLE_SLEEP);
 
 		var port = findRandomOpenPortOnAllLocalInterfaces();
 		ModbusSlave slave = null;
@@ -87,7 +90,7 @@ public class BridgeModbusTcpImplTest {
 							.output("device0", MODBUS_COMMUNICATION_FAILED, false)); //
 
 			test.deactivate();
-
+			
 		} finally {
 			if (slave != null) {
 				slave.close();
