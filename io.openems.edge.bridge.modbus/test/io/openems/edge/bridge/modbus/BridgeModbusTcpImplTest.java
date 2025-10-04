@@ -31,7 +31,7 @@ public class BridgeModbusTcpImplTest {
 
 	@Test
 	public void test() throws Exception {
-		final ThrowingRunnable<Exception> sleep = () -> Thread.sleep(CYCLE_TIME);
+		final ThrowingRunnable<Exception> sleep = () -> Thread.sleep(CYCLE_TIME + 1);
 
 		var port = findRandomOpenPortOnAllLocalInterfaces();
 		ModbusSlave slave = null;
