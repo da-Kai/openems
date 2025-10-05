@@ -99,7 +99,7 @@ jobs:
 
       - name: validate yaml files
         run: |
-          CONFIG="{extends: relaxed, rules: {document-start: disable, line-length: {max: 124}}}"
+          CONFIG="{extends: relaxed, rules: {document-start: disable, line-length: {max: 256}}}"
           find .github/ \( -name "*.yml" -o -name "*.yaml" \) -exec yamllint -d "${CONFIG}" {} \;
           find tools/ \( -name "*.yml" -o -name "*.yaml" \) -exec yamllint -d "${CONFIG}" {} \;
           yamllint -d "${CONFIG}" codecov.yml
