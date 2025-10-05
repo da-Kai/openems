@@ -43,24 +43,24 @@ for D in *; do
 				echo "# preparing ${D}"
 
 				# verify the project .gitignore file
-				if grep -q '/bin_test/' ${D}/.gitignore \
-					&& grep -q '/generated/' ${D}/.gitignore; then
+				if grep -q '/bin_test/' "${D}/.gitignore" \
+					&& grep -q '/generated/' "${D}/.gitignore"; then
 					:
 				else
 					echo "${D}/.gitignore -> not complete"
-					echo '/bin_test/' > ${D}/.gitignore
-					echo '/generated/' >> ${D}/.gitignore
+					echo '/bin_test/' > "${D}/.gitignore"
+					echo '/generated/' >> "${D}/.gitignore"
 				fi
 
 				# verify there is a test folder
 				if [ ! -d "${D}/test" ]; then
-					mkdir -p ${D}/test
+					mkdir -p "${D}/test"
 				fi
 
 				# verify that the test folder has a .gitignore file
 				if [ ! -f "./${D}/test/.gitignore" ]; then
 					echo "${D}/test/.gitignore -> missing"
-					touch ${D}/test/.gitignore
+					touch "${D}/test/.gitignore"
 				fi
 
 				# verify explicit encoding for Eclipse IDE; avoids 'Project has no explicit encoding set' warnings
@@ -120,15 +120,16 @@ EOT
 				if [ -f "${D}/bnd.bnd" ]; then
 					start=$(grep -n '${buildpath},' "${D}/bnd.bnd" | grep -Eo '^[^:]+' | head -n1)
 					end=$(grep -n 'testpath' "${D}/bnd.bnd" | grep -Eo '^[^:]+' | head -n1)
-					if [ -z "$start" -a -z "$end" ]; then
+					if [ -z "$start" ] && [ -z "$end" ]; then
 						:
 					else
 						(
-							head -n $start "${D}/bnd.bnd"; # before 'buildpath'
-							head -n$(expr $end - 2) "${D}/bnd.bnd" | tail -n$(expr $end - $start - 2) | LC_COLLATE=C sort | sed '/\\$/!s/$/,\\/'; # the 'buildpath'
-							tail -n +$(expr $end - 1) "${D}/bnd.bnd" # after 'buildpath'
+							head -n "${start}" "${D}/bnd.bnd"; # before 'buildpath'
+							head -n "$((end - 2))" "${D}/bnd.bnd" | tail -n "$((end - start - 2))" | LC_COLLATE=C sort | sed '/\\$/!s/$/,\\/'; # the 'buildpath'
+							tail -n +"$((end - 1))" "${D}/bnd.bnd" # after 'buildpath'
 						) > "${D}/bnd.bnd.new"
-						if [ $? -eq 0 ]; then
+						exit_code=$?
+						if [ "$exit_code" -eq 0 ]; then
 							mv "${D}/bnd.bnd.new" "${D}/bnd.bnd"
 						else
 							echo "Unable to sort buildpath in ${D}/bnd.bnd"
@@ -147,34 +148,43 @@ echo "# building Java projects"
 ./gradlew build
 
 update_bndrun() {
+	local bndrun
+	local bndrun_tmp
+	local runbundles
+
 	echo "#"
 	echo "# updating $1"
-	local bndrun="${2}.application/${1}.bndrun"
-	head -n $(grep -n '\-runrequires:' $bndrun | grep -Eo '^[^:]+' | head -n1) "$bndrun" > "$bndrun.new"
-	echo "	bnd.identity;id='org.ops4j.pax.logging.pax-logging-api',\\" >> "$bndrun.new"
-	echo "	bnd.identity;id='org.ops4j.pax.logging.pax-logging-log4j2',\\" >> "$bndrun.new"
+	bndrun="${2}.application/${1}.bndrun"
+	bndrun_tmp=$(mktemp "${2}.application/${1}.bndrun.XXXXXX")
+	{
+	head -n "$(grep -n '\-runrequires:' "${bndrun}" | grep -Eo '^[^:]+' | head -n1)" "$bndrun";
+	echo "	bnd.identity;id='org.ops4j.pax.logging.pax-logging-api',\\";
+	echo "	bnd.identity;id='org.ops4j.pax.logging.pax-logging-log4j2',\\";
+	} > "${bndrun_tmp}"
 	if [[ "$1" == "BackendApp" ]]; then
-		echo "	bnd.identity;id='org.osgi.service.jdbc',\\" >> "$bndrun.new"
+		echo "	bnd.identity;id='org.osgi.service.jdbc',\\" >> "${bndrun_tmp}"
 	fi
-	echo "	bnd.identity;id='org.apache.felix.http.jetty12',\\" >> "$bndrun.new"
-	echo "	bnd.identity;id='org.apache.felix.http.servlet-api',\\" >> "$bndrun.new"
-	echo "	bnd.identity;id='org.apache.felix.webconsole',\\" >> "$bndrun.new"
-	echo "	bnd.identity;id='org.apache.felix.webconsole.plugins.ds',\\" >> "$bndrun.new"
-	echo "	bnd.identity;id='org.apache.felix.inventory',\\" >> "$bndrun.new"
-	echo "	bnd.identity;id='org.apache.felix.eventadmin',\\" >> "$bndrun.new"
-	echo "	bnd.identity;id='org.apache.felix.fileinstall',\\" >> "$bndrun.new"
-	echo "	bnd.identity;id='org.apache.felix.metatype',\\" >> "$bndrun.new"
-	for D in $2.*; do
+	{
+	echo "	bnd.identity;id='org.apache.felix.http.jetty12',\\";
+	echo "	bnd.identity;id='org.apache.felix.http.servlet-api',\\";
+	echo "	bnd.identity;id='org.apache.felix.webconsole',\\";
+	echo "	bnd.identity;id='org.apache.felix.webconsole.plugins.ds',\\";
+	echo "	bnd.identity;id='org.apache.felix.inventory',\\";
+	echo "	bnd.identity;id='org.apache.felix.eventadmin',\\";
+	echo "	bnd.identity;id='org.apache.felix.fileinstall',\\";
+	echo "	bnd.identity;id='org.apache.felix.metatype',\\"
+	} >> "${bndrun_tmp}"
+	for D in "$2".*; do
 		if [[ "$D" == *api ]]; then
 			continue # ignore api bundle
 		fi
-		echo "	bnd.identity;id='${D}',\\" >> "$bndrun.new"
+		echo "	bnd.identity;id='${D}',\\" >> "${bndrun_tmp}"
 	done
-	local runbundles=$(grep -n '\-runbundles:' $bndrun | grep -Eo '^[^:]+' | head -n1)
-	tail -n +$(expr $runbundles - 1) "$bndrun" >> "$bndrun.new"
-	head -n $(grep -n '\-runbundles:' "$bndrun.new" | grep -Eo '^[^:]+' | head -n1) "$bndrun.new" > "$bndrun"
-	rm "$bndrun.new"
-	./gradlew resolve.$1
+	runbundles=$(grep -n '\-runbundles:' "${bndrun}" | grep -Eo '^[^:]+' | head -n1)
+	tail -n +$((runbundles - 1)) "${bndrun}" >> "${bndrun_tmp}"
+	head -n "$(grep -n '\-runbundles:' "${bndrun_tmp}" | grep -Eo '^[^:]+' | head -n1)" "${bndrun_tmp}" > "${bndrun}"
+	rm "${bndrun_tmp}"
+	./gradlew "resolve.$1"
 }
 
 update_bndrun EdgeApp 'io.openems.edge'

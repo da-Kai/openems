@@ -3,6 +3,8 @@
 # Provides commonly used functions and variables
 
 common_initialize_environment() {
+    local tmp_version
+
     # Code files relevant for version
     SRC_OPENEMS_CONSTANTS="io.openems.common/src/io/openems/common/OpenemsConstants.java"
     SRC_PACKAGE_JSON="ui/package.json"
@@ -11,16 +13,17 @@ common_initialize_environment() {
 
     # Set environment variables
     THEME="${THEME:-openems}"
+    # shellcheck disable=SC2034
     PACKAGE_NAME="openems-edge"
 
     VERSION_STRING=""
     VERSION="$(cd ui && node -p "require('./package.json').version" && cd ..)"
-    local tmp_version=$(echo $VERSION | cut -d'-' -f1)
-    VERSION_MAJOR=$(echo $tmp_version | cut -d'.' -f1)
-    VERSION_MINOR=$(echo $tmp_version | cut -d'.' -f2)
-    VERSION_PATCH=$(echo $tmp_version | cut -d'.' -f3)
-    VERSION_STRING=$(echo $VERSION | cut -s -d'-' -f2)
-    VERSION_FULL=$tmp_version
+    tmp_version="$(echo "${VERSION}" | cut -d'-' -f1)"
+    VERSION_MAJOR="$(echo "${tmp_version}" | cut -d'.' -f1)"
+    VERSION_MINOR="$(echo "${tmp_version}" | cut -d'.' -f2)"
+    VERSION_PATCH="$(echo "${tmp_version}" | cut -d'.' -f3)"
+    VERSION_STRING="$(echo "${VERSION}" | cut -s -d'-' -f2)"
+    VERSION_FULL="${tmp_version}"
 }
 
 common_build_snapshot_version() {
@@ -30,14 +33,15 @@ common_build_snapshot_version() {
         VERSION_DEV_BRANCH="$(git branch --show-current)"
         VERSION_DEV_COMMIT=""
         git diff --exit-code --quiet
-        if [ $? -ne 0 ]; then
+        exit_code=$?
+        if [ "${exit_code}" -ne 0 ]; then
             VERSION_DEV_COMMIT="dirty"
         else
             VERSION_DEV_COMMIT="$(git rev-parse --short HEAD)"
         fi
         VERSION_DEV_BUILD_TIME=$(date "+%Y%m%d.%H%M")
         # Compliant with https://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-version
-        VERSION_STRING="$(echo $VERSION_DEV_BRANCH | tr -cs 'a-zA-Z0-9\n' '.').${VERSION_DEV_BUILD_TIME}.${VERSION_DEV_COMMIT}"
+        VERSION_STRING="$(echo "${VERSION_DEV_BRANCH}" | tr -cs 'a-zA-Z0-9\n' '.').${VERSION_DEV_BUILD_TIME}.${VERSION_DEV_COMMIT}"
         VERSION="${VERSION/-SNAPSHOT/"-${VERSION_STRING}"}"
     fi
 }
@@ -46,22 +50,22 @@ common_build_snapshot_version() {
 common_update_version_in_code() {
     echo "# Update version in Code"
     echo "## Update $SRC_OPENEMS_CONSTANTS"
-    sed --in-place "s#\(VERSION_MAJOR = \)\([0-9]\+\);#\1$VERSION_MAJOR;#" $SRC_OPENEMS_CONSTANTS
-    sed --in-place "s#\(VERSION_MINOR = \)\([0-9]\+\);#\1$VERSION_MINOR;#" $SRC_OPENEMS_CONSTANTS
-    sed --in-place "s#\(VERSION_PATCH = \)\([0-9]\+\);#\1$VERSION_PATCH;#" $SRC_OPENEMS_CONSTANTS
-    sed --in-place "s#\(VERSION_STRING = \)\"\(.*\)\";#\1\"$VERSION_STRING\";#" $SRC_OPENEMS_CONSTANTS
-    sed --in-place "s#\(VERSION_DEV_BRANCH = \)\"\(.*\)\";#\1\"${VERSION_DEV_BRANCH}\";#" $SRC_OPENEMS_CONSTANTS
-    sed --in-place "s#\(VERSION_DEV_COMMIT = \)\"\(.*\)\";#\1\"$VERSION_DEV_COMMIT\";#" $SRC_OPENEMS_CONSTANTS
-    sed --in-place "s#\(VERSION_DEV_BUILD_TIME = \)\"\(.*\)\";#\1\"$VERSION_DEV_BUILD_TIME\";#" $SRC_OPENEMS_CONSTANTS
+    sed --in-place "s#\(VERSION_MAJOR = \)\([0-9]\+\);#\1$VERSION_MAJOR;#" "$SRC_OPENEMS_CONSTANTS"
+    sed --in-place "s#\(VERSION_MINOR = \)\([0-9]\+\);#\1$VERSION_MINOR;#" "$SRC_OPENEMS_CONSTANTS"
+    sed --in-place "s#\(VERSION_PATCH = \)\([0-9]\+\);#\1$VERSION_PATCH;#" "$SRC_OPENEMS_CONSTANTS"
+    sed --in-place "s#\(VERSION_STRING = \)\"\(.*\)\";#\1\"$VERSION_STRING\";#" "$SRC_OPENEMS_CONSTANTS"
+    sed --in-place "s#\(VERSION_DEV_BRANCH = \)\"\(.*\)\";#\1\"${VERSION_DEV_BRANCH}\";#" "$SRC_OPENEMS_CONSTANTS"
+    sed --in-place "s#\(VERSION_DEV_COMMIT = \)\"\(.*\)\";#\1\"$VERSION_DEV_COMMIT\";#" "$SRC_OPENEMS_CONSTANTS"
+    sed --in-place "s#\(VERSION_DEV_BUILD_TIME = \)\"\(.*\)\";#\1\"$VERSION_DEV_BUILD_TIME\";#" "$SRC_OPENEMS_CONSTANTS"
 
     echo "## Update $SRC_PACKAGE_JSON"
-    sed --in-place "s#^\(  \"version\": \"\).*\(\".*$\)#\1$VERSION\2#" $SRC_PACKAGE_JSON
+    sed --in-place "s#^\(  \"version\": \"\).*\(\".*$\)#\1$VERSION\2#" "$SRC_PACKAGE_JSON"
 
     echo "## Update $SRC_PACKAGE_LOCK_JSON"
-    sed --in-place "s#^\(  \"version\": \"\).*\(\".*$\)#\1$VERSION\2#" $SRC_PACKAGE_LOCK_JSON
+    sed --in-place "s#^\(  \"version\": \"\).*\(\".*$\)#\1$VERSION\2#" "$SRC_PACKAGE_LOCK_JSON"
 
     echo "## Update $SRC_CHANGELOG_CONSTANTS"
-    sed --in-place "s#\(UI_VERSION = \"\).*\(\";\)#\1$VERSION\2#" $SRC_CHANGELOG_CONSTANTS
+    sed --in-place "s#\(UI_VERSION = \"\).*\(\";\)#\1$VERSION\2#" "$SRC_CHANGELOG_CONSTANTS"
 }
 
 common_print_banner() {
@@ -83,8 +87,8 @@ common_build_backend() {
 # Build OpenEMS Edge and UI in parallel
 common_build_edge_and_ui_in_parallel() {
     # TODO use 'parallel' tool for reliable implementation
-    common_build_edge
-    common_build_ui
+    common_build_edge;
+    common_build_ui;
 }
 
 
@@ -104,7 +108,7 @@ common_run_checkstyle() {
 # Build OpenEMS UI
 common_build_ui() {
     common_print_banner "Build OpenEMS UI"
-    if [ "${NODE_MODULES_CACHE}" != "" -a -d "$NODE_MODULES_CACHE" ]; then
+    if [ "${NODE_MODULES_CACHE}" != "" ] && [ -d "$NODE_MODULES_CACHE" ]; then
         echo "## Use cached node_modules"
         mv -f "${NODE_MODULES_CACHE}" "ui/node_modules"
     fi
@@ -129,7 +133,7 @@ common_build_ui() {
 
 common_build_android_app() {
     echo "# Build OpenEMS Android APP"
-    if [ "${NODE_MODULES_CACHE}" != "" -a -d "$NODE_MODULES_CACHE" ]; then
+    if [ "${NODE_MODULES_CACHE}" != "" ] && [ -d "$NODE_MODULES_CACHE" ]; then
         echo "## Use cached node_modules"
         mv -f "${NODE_MODULES_CACHE}" "ui/node_modules"
     fi

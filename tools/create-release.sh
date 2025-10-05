@@ -22,16 +22,16 @@ main() {
 initialize_environment() {
     # Set working directory
     SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
-    cd ${SCRIPT_DIR}/..
+    cd "${SCRIPT_DIR}/.."
 
     # Include commons
-    source $SCRIPT_DIR/common.sh
+    source "$SCRIPT_DIR/common.sh"
     common_initialize_environment
 
     # Set environment variables
     THEME="openems"
     RELEASE_DATE=$(date --iso-8601)
-    PREV_VERSION=$VERSION
+    PREV_VERSION="${VERSION}"
     SRC_CHANGELOG_COMPONENT="ui/src/app/changelog/view/component/changelog.component.ts"
 
     # Target version without SNAPSHOT
@@ -48,13 +48,13 @@ initialize_environment() {
 check_dependencies() {
     hash code 2>/dev/null || { echo >&2 "I require 'code' but it's not installed. Aborting."; exit 1; }
 
-    if [ $(git remote -v | grep -c '^origin') -eq 0 ]; then
+    if [ "$(git remote -v | grep -c '^origin')" -eq 0 ]; then
         echo "# Missing Remote origin"
         echo "git remote add origin https://git.intranet.fenecon.de/FENECON/fems.git"
         exit 1
     fi
 
-    if [ $(dpkg -l | grep -c git-flow) -eq 0 ]; then
+    if [ "$(dpkg -l | grep -c git-flow)" -eq 0 ]; then
         echo "# Missing git-flow"
         echo "apt install git-flow"
         echo "git flow init"
@@ -89,6 +89,7 @@ start_release() {
 update_changelog() {
     echo "# Update Changelog! ($SRC_CHANGELOG_COMPONENT)"
     code $SRC_CHANGELOG_COMPONENT
+    # shellcheck disable=SC2162
     read -p ""
 }
 
