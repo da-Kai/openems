@@ -313,7 +313,7 @@ public class ComponentManagerImpl extends AbstractOpenemsComponent
 	public <T extends OpenemsComponent> T getPossiblyDisabledComponent(String componentId)
 			throws OpenemsNamedException {
 		var component = this.trackedComponents.get(componentId);
-		if (component != null && component.isEnabled()) {
+		if (component != null) {
 			return (T) component;
 		}
 		throw OpenemsError.EDGE_NO_COMPONENT_WITH_ID.exception(componentId);
