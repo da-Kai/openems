@@ -156,7 +156,6 @@ public class ComponentManagerImpl extends AbstractOpenemsComponent
 	private void initializeComponentTracker(BundleContext bundleContext) {
 		final var customizer = new ServiceTrackerCustomizer<OpenemsComponent, OpenemsComponent>() {
 			
-			private final ComponentManagerImpl self = ComponentManagerImpl.this;
 			private final Logger log = LoggerFactory.getLogger(ComponentManagerImpl.class);
 
 			@Override
@@ -164,11 +163,11 @@ public class ComponentManagerImpl extends AbstractOpenemsComponent
 				try {
 					var component = bundleContext.getService(reference);
 					if (component != null) {
-						self.trackedComponents.put(component.id(), component);
+						ComponentManagerImpl.this.trackedComponents.put(component.id(), component);
 					}
 					return component;
 				} catch (Exception e) {
-					log.debug(e.getMessage(), e);
+					this.log.debug(e.getMessage(), e);
 					return null;
 				}
 			}
@@ -177,7 +176,7 @@ public class ComponentManagerImpl extends AbstractOpenemsComponent
 			public void modifiedService(ServiceReference<OpenemsComponent> reference,
 					OpenemsComponent service) {
 				if (service != null) {
-					self.trackedComponents.put(service.id(), service);
+					ComponentManagerImpl.this.trackedComponents.put(service.id(), service);
 				}
 			}
 
@@ -185,7 +184,7 @@ public class ComponentManagerImpl extends AbstractOpenemsComponent
 			public void removedService(ServiceReference<OpenemsComponent> reference,
 					OpenemsComponent service) {
 				if (service != null) {
-					self.trackedComponents.remove(service.id());
+					ComponentManagerImpl.this.trackedComponents.remove(service.id());
 				}
 				bundleContext.ungetService(reference);
 			}
