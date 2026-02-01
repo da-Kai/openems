@@ -11,17 +11,18 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
+import org.osgi.framework.ServiceReference;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationEvent;
@@ -37,7 +38,10 @@ import org.osgi.service.component.runtime.ServiceComponentRuntime;
 import org.osgi.service.event.EventAdmin;
 import org.osgi.service.metatype.MetaTypeService;
 import org.osgi.service.metatype.annotations.Designate;
+import org.osgi.util.tracker.ServiceTracker;
+import org.osgi.util.tracker.ServiceTrackerCustomizer;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonNull;
 
@@ -97,6 +101,10 @@ public class ComponentManagerImpl extends AbstractOpenemsComponent
 	private final EdgeConfigWorker edgeConfigWorker;
 
 	protected BundleContext bundleContext;
+	
+	private ServiceTracker<OpenemsComponent, OpenemsComponent> componentTracker;
+	private final ConcurrentHashMap<String, OpenemsComponent> trackedComponents = new ConcurrentHashMap<>();
+
 
 	@Reference(cardinality = ReferenceCardinality.OPTIONAL)
 	private volatile ClockProvider clockProvider = null;
@@ -128,6 +136,8 @@ public class ComponentManagerImpl extends AbstractOpenemsComponent
 	private void activate(ComponentContext componentContext, BundleContext bundleContext) throws OpenemsException {
 		super.activate(componentContext, SINGLETON_COMPONENT_ID, SINGLETON_SERVICE_PID, true);
 		this.bundleContext = bundleContext;
+		
+		this.initializeComponentTracker(bundleContext);
 
 		for (ComponentManagerWorker worker : this.workers) {
 			worker.activate(this.id());
@@ -136,6 +146,53 @@ public class ComponentManagerImpl extends AbstractOpenemsComponent
 		if (OpenemsComponent.validateSingleton(this.cm, SINGLETON_SERVICE_PID, SINGLETON_COMPONENT_ID)) {
 			return;
 		}
+	}
+	
+	/**
+	 * Initializes the ServiceTracker for OpenemsComponent services.
+	 * 
+	 * @param bundleContext the BundleContext
+	 */
+	private void initializeComponentTracker(BundleContext bundleContext) {
+		final var customizer = new ServiceTrackerCustomizer<OpenemsComponent, OpenemsComponent>() {
+			
+			private final ComponentManagerImpl self = ComponentManagerImpl.this;
+			private final Logger log = LoggerFactory.getLogger(ComponentManagerImpl.class);
+
+			@Override
+			public OpenemsComponent addingService(ServiceReference<OpenemsComponent> reference) {
+				try {
+					var component = bundleContext.getService(reference);
+					if (component != null) {
+						self.trackedComponents.put(component.id(), component);
+					}
+					return component;
+				} catch (Exception e) {
+					log.debug(e.getMessage(), e);
+					return null;
+				}
+			}
+
+			@Override
+			public void modifiedService(ServiceReference<OpenemsComponent> reference,
+					OpenemsComponent service) {
+				if (service != null) {
+					self.trackedComponents.put(service.id(), service);
+				}
+			}
+
+			@Override
+			public void removedService(ServiceReference<OpenemsComponent> reference,
+					OpenemsComponent service) {
+				if (service != null) {
+					self.trackedComponents.remove(service.id());
+				}
+				bundleContext.ungetService(reference);
+			}
+		};
+		
+		this.componentTracker = new ServiceTracker<>(bundleContext, OpenemsComponent.class, customizer);
+		this.componentTracker.open();
 	}
 
 	@Modified
@@ -156,6 +213,11 @@ public class ComponentManagerImpl extends AbstractOpenemsComponent
 	@Deactivate
 	protected void deactivate() {
 		super.deactivate();
+		
+		if (this.componentTracker != null) {
+			this.componentTracker.close();
+		}
+		this.trackedComponents.clear();
 
 		for (ComponentManagerWorker worker : this.workers) {
 			worker.deactivate();
@@ -185,24 +247,63 @@ public class ComponentManagerImpl extends AbstractOpenemsComponent
 
 	@Override
 	public List<OpenemsComponent> getEnabledComponents() {
-		return this.getComponentsViaService("(&(enabled=true)(!(service.factoryPid=Core.ComponentManager)))");
+		return this.trackedComponents.values().stream() //
+				.filter(OpenemsComponent::isEnabled) //
+				.filter(component -> !SINGLETON_SERVICE_PID.equals(component.serviceFactoryPid())) //
+				.toList();
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <T extends OpenemsComponent> List<T> getEnabledComponentsOfType(Class<T> clazz) {
-		return this.getComponentsViaService(clazz, "(enabled=true)");
+		return this.trackedComponents.values().stream() //
+			.filter(OpenemsComponent::isEnabled) //
+			.filter(component -> implementsInterface(component.getClass(), clazz.getName())) //
+			.map(component -> (T) component) //
+			.toList();
+	}
+	
+	/**
+	 * Checks if a class or any of its superclasses/interfaces match the target class name.
+	 * This avoids ClassNotFoundException by using string comparison instead of Class.isInstance().
+	 * 
+	 * @param clazz           the class to check
+	 * @param targetClassName the fully qualified name of the target class/interface
+	 * @return true if the class implements or extends the target
+	 */
+	private static boolean implementsInterface(Class<?> clazz, String targetClassName) {
+	    if (clazz == null) {
+	        return false;
+	    }
+	    
+	    // Check the class itself
+	    if (clazz.getName().equals(targetClassName)) {
+	        return true;
+	    }
+	    
+	    // Check all implemented interfaces (recursively includes parent interfaces)
+	    for (Class<?> iface : clazz.getInterfaces()) {
+	        if (implementsInterface(iface, targetClassName)) {
+	            return true;
+	        }
+	    }
+	    
+	    // Check superclass
+	    return implementsInterface(clazz.getSuperclass(), targetClassName);
 	}
 
 	@Override
 	public List<OpenemsComponent> getAllComponents() {
-		return this.getComponentsViaService("(!(service.factoryPid=" + ComponentManager.SINGLETON_SERVICE_PID + "))");
+		return this.trackedComponents.values().stream() //
+				.filter(component -> !SINGLETON_SERVICE_PID.equals(component.serviceFactoryPid())) //
+				.toList();
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T extends OpenemsComponent> T getComponent(String componentId) throws OpenemsNamedException {
-		var component = this.getComponentViaService(componentId, true);
-		if (component != null) {
+		var component = this.trackedComponents.get(componentId);
+		if (component != null && component.isEnabled()) {
 			return (T) component;
 		}
 		throw OpenemsError.EDGE_NO_COMPONENT_WITH_ID.exception(componentId);
@@ -212,93 +313,11 @@ public class ComponentManagerImpl extends AbstractOpenemsComponent
 	@SuppressWarnings("unchecked")
 	public <T extends OpenemsComponent> T getPossiblyDisabledComponent(String componentId)
 			throws OpenemsNamedException {
-		var component = this.getComponentViaService(componentId);
-		if (component != null) {
+		var component = this.trackedComponents.get(componentId);
+		if (component != null && component.isEnabled()) {
 			return (T) component;
 		}
 		throw OpenemsError.EDGE_NO_COMPONENT_WITH_ID.exception(componentId);
-	}
-
-	/**
-	 * Gets the components via OSGi service reference.
-	 *
-	 * @param filter the filter for the components
-	 * @return the components matching the filter
-	 */
-	private List<OpenemsComponent> getComponentsViaService(String filter) {
-		return this.getComponentsViaService(OpenemsComponent.class, filter);
-	}
-
-	/**
-	 * Gets the components via OSGi service reference.
-	 * 
-	 * @param <T>    the class type
-	 * @param clazz  The class under whose name the service was registered. Must not
-	 *               be {@code null}.
-	 * @param filter the filter for the components
-	 * @return the components matching the filter
-	 */
-	private <T> List<T> getComponentsViaService(Class<T> clazz, String filter) {
-		if (this.bundleContext == null) {
-			// Can be null in JUnit tests
-			return Collections.emptyList();
-		}
-
-		try {
-			var serviceReferences = this.bundleContext.getServiceReferences(clazz, filter);
-
-			var allComponents = new ArrayList<T>(serviceReferences.size());
-			for (var reference : serviceReferences) {
-				var component = this.bundleContext.getService(reference);
-				if (component == null) {
-					continue;
-				}
-				allComponents.add(component);
-				this.bundleContext.ungetService(reference);
-			}
-			return allComponents;
-
-		} catch (InvalidSyntaxException e) {
-			// filter invalid
-			e.printStackTrace();
-			return Collections.emptyList();
-		} catch (RuntimeException e) {
-			e.printStackTrace();
-			return Collections.emptyList();
-		}
-	}
-
-	/**
-	 * Gets the component via OSGi service reference. Be careful, that the Component
-	 * might not be 'enabled'.
-	 *
-	 * @param <T>         the type of the component
-	 * @param componentId the id of the component
-	 * @return the component or null if not found
-	 */
-	private <T extends OpenemsComponent> T getComponentViaService(String componentId) {
-		return this.getComponentViaService(componentId, false);
-	}
-
-	/**
-	 * Gets the component via OSGi service reference.
-	 *
-	 * @param <T>            the type of the component
-	 * @param componentId    the id of the component
-	 * @param hasToBeEnabled if the component has to be enabled
-	 * @return the component or null if not found
-	 */
-	@SuppressWarnings("unchecked")
-	private <T extends OpenemsComponent> T getComponentViaService(String componentId, boolean hasToBeEnabled) {
-		var filter = "(id=" + componentId + ")";
-		if (hasToBeEnabled) {
-			filter = "(&(enabled=true)" + filter + ")";
-		}
-		var components = this.getComponentsViaService(filter);
-		if (components.isEmpty()) {
-			return null;
-		}
-		return (T) components.get(0);
 	}
 
 	@Override
