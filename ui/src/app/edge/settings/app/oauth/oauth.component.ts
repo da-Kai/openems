@@ -184,8 +184,15 @@ export class OAuthIndexComponent {
 
 }
 
+/**
+ * Debug logging utility that only logs when debug mode is enabled in environment.
+ * 
+ * @param message The debug message to log
+ * @param optionalParams Additional parameters to log
+ */
 function debugLog(message: string, ...optionalParams: any[]) {
     if (environment.debugMode) {
+        // eslint-disable-next-line no-console
         console.log(message, optionalParams);
     }
 }

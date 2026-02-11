@@ -25,6 +25,7 @@ import { DefaultTypes } from "../type/defaulttypes";
 import { Language } from "../type/language";
 import { Role } from "../type/role";
 import { DateUtils } from "../utils/date/dateutils";
+import { TimeoutConstants } from "../constants/timeouts";
 import { AbstractService } from "./abstractservice";
 import { RouteService } from "./route.service";
 import { Websocket } from "./websocket";
@@ -87,7 +88,7 @@ export class Service extends AbstractService {
     private queryEnergyQueue: {
         fromDate: Date, toDate: Date, channels: ChannelAddress[], promises: { resolve, reject }[]
     }[] = [];
-    private queryEnergyTimeout: any = null;
+    private queryEnergyTimeout: ReturnType<typeof setTimeout> | null = null;
     private injector = inject(Injector);
 
     constructor(

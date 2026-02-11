@@ -5,6 +5,7 @@ import { BehaviorSubject, Subject } from "rxjs";
 import { filter, first } from "rxjs/operators";
 import { hasUpdateAppVersion } from "src/app/edge/settings/app/permissions";
 import { SumState } from "src/app/index/shared/sumState";
+import { TimeoutConstants } from "src/app/shared/constants/timeouts";
 import { JsonrpcRequest, JsonrpcResponseSuccess } from "../../jsonrpc/base";
 import { CurrentDataNotification } from "../../jsonrpc/notification/currentDataNotification";
 import { EdgeConfigNotification } from "../../jsonrpc/notification/edgeConfigNotification";
@@ -59,7 +60,7 @@ export class Edge {
     // holds currently subscribed channels, identified by source id
     private subscribedChannels: { [sourceId: string]: ChannelAddress[] } = {};
     private isRefreshConfigBlocked: boolean = false;
-    private subscribeChannelsTimeout: any = null;
+    private subscribeChannelsTimeout: ReturnType<typeof setTimeout> | null = null;
 
     constructor(
         public readonly id: string,
@@ -612,7 +613,7 @@ export class Edge {
    * @param websocket the Websocket
    */
     private sendSubscribeChannels(websocket: Websocket): void {
-        // make sure to send not faster than every 100 ms
+        // make sure to send not faster than every 500 ms
         if (this.subscribeChannelsTimeout == null) {
             this.subscribeChannelsTimeout = setTimeout(() => {
                 // reset subscribeChannelsTimeout
@@ -630,7 +631,7 @@ export class Edge {
                     this.subscribeChannelsSuccessful = false;
                     console.warn(reason);
                 });
-            }, 100);
+            }, TimeoutConstants.CHANNEL_SUBSCRIBE_DEBOUNCE_MS);
         }
     }
 }

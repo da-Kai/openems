@@ -3,6 +3,7 @@ import { Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from "@ang
 import { Subject, fromEvent } from "rxjs";
 import { debounceTime, delay, takeUntil } from "rxjs/operators";
 import { Service } from "src/app/shared/shared";
+import { TimeoutConstants } from "src/app/shared/constants/timeouts";
 import { CurrentData } from "../../../../shared/components/edge/currentdata";
 import { ConsumptionSectionComponent } from "./section/consumption.component";
 import { GridSectionComponent } from "./section/grid.component";
@@ -52,7 +53,7 @@ export class EnergymonitorChartComponent implements OnInit, OnDestroy {
     ngOnInit() {
         this.service.startSpinner(this.spinnerId);
         // make sure chart is redrawn in the beginning and on window resize
-        setTimeout(() => this.updateOnWindowResize(), 500);
+        setTimeout(() => this.updateOnWindowResize(), TimeoutConstants.CHART_REFRESH_DELAY_MS);
         const source = fromEvent(window, "resize", null, null);
         source.pipe(takeUntil(this.ngUnsubscribe), debounceTime(200), delay(100)).subscribe(e => {
             this.updateOnWindowResize();

@@ -180,7 +180,7 @@ export class SystemExecuteComponent implements OnInit {
                 })).then(response => {
                 const result = (response as ExecuteSystemCommandResponse).result;
                 this.loading = false;
-                if (result.stdout.length == 0) {
+                if (result.stdout.length === 0) {
                     this.stdout = [""];
                 } else {
                     this.stdout = result.stdout;
