@@ -33,9 +33,6 @@ public class OnErrorHandler implements Runnable {
 		} catch (RuntimeException e) {
 			// Catch specific runtime exceptions thrown during error handling
 			this.handleInternalError.accept(e, generateWsDataString(this.ws));
-		} catch (Error e) {
-			// Re-throw JVM errors as they indicate serious problems
-			throw e;
 		}
 	}
 

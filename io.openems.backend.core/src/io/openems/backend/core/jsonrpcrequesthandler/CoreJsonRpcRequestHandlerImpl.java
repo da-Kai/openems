@@ -48,7 +48,6 @@ public class CoreJsonRpcRequestHandlerImpl extends AbstractOpenemsBackendCompone
 
 	/**
 	 * Default component ID for the BalancingScheduleController.
-	 * 
 	 * <p>
 	 * Note: This is a temporary constant. In the future, this should be
 	 * dynamically retrieved based on the actual component configuration.
