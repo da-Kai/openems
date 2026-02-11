@@ -613,7 +613,7 @@ export class Edge {
    * @param websocket the Websocket
    */
     private sendSubscribeChannels(websocket: Websocket): void {
-        // make sure to send not faster than every 500 ms
+        // Debounce channel subscription requests using CHANNEL_SUBSCRIBE_DEBOUNCE_MS
         if (this.subscribeChannelsTimeout == null) {
             this.subscribeChannelsTimeout = setTimeout(() => {
                 // reset subscribeChannelsTimeout

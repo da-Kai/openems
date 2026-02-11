@@ -190,7 +190,7 @@ export class OAuthIndexComponent {
  * @param message The debug message to log
  * @param optionalParams Additional parameters to log
  */
-function debugLog(message: string, ...optionalParams: any[]) {
+function debugLog(message: string, ...optionalParams: unknown[]) {
     if (environment.debugMode) {
         // eslint-disable-next-line no-console
         console.log(message, optionalParams);
