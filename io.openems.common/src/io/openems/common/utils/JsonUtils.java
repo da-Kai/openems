@@ -1566,7 +1566,11 @@ public final class JsonUtils {
 			}
 			return j.getAsString();
 		} catch (IllegalStateException | UnsupportedOperationException | NumberFormatException | ClassCastException e) {
-			// Catch specific exceptions that can occur during JSON element type conversions
+			// Handle specific exceptions from JSON operations:
+			// - IllegalStateException: from getAsXxx() calls on wrong JSON types
+			// - UnsupportedOperationException: from unsupported JSON operations
+			// - NumberFormatException: from numeric parsing (Longs.tryParse, Doubles.tryParse)
+			// - ClassCastException: from type casting operations
 			throw OpenemsError.JSON_PARSE_ELEMENT_FAILED.exception(//
 					StringUtils.toShortString(j.toString().replace("%", "%%"), 100), //
 					e.getClass().getSimpleName(), e.getMessage());

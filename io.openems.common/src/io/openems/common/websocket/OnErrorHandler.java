@@ -30,11 +30,8 @@ public class OnErrorHandler implements Runnable {
 		try {
 			this.onError.accept(this.ws, this.ex);
 
-		} catch (RuntimeException e) {
-			// Catch runtime exceptions thrown during error handling
-			this.handleInternalError.accept(e, generateWsDataString(this.ws));
 		} catch (Exception e) {
-			// Catch checked exceptions (e.g., OpenemsException) from the callback
+			// Catch all exceptions (runtime and checked) thrown during error handling
 			this.handleInternalError.accept(e, generateWsDataString(this.ws));
 		}
 	}
