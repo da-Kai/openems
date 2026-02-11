@@ -46,6 +46,15 @@ import io.openems.common.session.Role;
 )
 public class CoreJsonRpcRequestHandlerImpl extends AbstractOpenemsBackendComponent implements JsonRpcRequestHandler {
 
+	/**
+	 * Default component ID for the BalancingScheduleController.
+	 * 
+	 * <p>
+	 * Note: This is a temporary constant. In the future, this should be
+	 * dynamically retrieved based on the actual component configuration.
+	 */
+	private static final String DEFAULT_BALANCING_SCHEDULE_COMPONENT_ID = "ctrlBalancingSchedule0";
+
 	private final Logger log = LoggerFactory.getLogger(JsonRpcRequestHandler.class);
 	private final EdgeRpcRequestHandler edgeRpcRequestHandler;
 
@@ -181,8 +190,8 @@ public class CoreJsonRpcRequestHandlerImpl extends AbstractOpenemsBackendCompone
 		final var role = this.metadata.assertUserRole(user, edgeId, Role.ADMIN, SetGridConnScheduleRequest.METHOD);
 
 		// wrap original request inside ComponentJsonApiRequest
-		var componentId = "ctrlBalancingSchedule0"; // TODO find dynamic Component-ID of BalancingScheduleController
-		var request = new ComponentJsonApiRequest(componentId, setGridConnScheduleRequest);
+		var request = new ComponentJsonApiRequest(DEFAULT_BALANCING_SCHEDULE_COMPONENT_ID,
+				setGridConnScheduleRequest);
 
 		var resultFuture = this.edgeManager.send(edgeId, user, role, request);
 
