@@ -3,6 +3,9 @@
  * 
  * Centralized location for all timeout values to improve maintainability
  * and prevent magic numbers throughout the codebase.
+ * 
+ * Note: Some constants may have identical values but are kept separate as they
+ * serve different purposes and may need independent tuning in the future.
  */
 export class TimeoutConstants {
     /**
