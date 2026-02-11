@@ -1565,7 +1565,7 @@ public final class JsonUtils {
 				return n.intValue();
 			}
 			return j.getAsString();
-		} catch (IllegalStateException | UnsupportedOperationException | NumberFormatException e) {
+		} catch (IllegalStateException | UnsupportedOperationException | NumberFormatException | ClassCastException e) {
 			// Catch specific exceptions that can occur during JSON element type conversions
 			throw OpenemsError.JSON_PARSE_ELEMENT_FAILED.exception(//
 					StringUtils.toShortString(j.toString().replace("%", "%%"), 100), //
