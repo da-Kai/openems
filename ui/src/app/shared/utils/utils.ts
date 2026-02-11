@@ -387,7 +387,7 @@ export class Utils {
    * @returns converted value
    */
     public static CONVERT_MODE_TO_MANUAL_OFF_AUTOMATIC = (translate: TranslateService) => {
-        return (value: any): string => {
+        return (value: string | null | undefined): string => {
             if (value === "MANUAL") {
                 return translate.instant("GENERAL.MANUALLY");
             } else if (value === "OFF") {
@@ -420,7 +420,10 @@ export class Utils {
    * @returns converted value
    */
     public static CONVERT_TIME_OF_USE_TARIFF_STATE = (translate: TranslateService) => {
-        return (value: any): string => {
+        return (value: number | null | undefined): string => {
+            if (value == null) {
+                return "-";
+            }
             switch (Math.round(value)) {
                 case 0:
                     return translate.instant("EDGE.INDEX.WIDGETS.TIME_OF_USE_TARIFF.STATE.DELAY_DISCHARGE");

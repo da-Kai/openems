@@ -87,7 +87,7 @@ export class Service extends AbstractService {
     private queryEnergyQueue: {
         fromDate: Date, toDate: Date, channels: ChannelAddress[], promises: { resolve, reject }[]
     }[] = [];
-    private queryEnergyTimeout: any = null;
+    private queryEnergyTimeout: ReturnType<typeof setTimeout> | null = null;
     private injector = inject(Injector);
 
     constructor(

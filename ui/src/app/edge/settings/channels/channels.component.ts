@@ -20,7 +20,7 @@ export class ChannelsComponent {
 
     private static readonly SELECTOR = "channels";
     private static readonly URL_PREFIX = "channels";
-    public customAlertOptions: any = {
+    public customAlertOptions: { cssClass: string } = {
         cssClass: "wide-alert",
     };
 
@@ -140,7 +140,7 @@ export class ChannelsComponent {
         this.saveChannelsInUrl();
     }
 
-    protected setChannelValue(componentId: string, channelId: string, channelValue: any) {
+    protected setChannelValue(componentId: string, channelId: string, channelValue: string | number | boolean | null) {
         if (this.edge) {
             this.edge.sendRequest(
                 this.service.websocket,
