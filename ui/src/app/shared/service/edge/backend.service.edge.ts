@@ -15,10 +15,11 @@ export class BackendService {
 
     /**
      * Stub implementation for Edge builds - this method is never called in Edge mode
-     * @param _req unused parameter
+     * Type signature maintained for consistency with backend implementation
+     * @param _req unused parameter (accepts any object to match GetEdgesRequest interface)
      * @returns rejected promise
      */
-    public getEdges(_req: any): Promise<Edge[]> {
+    public getEdges(_req: object): Promise<Edge[]> {
         return Promise.reject(new Error("getEdges is not available in Edge builds"));
     }
 }
