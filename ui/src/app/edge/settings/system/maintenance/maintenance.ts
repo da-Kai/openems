@@ -108,7 +108,7 @@ export class MaintenanceComponent implements OnInit, OnDestroy {
         );
     }
 
-    ngOnDestroy() {
+    public ngOnDestroy(): void {
         this.subscriptions.unsubscribe();
     }
 
