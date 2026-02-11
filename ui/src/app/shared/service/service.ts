@@ -253,7 +253,7 @@ export class Service extends AbstractService {
             promises: [promise],
         });
 
-        if (this.queryEnergyTimeout == null) {
+        if (this.queryEnergyTimeout === null) {
             this.queryEnergyTimeout = setTimeout(() => {
                 this.queryEnergyTimeout = null;
 

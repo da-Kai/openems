@@ -614,7 +614,7 @@ export class Edge {
    */
     private sendSubscribeChannels(websocket: Websocket): void {
         // Debounce channel subscription requests using CHANNEL_SUBSCRIBE_DEBOUNCE_MS
-        if (this.subscribeChannelsTimeout == null) {
+        if (this.subscribeChannelsTimeout === null) {
             this.subscribeChannelsTimeout = setTimeout(() => {
                 // reset subscribeChannelsTimeout
                 this.subscribeChannelsTimeout = null;
