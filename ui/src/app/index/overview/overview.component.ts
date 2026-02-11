@@ -12,6 +12,7 @@ import { UserService } from "src/app/shared/service/user.service";
 import { Edge, Service, Utils, Websocket } from "src/app/shared/shared";
 import { Role } from "src/app/shared/type/role";
 import { environment } from "src/environments";
+import { IS_EDGE_BUILD } from "src/environments/buildtime/backend-type";
 import { ChosenFilter, FilterComponent } from "../filter/filter.component";
 import { ORDER_STATES } from "../shared/order-state";
 import { SUM_STATES } from "../shared/sumState";
@@ -195,7 +196,7 @@ export class OverViewComponent implements ViewWillEnter, OnDestroy {
                     // Forward directly to device page, if
                     // - Direct local access to Edge
                     // - No installer (i.e. guest or owner) and access to only one Edge
-                    if (environment.backend == "OpenEMS Edge" || (!this.loggedInUserCanInstall && edgeIds.length == 1)) {
+                    if (IS_EDGE_BUILD || (!this.loggedInUserCanInstall && edgeIds.length == 1)) {
                         const edge = metadata.edges[edgeIds[0]];
                         setTimeout(() => {
                             this.router.navigate(["/device", edge.id]);

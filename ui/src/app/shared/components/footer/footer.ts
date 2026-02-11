@@ -3,6 +3,7 @@ import { Title } from "@angular/platform-browser";
 import { filter } from "rxjs/operators";
 
 import { environment } from "../../../../environments";
+import { IS_BACKEND_BUILD, IS_EDGE_BUILD } from "../../../../environments/buildtime/backend-type";
 import { User } from "../../jsonrpc/shared";
 import { Edge, Service } from "../../shared";
 import { Role } from "../../type/role";
@@ -69,17 +70,13 @@ export class FooterComponent {
             version: edge.version,
         };
 
-        switch (environment.backend) {
-            case "OpenEMS Backend":
-                if (Role.isAtLeast(user.globalRole, Role.OWNER) && user.hasMultipleEdges) {
-                    result.comment = edge?.comment;
-                }
-                result.id = edge.id;
-                break;
-
-            case "OpenEMS Edge":
-                result.id = environment.edgeShortName;
-                break;
+        if (IS_BACKEND_BUILD) {
+            if (Role.isAtLeast(user.globalRole, Role.OWNER) && user.hasMultipleEdges) {
+                result.comment = edge?.comment;
+            }
+            result.id = edge.id;
+        } else if (IS_EDGE_BUILD) {
+            result.id = environment.edgeShortName;
         }
 
         return result;

@@ -15,7 +15,7 @@
               <ion-icon slot="start" name="cloud-download-outline" color="primary"></ion-icon>
               <ion-label>
                 <span>{{ 'EDGE.INDEX.SYSTEMUPDATE'| translate}}</span>
-                @if (environment.backend === 'OpenEMS Backend') {
+                @if (environment.IS_BACKEND_BUILD) {
                   <span> {{ 'GENERAL.FOR' | translate }}
                   {{ edge.id }}</span>
                 }

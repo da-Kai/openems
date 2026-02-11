@@ -3,6 +3,7 @@ import { ModalController } from "@ionic/angular";
 import { Theme, Theme as UserTheme } from "src/app/edge/history/shared";
 import { ThemePopoverComponent } from "src/app/user/theme-selection-popup/theme-selection-popover";
 import { environment } from "src/environments";
+import { IS_EDGE_BUILD } from "src/environments/buildtime/backend-type";
 import { NavigationService } from "../components/navigation/service/navigation.service";
 import { UnimplementedInEdgeError } from "../errors.ts/errors";
 import { JsonrpcResponseSuccess } from "../jsonrpc/base";
@@ -106,7 +107,7 @@ export class UserService {
      * @returns the userTheme if existing, else null
      */
     private getTheme(user: User | null): UserTheme | null {
-        if (environment.backend === "OpenEMS Edge") {
+        if (IS_EDGE_BUILD) {
             return localStorage.getItem("THEME") as UserTheme ?? null;
         }
 
@@ -161,7 +162,7 @@ export class UserService {
     */
     private updateUserSettings(settings: object): Promise<[Error | null, JsonrpcResponseSuccess | null]> {
         const request = new UpdateUserSettingsRequest({ settings: settings });
-        if (environment.backend === "OpenEMS Edge") {
+        if (IS_EDGE_BUILD) {
             return Promise.resolve([new UnimplementedInEdgeError(request), null]);
         }
         return JsonRpcUtils.handle(this.service.websocket.sendSafeRequest(request));

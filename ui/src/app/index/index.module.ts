@@ -1,4 +1,5 @@
 import { NgModule } from "@angular/core";
+import { IS_BACKEND_BUILD } from "src/environments/buildtime/backend-type";
 import { FlatWidgetButtonComponent } from "../shared/components/flat/flat-widget-button/flat-widget-button";
 import { SharedModule } from "./../shared/shared.module";
 import { FilterComponent } from "./filter/filter.component";
@@ -11,7 +12,7 @@ import { SumStateComponent } from "./shared/sumState";
 @NgModule({
     imports: [
         SharedModule,
-        RegistrationModule,
+        ...(IS_BACKEND_BUILD ? [RegistrationModule] : []),
         FlatWidgetButtonComponent,
         FilterComponent,
     ],

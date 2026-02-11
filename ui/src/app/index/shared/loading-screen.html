@@ -21,7 +21,7 @@
                         </ion-grid>
                     </ion-item>
                     <ion-card-content class="ion-justify-content-center ion-text-center">
-                        @if (environment.backend === 'OpenEMS Backend') {
+                        @if (environment.IS_BACKEND_BUILD) {
                         <ng-container *ngTemplateOutlet="connectionToBackendFailed"></ng-container>
                         }@else {
                         <ng-container *ngTemplateOutlet="connectionToEdgeFailed"></ng-container>

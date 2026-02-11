@@ -5,6 +5,7 @@ import { MenuController, ModalController, NavController } from "@ionic/angular";
 import { Subject } from "rxjs";
 import { filter, takeUntil } from "rxjs/operators";
 import { environment } from "src/environments";
+import { IS_EDGE_BUILD } from "src/environments/buildtime/backend-type";
 
 import { RouteService } from "../../service/route.service";
 import { Service, Websocket } from "../../shared";
@@ -120,7 +121,7 @@ export class HeaderComponent implements OnInit, OnDestroy, AfterViewChecked {
         }
 
         // disable backUrl to first 'index' page from Edge index if there is only one Edge in the system
-        if (file === "live" && urlArray.length == 3 && this.environment.backend === "OpenEMS Edge") {
+        if (file === "live" && urlArray.length == 3 && IS_EDGE_BUILD) {
             this.backUrl = false;
             return;
         }

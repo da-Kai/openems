@@ -2,7 +2,7 @@
   <ion-grid>
     <ion-row class="ion-justify-content-center">
       <ion-col size="12" size-md="8" size-lg="6">
-        @if (environment.backend === 'OpenEMS Backend') {
+        @if (environment.IS_BACKEND_BUILD) {
           @if (noEdges) {
             <ion-card class="ion-justify-content-center">
               @if ((service.metadata | async)?.user; as user) {
@@ -73,7 +73,7 @@
                           }
                         </ion-label>
                         <ion-label>
-                          @if (environment.backend === 'OpenEMS Backend') {
+                          @if (environment.IS_BACKEND_BUILD) {
                             <p class="custom-theme-text">ID: {{ edge.id }}</p>
                             <p class="ion-text-wrap" class="custom-theme-text">
                               <ion-text translate>INDEX.TYPE</ion-text>: {{

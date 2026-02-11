@@ -9,6 +9,7 @@ import { UserService } from "src/app/shared/service/user.service";
 import { Edge, EdgeConfig, EdgePermission, Service } from "src/app/shared/shared";
 import { Widgets } from "src/app/shared/type/widgets";
 import { environment } from "src/environments";
+import { IS_EDGE_BUILD } from "src/environments/buildtime/backend-type";
 
 @Component({
     selector: "history",
@@ -56,7 +57,7 @@ export class HistoryComponent implements OnInit {
             config.hasStorage();
             this.widgets = this.navigationService.getWidgets(config.widgets, this.userService.currentUser(), this.edge);
             // Are we connected to OpenEMS Edge and is a timedata service available?
-            if (environment.backend == "OpenEMS Edge"
+            if (IS_EDGE_BUILD
                 && config.getComponentsImplementingNature("io.openems.edge.timedata.api.Timedata").filter(c => c.isEnabled).length == 0) {
                 this.isTimedataAvailable = false;
             }

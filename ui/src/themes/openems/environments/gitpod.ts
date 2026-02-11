@@ -1,4 +1,5 @@
 import { Environment } from "src/environments";
+import { IS_BACKEND_BUILD, IS_EDGE_BUILD } from "src/environments/buildtime/backend-type";
 import { theme } from "./theme";
 
 export const environment: Environment = {
@@ -10,5 +11,8 @@ export const environment: Environment = {
 
         production: false,
         debugMode: true,
+
+        IS_BACKEND_BUILD: IS_BACKEND_BUILD,
+        IS_EDGE_BUILD: IS_EDGE_BUILD,
     },
 };

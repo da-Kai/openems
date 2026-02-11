@@ -104,6 +104,10 @@
                 {
                   "replace": "src/environments/oem-meta.ts",
                   "with": "src/themes/openems/environments/oem-meta.ts"
+                },
+                {
+                  "replace": "src/environments/buildtime/backend-type.ts",
+                  "with": "src/environments/buildtime/backend-type.backend.ts"
                 }
               ]
             },
@@ -120,6 +124,10 @@
                 {
                   "replace": "src/environments/oem-meta.ts",
                   "with": "src/themes/openems/environments/oem-meta.ts"
+                },
+                {
+                  "replace": "src/environments/buildtime/backend-type.ts",
+                  "with": "src/environments/buildtime/backend-type.backend.ts"
                 }
               ]
             },
@@ -136,6 +144,10 @@
                 {
                   "replace": "src/environments/oem-meta.ts",
                   "with": "src/themes/openems/environments/oem-meta.ts"
+                },
+                {
+                  "replace": "src/environments/buildtime/backend-type.ts",
+                  "with": "src/environments/buildtime/backend-type.edge.ts"
                 }
               ]
             },
@@ -152,6 +164,10 @@
                 {
                   "replace": "src/environments/oem-meta.ts",
                   "with": "src/themes/openems/environments/oem-meta.ts"
+                },
+                {
+                  "replace": "src/environments/buildtime/backend-type.ts",
+                  "with": "src/environments/buildtime/backend-type.edge.ts"
                 }
               ]
             },
@@ -168,6 +184,10 @@
                 {
                   "replace": "src/environments/oem-meta.ts",
                   "with": "src/themes/openems/environments/oem-meta.ts"
+                },
+                {
+                  "replace": "src/environments/buildtime/backend-type.ts",
+                  "with": "src/environments/buildtime/backend-type.edge.ts"
                 }
               ]
             },
@@ -184,6 +204,10 @@
                 {
                   "replace": "src/environments/oem-meta.ts",
                   "with": "src/themes/openems/environments/oem-meta.ts"
+                },
+                {
+                  "replace": "src/environments/buildtime/backend-type.ts",
+                  "with": "src/environments/buildtime/backend-type.backend.ts"
                 }
               ]
             },
@@ -200,6 +224,10 @@
                 {
                   "replace": "src/environments/oem-meta.ts",
                   "with": "src/themes/openems/environments/oem-meta.ts"
+                },
+                {
+                  "replace": "src/environments/buildtime/backend-type.ts",
+                  "with": "src/environments/buildtime/backend-type.backend.ts"
                 }
               ]
             }

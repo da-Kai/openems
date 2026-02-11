@@ -7,6 +7,7 @@ import { UpdateUserSettingsRequest } from "src/app/shared/jsonrpc/request/update
 import { UserService } from "src/app/shared/service/user.service";
 import { Edge, Service, Websocket } from "src/app/shared/shared";
 import { environment } from "src/environments";
+import { IS_BACKEND_BUILD, IS_EDGE_BUILD } from "src/environments/buildtime/backend-type";
 
 @Component({
     selector: JsonrpcTestComponent.SELECTOR,
@@ -80,7 +81,7 @@ export class JsonrpcTestComponent implements OnInit {
         );
         for (let i = endpoint.parent.length - 1; i >= 0; i--) {
             const parent = endpoint.parent[i];
-            if (environment.backend === "OpenEMS Backend") {
+            if (IS_BACKEND_BUILD) {
                 if (parent.method === "authenticatedRpc") {
                     break;
                 }
@@ -104,7 +105,7 @@ export class JsonrpcTestComponent implements OnInit {
         }
 
 
-        (environment.backend === "OpenEMS Edge"
+        (IS_EDGE_BUILD
             ? this.websocket.sendRequest(request)
             : this.edge.sendRequest(this.websocket, request))
             .then(response => {

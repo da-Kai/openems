@@ -5,6 +5,7 @@ import { CommonUiModule } from "src/app/shared/common-ui.module";
 import { FlatWidgetButtonComponent } from "src/app/shared/components/flat/flat-widget-button/flat-widget-button";
 import { Role } from "src/app/shared/type/role";
 import { environment } from "src/environments";
+import { IS_EDGE_BUILD } from "src/environments/buildtime/backend-type";
 import { Edge, Service, Utils } from "../../shared/shared";
 import { JsonrpcTestPermission } from "./jsonrpctest/jsonrpctest.permission";
 
@@ -28,7 +29,7 @@ export class SettingsComponent implements OnInit {
     public isAtLeastAdmin: boolean = false;
     public canSeeJsonrpcTest: boolean = false;
 
-    protected isEdgeBackend: boolean = environment.backend === "OpenEMS Edge";
+    protected isEdgeBackend: boolean = IS_EDGE_BUILD;
 
     constructor(
         protected utils: Utils,

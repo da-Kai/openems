@@ -11,7 +11,7 @@
               </ion-item>
               <ion-card-content>
                 <ion-list class="ion-font-size-small">
-                  @if (environment.backend === 'OpenEMS Backend') {
+                  @if (environment.IS_BACKEND_BUILD) {
                     <ion-item>
                       <ion-label>Edge-ID</ion-label>
                       {{ edge.id }}
