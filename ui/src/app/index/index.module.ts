@@ -12,6 +12,8 @@ import { SumStateComponent } from "./shared/sumState";
 @NgModule({
     imports: [
         SharedModule,
+        // RegistrationModule is only needed for Backend builds (user registration feature)
+        // It will be tree-shaken out of Edge builds through compile-time elimination
         ...(IS_BACKEND_BUILD ? [RegistrationModule] : []),
         FlatWidgetButtonComponent,
         FilterComponent,
