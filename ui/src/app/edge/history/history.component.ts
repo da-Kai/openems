@@ -8,7 +8,6 @@ import { JsonrpcResponseError } from "src/app/shared/jsonrpc/base";
 import { UserService } from "src/app/shared/service/user.service";
 import { Edge, EdgeConfig, EdgePermission, Service } from "src/app/shared/shared";
 import { Widgets } from "src/app/shared/type/widgets";
-import { environment } from "src/environments";
 import { IS_EDGE_BUILD } from "src/environments/buildtime/backend-type";
 
 @Component({

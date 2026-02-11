@@ -1,6 +1,5 @@
 import { TranslateService } from "@ngx-translate/core";
 import { Theme } from "src/app/edge/history/shared";
-import { environment } from "src/environments";
 import { IS_EDGE_BUILD } from "src/environments/buildtime/backend-type";
 
 import { NavigationId, NavigationTree } from "../components/navigation/shared";

@@ -2,7 +2,6 @@ import { Directive, effect, signal, WritableSignal } from "@angular/core";
 import { ModalController } from "@ionic/angular";
 import { Theme, Theme as UserTheme } from "src/app/edge/history/shared";
 import { ThemePopoverComponent } from "src/app/user/theme-selection-popup/theme-selection-popover";
-import { environment } from "src/environments";
 import { IS_EDGE_BUILD } from "src/environments/buildtime/backend-type";
 import { NavigationService } from "../components/navigation/service/navigation.service";
 import { UnimplementedInEdgeError } from "../errors.ts/errors";

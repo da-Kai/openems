@@ -1,7 +1,6 @@
 import { TranslateService } from "@ngx-translate/core";
 import { Filter } from "src/app/index/filter/filter.component";
 import { DefaultTypes } from "src/app/shared/type/defaulttypes";
-import { IS_BACKEND_BUILD, IS_EDGE_BUILD } from "./buildtime/backend-type";
 export { environment } from "./dummy";
 
 export type Theme = "OpenEMS";

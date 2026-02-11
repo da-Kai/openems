@@ -6,7 +6,6 @@ import { JsonrpcRequest } from "src/app/shared/jsonrpc/base";
 import { UpdateUserSettingsRequest } from "src/app/shared/jsonrpc/request/updateUserSettingsRequest";
 import { UserService } from "src/app/shared/service/user.service";
 import { Edge, Service, Websocket } from "src/app/shared/shared";
-import { environment } from "src/environments";
 import { IS_BACKEND_BUILD, IS_EDGE_BUILD } from "src/environments/buildtime/backend-type";
 
 @Component({

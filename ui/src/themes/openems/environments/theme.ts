@@ -1,7 +1,7 @@
 import { Environment, Theme } from "src/environments";
 import { OemMeta } from "./oem-meta";
 
-export const theme: Omit<Environment, "url" | "backend" | "production" | "debugMode"> = {
+export const theme: Omit<Environment, "url" | "backend" | "production" | "debugMode" | "IS_BACKEND_BUILD" | "IS_EDGE_BUILD"> = {
     theme: "OpenEMS" as Theme,
 
     uiTitle: "OpenEMS UI",
