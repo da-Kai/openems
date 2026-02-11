@@ -28,6 +28,16 @@ import io.openems.common.utils.ThreadPoolUtils;
 public abstract class AbstractWebsocketServer<T extends WsData> extends AbstractWebsocket<T> {
 
 	/**
+	 * Maximum number of retry attempts when stopping the WebSocket server.
+	 */
+	private static final int STOP_RETRY_ATTEMPTS = 3;
+
+	/**
+	 * Delay in milliseconds between retry attempts when stopping the server.
+	 */
+	private static final long STOP_RETRY_DELAY_MS = 100;
+
+	/**
 	 * Shared {@link ExecutorService}.
 	 */
 	private final ThreadPoolExecutor executor;
@@ -266,7 +276,7 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 		// Shutdown executors
 		shutdownAndAwaitTermination(this.executor, 5);
 
-		var tries = 3;
+		var tries = STOP_RETRY_ATTEMPTS;
 		while (tries-- > 0) {
 			try {
 				this.ws.stop();
@@ -275,7 +285,7 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 				this.logWarn(this.log,
 						"Unable to stop websocket server. " + e.getClass().getSimpleName() + ": " + e.getMessage());
 				try {
-					Thread.sleep(100);
+					Thread.sleep(STOP_RETRY_DELAY_MS);
 				} catch (InterruptedException e1) {
 					/* ignore */
 				}

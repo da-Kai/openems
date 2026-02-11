@@ -13,6 +13,10 @@ import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 
 public class EnumUtils {
 
+	private EnumUtils() {
+		// Utility class - prevent instantiation
+	}
+
 	/**
 	 * Gets the Enum instance from the given value.
 	 * 

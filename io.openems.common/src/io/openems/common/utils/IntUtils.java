@@ -2,6 +2,10 @@ package io.openems.common.utils;
 
 public class IntUtils {
 
+	private IntUtils() {
+		// Utility class - prevent instantiation
+	}
+
 	public enum Round {
 		AWAY_FROM_ZERO, TOWARDS_ZERO, HALF_UP
 	}

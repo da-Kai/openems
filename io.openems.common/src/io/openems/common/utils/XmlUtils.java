@@ -26,6 +26,10 @@ import io.openems.common.exceptions.OpenemsException;
 
 public class XmlUtils {
 
+	private XmlUtils() {
+		// Utility class - prevent instantiation
+	}
+
 	/**
 	 * Converts a {@link NamedNodeMap} to a string representative.
 	 *
