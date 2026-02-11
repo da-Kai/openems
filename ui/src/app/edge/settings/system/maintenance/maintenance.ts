@@ -184,8 +184,15 @@ export class MaintenanceComponent implements OnInit, OnDestroy {
         const request = new ComponentJsonApiRequest({ componentId: "_host", payload: new ExecuteSystemRestartRequest({ type: type }) });
 
         // Workaround, there could be no response
-        this.edge.sendRequest(this.websocket, request).catch(() => {
+        this.edge.sendRequest(this.websocket, request).catch((error) => {
+            console.error("System restart request failed:", error);
             this.systemRestartState.next({ key: type, state: SystemRestartState.FAILED });
+            this.service.toast(
+                this.translate.instant("SETTINGS.SYSTEM_UPDATE.RESTART_FAILED", {
+                    system: type === Type.HARD ? environment.edgeShortName : "OpenEMS",
+                }),
+                "danger",
+            );
             return;
         });
 
@@ -209,9 +216,17 @@ export class MaintenanceComponent implements OnInit, OnDestroy {
         subscription.add(
 
             // wait for next edgeConfig
-            this.edge.getConfig(this.websocket).pipe(skip(1)).subscribe(() => {
-                subscription.unsubscribe();
-                this.systemRestartState.next({ key: type, state: SystemRestartState.RESTARTED });
+            this.edge.getConfig(this.websocket).pipe(skip(1)).subscribe({
+                next: () => {
+                    subscription.unsubscribe();
+                    this.systemRestartState.next({ key: type, state: SystemRestartState.RESTARTED });
+                },
+                error: (error) => {
+                    subscription.unsubscribe();
+                    console.error("Error checking system state after restart:", error);
+                    this.systemRestartState.next({ key: type, state: SystemRestartState.FAILED });
+                    this.service.stopSpinner(this.spinnerId + type);
+                },
             }),
         );
     }
