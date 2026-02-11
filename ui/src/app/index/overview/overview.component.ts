@@ -7,6 +7,7 @@ import { TranslateService } from "@ngx-translate/core";
 import { Subject, Subscription } from "rxjs";
 import { filter, take } from "rxjs/operators";
 import { GetEdgesRequest } from "src/app/shared/jsonrpc/request/getEdgesRequest";
+import { BackendService } from "src/app/shared/service/backend.service";
 import { Pagination } from "src/app/shared/service/pagination";
 import { UserService } from "src/app/shared/service/user.service";
 import { Edge, Service, Utils, Websocket } from "src/app/shared/shared";
@@ -60,6 +61,7 @@ export class OverViewComponent implements ViewWillEnter, OnDestroy {
         private router: Router,
         private userService: UserService,
         private platform: Platform,
+        private backendService: BackendService,
     ) {
 
         effect(() => {
@@ -142,7 +144,7 @@ export class OverViewComponent implements ViewWillEnter, OnDestroy {
 
             this.lastReqId = req.id;
 
-            this.service.getEdges(req)
+            this.backendService.getEdges(req)
                 .then((edges) => {
                     if (this.lastReqId !== req.id) {
                         resolve(this.filteredEdges);

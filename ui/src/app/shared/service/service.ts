@@ -13,10 +13,8 @@ import { Edge } from "../components/edge/edge";
 import { EdgeConfig } from "../components/edge/edgeconfig";
 import { JsonrpcResponseError } from "../jsonrpc/base";
 import { GetEdgeRequest } from "../jsonrpc/request/getEdgeRequest";
-import { GetEdgesRequest } from "../jsonrpc/request/getEdgesRequest";
 import { QueryHistoricTimeseriesEnergyRequest } from "../jsonrpc/request/queryHistoricTimeseriesEnergyRequest";
 import { GetEdgeResponse } from "../jsonrpc/response/getEdgeResponse";
-import { GetEdgesResponse } from "../jsonrpc/response/getEdgesResponse";
 import { QueryHistoricTimeseriesEnergyResponse } from "../jsonrpc/response/queryHistoricTimeseriesEnergyResponse";
 import { User } from "../jsonrpc/shared";
 import { States } from "../ngrx-store/states";
@@ -335,47 +333,6 @@ export class Service extends AbstractService {
             }, ChartConstants.REQUEST_TIMEOUT);
         }
         return response;
-    }
-
-    /**
-     * Gets the page for the given number.
-     *
-     * @param req the get edges request
-     * @returns a promise with the resulting edges
-     */
-    public getEdges(req: GetEdgesRequest): Promise<Edge[]> {
-        return new Promise<Edge[]>((resolve, reject) => {
-            this.websocket.sendSafeRequest(req)
-                .then((response) => {
-
-                    const result = (response as GetEdgesResponse).result;
-
-                    // TODO change edges-map to array or other way around
-                    const value = this.metadata.value;
-                    const mappedResult = [];
-                    for (const edge of result.edges) {
-                        const mappedEdge = new Edge(
-                            edge.id,
-                            edge.comment,
-                            edge.producttype,
-                            ("version" in edge) ? edge["version"] : "0.0.0",
-                            Role.getRole(edge.role.toString()),
-                            edge.isOnline,
-                            edge.lastmessage,
-                            edge.sumState,
-                            DateUtils.stringToDate(edge.firstSetupProtocol?.toString()),
-                            edge.settings ?? null,
-                        );
-                        value.edges[edge.id] = mappedEdge;
-                        mappedResult.push(mappedEdge);
-                    }
-
-                    this.metadata.next(value);
-                    resolve(mappedResult);
-                }).catch((err) => {
-                    reject(err);
-                });
-        });
     }
 
     /**

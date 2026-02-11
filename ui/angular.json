@@ -108,6 +108,18 @@
                 {
                   "replace": "src/environments/buildtime/backend-type.ts",
                   "with": "src/environments/buildtime/backend-type.backend.ts"
+                },
+                {
+                  "replace": "src/app/index/index.module.ts",
+                  "with": "src/app/index/backend/index.module.backend.ts"
+                },
+                {
+                  "replace": "src/app/shared/service/backend.service.ts",
+                  "with": "src/app/shared/service/backend/backend.service.backend.ts"
+                },
+                {
+                  "replace": "src/app/shared/service/pagination.ts",
+                  "with": "src/app/shared/service/backend/pagination.backend.ts"
                 }
               ]
             },
@@ -128,6 +140,18 @@
                 {
                   "replace": "src/environments/buildtime/backend-type.ts",
                   "with": "src/environments/buildtime/backend-type.backend.ts"
+                },
+                {
+                  "replace": "src/app/index/index.module.ts",
+                  "with": "src/app/index/backend/index.module.backend.ts"
+                },
+                {
+                  "replace": "src/app/shared/service/backend.service.ts",
+                  "with": "src/app/shared/service/backend/backend.service.backend.ts"
+                },
+                {
+                  "replace": "src/app/shared/service/pagination.ts",
+                  "with": "src/app/shared/service/backend/pagination.backend.ts"
                 }
               ]
             },
@@ -148,6 +172,18 @@
                 {
                   "replace": "src/environments/buildtime/backend-type.ts",
                   "with": "src/environments/buildtime/backend-type.edge.ts"
+                },
+                {
+                  "replace": "src/app/index/index.module.ts",
+                  "with": "src/app/index/edge/index.module.edge.ts"
+                },
+                {
+                  "replace": "src/app/shared/service/backend.service.ts",
+                  "with": "src/app/shared/service/edge/backend.service.edge.ts"
+                },
+                {
+                  "replace": "src/app/shared/service/pagination.ts",
+                  "with": "src/app/shared/service/edge/pagination.edge.ts"
                 }
               ]
             },
@@ -168,6 +204,18 @@
                 {
                   "replace": "src/environments/buildtime/backend-type.ts",
                   "with": "src/environments/buildtime/backend-type.edge.ts"
+                },
+                {
+                  "replace": "src/app/index/index.module.ts",
+                  "with": "src/app/index/edge/index.module.edge.ts"
+                },
+                {
+                  "replace": "src/app/shared/service/backend.service.ts",
+                  "with": "src/app/shared/service/edge/backend.service.edge.ts"
+                },
+                {
+                  "replace": "src/app/shared/service/pagination.ts",
+                  "with": "src/app/shared/service/edge/pagination.edge.ts"
                 }
               ]
             },
@@ -188,6 +236,18 @@
                 {
                   "replace": "src/environments/buildtime/backend-type.ts",
                   "with": "src/environments/buildtime/backend-type.edge.ts"
+                },
+                {
+                  "replace": "src/app/index/index.module.ts",
+                  "with": "src/app/index/edge/index.module.edge.ts"
+                },
+                {
+                  "replace": "src/app/shared/service/backend.service.ts",
+                  "with": "src/app/shared/service/edge/backend.service.edge.ts"
+                },
+                {
+                  "replace": "src/app/shared/service/pagination.ts",
+                  "with": "src/app/shared/service/edge/pagination.edge.ts"
                 }
               ]
             },
@@ -208,6 +268,18 @@
                 {
                   "replace": "src/environments/buildtime/backend-type.ts",
                   "with": "src/environments/buildtime/backend-type.backend.ts"
+                },
+                {
+                  "replace": "src/app/index/index.module.ts",
+                  "with": "src/app/index/backend/index.module.backend.ts"
+                },
+                {
+                  "replace": "src/app/shared/service/backend.service.ts",
+                  "with": "src/app/shared/service/backend/backend.service.backend.ts"
+                },
+                {
+                  "replace": "src/app/shared/service/pagination.ts",
+                  "with": "src/app/shared/service/backend/pagination.backend.ts"
                 }
               ]
             },
@@ -228,6 +300,18 @@
                 {
                   "replace": "src/environments/buildtime/backend-type.ts",
                   "with": "src/environments/buildtime/backend-type.backend.ts"
+                },
+                {
+                  "replace": "src/app/index/index.module.ts",
+                  "with": "src/app/index/backend/index.module.backend.ts"
+                },
+                {
+                  "replace": "src/app/shared/service/backend.service.ts",
+                  "with": "src/app/shared/service/backend/backend.service.backend.ts"
+                },
+                {
+                  "replace": "src/app/shared/service/pagination.ts",
+                  "with": "src/app/shared/service/backend/pagination.backend.ts"
                 }
               ]
             }

@@ -14,6 +14,7 @@ import { AuthenticateWithPasswordRequest } from "../shared/jsonrpc/request/authe
 import { GetEdgesRequest } from "../shared/jsonrpc/request/getEdgesRequest";
 import { User, UserSettings } from "../shared/jsonrpc/shared";
 import { States } from "../shared/ngrx-store/states";
+import { BackendService } from "../shared/service/backend.service";
 import { UserService } from "../shared/service/user.service";
 import { Edge, Service, Utils, Websocket } from "../shared/shared";
 
@@ -46,6 +47,7 @@ export class LoginComponent implements ViewWillEnter, AfterContentChecked, OnDes
         protected modalCtrl: ModalController,
         private userService: UserService,
         private cookieService: CookieService,
+        private backendService: BackendService,
     ) {
         effect(() => {
             const user = this.userService.currentUser();
@@ -116,7 +118,7 @@ export class LoginComponent implements ViewWillEnter, AfterContentChecked, OnDes
 
             const req = new GetEdgesRequest({ page: this.page });
 
-            this.service.getEdges(req)
+            this.backendService.getEdges(req)
                 .then((edges) => {
                     setTimeout(() => {
                         this.router.navigate(["/device", edges[0].id]);
