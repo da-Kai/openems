@@ -1,21 +1,29 @@
-import { Injectable, signal, WritableSignal } from "@angular/core";
+import { Injectable, OnDestroy, signal, WritableSignal } from "@angular/core";
 import { ActivatedRouteSnapshot, NavigationEnd, Router } from "@angular/router";
+import { Subscription } from "rxjs";
 
 @Injectable()
-export class RouteService {
+export class RouteService implements OnDestroy {
 
     public currentUrl: WritableSignal<string | null> = signal(null);
 
     private previousUrl: string | null = null;
+    private subscriptions: Subscription = new Subscription();
 
     constructor(private router: Router) {
         this.previousUrl = this.currentUrl();
-        router.events.subscribe(event => {
-            if (event instanceof NavigationEnd) {
-                this.previousUrl = this.currentUrl();
-                this.currentUrl.set(event.urlAfterRedirects);;
-            }
-        });
+        this.subscriptions.add(
+            router.events.subscribe(event => {
+                if (event instanceof NavigationEnd) {
+                    this.previousUrl = this.currentUrl();
+                    this.currentUrl.set(event.urlAfterRedirects);;
+                }
+            })
+        );
+    }
+
+    public ngOnDestroy(): void {
+        this.subscriptions.unsubscribe();
     }
 
 
@@ -43,12 +51,10 @@ export class RouteService {
     *
     * @returns the current url
     */
-    public getCurrentUrl2() {
-        this.router.events.subscribe(event => {
-            if (event instanceof NavigationEnd) {
-                return event.urlAfterRedirects;
-            }
-        });
+    public getCurrentUrl2(): string | null {
+        // This method was creating a new subscription on every call causing memory leaks.
+        // Use getCurrentUrl() instead which returns the current URL from the signal.
+        return this.currentUrl();
     }
 
     /**

@@ -217,7 +217,7 @@ export class PowerAssistantComponent extends AbstractFlatWidget {
                     factoryId: controller.factoryId,
                     channels: [],
                 });
-                console.log("Ignore Controller: " + controller.id + " (" + controller.factoryId + ")", controller.properties);
+                // Ignore Controller: controller.id (controller.factoryId)
                 return null;
         }
 
