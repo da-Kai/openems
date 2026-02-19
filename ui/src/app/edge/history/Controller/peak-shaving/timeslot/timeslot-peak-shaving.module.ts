@@ -7,31 +7,31 @@ import { TranslateModule } from "@ngx-translate/core";
 import { NgxSpinnerModule } from "ngx-spinner";
 import { HistoryDataErrorModule } from "src/app/shared/components/history-data-error/history-data-error.module";
 import { PickdateComponentModule } from "src/app/shared/components/pickdate/pickdate.module";
-import { OverviewComponent } from "./overview/overview";
+import { ControllerPeakShavingTimeslotOverviewComponent } from "./overview/overview";
 
 const routes: Routes = [
-  { path: "", component: OverviewComponent },
+    { path: "", component: ControllerPeakShavingTimeslotOverviewComponent },
 ];
 
 @NgModule({
-  imports: [
-    ReactiveFormsModule,
-    CommonModule,
-    IonicModule,
-    TranslateModule,
-    PickdateComponentModule,
-    RouterModule.forChild(routes),
-    HistoryDataErrorModule,
-    NgxSpinnerModule,
-  ],
-  declarations: [
-  ],
-  exports: [
-    RouterModule,
-  ],
-  schemas: [
-    CUSTOM_ELEMENTS_SCHEMA,
-  ],
+    imports: [
+        ReactiveFormsModule,
+        CommonModule,
+        IonicModule,
+        TranslateModule,
+        PickdateComponentModule,
+        RouterModule.forChild(routes),
+        HistoryDataErrorModule,
+        NgxSpinnerModule,
+    ],
+    declarations: [
+    ],
+    exports: [
+        RouterModule,
+    ],
+    schemas: [
+        CUSTOM_ELEMENTS_SCHEMA,
+    ],
 })
 export class TimeslotPeakShavingModule {
 }

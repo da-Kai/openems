@@ -8,37 +8,37 @@ import { BaseChartDirective } from "ng2-charts";
 import { NgxSpinnerComponent, NgxSpinnerModule } from "ngx-spinner";
 
 import { PipeComponentsModule, PipeModule } from "../../pipe/pipe.module";
-import { FlatButtonComponent } from "../flat/flat-widget-button/flat-widget-button";
+import { FlatWidgetButtonComponent } from "../flat/flat-widget-button/flat-widget-button";
 import { HistoryDataErrorModule } from "../history-data-error/history-data-error.module";
 import { PickdateComponentModule, PickdateModule } from "../pickdate/pickdate.module";
 import { ChartComponent } from "./chart";
 import { ChartLegendComponent } from "./legend/legend";
 
 @NgModule({
-  imports: [
-    IonicModule,
-    PipeComponentsModule,
-    TranslateModule,
-    BaseChartDirective,
-    CommonModule,
-    NgxSpinnerModule.forRoot({
-      type: "ball-clip-rotate-multiple",
-    }),
-    HistoryDataErrorModule,
-    RouterModule,
-    PickdateComponentModule,
-    FlatButtonComponent,
-  ],
-  declarations: [
-    ChartComponent,
-    ChartLegendComponent,
-  ],
-  exports: [
-    ChartComponent,
-    ChartLegendComponent,
-    BaseChartDirective,
-    NgxSpinnerComponent,
-  ],
+    imports: [
+        IonicModule,
+        PipeComponentsModule,
+        TranslateModule,
+        BaseChartDirective,
+        CommonModule,
+        NgxSpinnerModule.forRoot({
+            type: "ball-clip-rotate-multiple",
+        }),
+        HistoryDataErrorModule,
+        RouterModule,
+        PickdateComponentModule,
+        FlatWidgetButtonComponent,
+    ],
+    declarations: [
+        ChartComponent,
+        ChartLegendComponent,
+    ],
+    exports: [
+        ChartComponent,
+        ChartLegendComponent,
+        BaseChartDirective,
+        NgxSpinnerComponent,
+    ],
 })
 export class ChartComponentsModule { }
 
@@ -46,17 +46,17 @@ export class ChartComponentsModule { }
 * @deprecated should avoid creating modules with browsermodule imported
 */
 @NgModule({
-  imports: [
-    BrowserModule,
-    ChartComponentsModule,
-    PipeModule,
-    PickdateModule,
-  ],
-  exports: [
-    ChartComponentsModule,
-    PickdateModule,
-    PipeModule,
-  ],
+    imports: [
+        BrowserModule,
+        ChartComponentsModule,
+        PipeModule,
+        PickdateModule,
+    ],
+    exports: [
+        ChartComponentsModule,
+        PickdateModule,
+        PipeModule,
+    ],
 })
 export class ChartModule { }
 

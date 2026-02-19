@@ -9,7 +9,6 @@ import static org.mockito.Mockito.when;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Stream;
@@ -19,19 +18,20 @@ import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.osgi.service.component.annotations.Component;
 
-import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.common.test.TimeLeapClock;
 import io.openems.common.types.ChannelAddress;
 import io.openems.common.utils.DateUtils;
 import io.openems.edge.common.test.ComponentTest;
 import io.openems.edge.common.test.DummyComponentManager;
+import io.openems.edge.predictor.api.common.PredictionException;
 import io.openems.edge.predictor.api.mlcore.classification.Classifier;
 import io.openems.edge.predictor.api.mlcore.clustering.Clusterer;
 import io.openems.edge.predictor.api.mlcore.transformer.OneHotEncoder;
 import io.openems.edge.predictor.api.prediction.Prediction;
 import io.openems.edge.predictor.profileclusteringmodel.PredictorProfileClusteringModelImpl.DefaultPredictorConfig;
 import io.openems.edge.predictor.profileclusteringmodel.TrainingCallback.ModelBundle;
+import io.openems.edge.predictor.profileclusteringmodel.prediction.PredictionError;
 import io.openems.edge.predictor.profileclusteringmodel.prediction.PredictionOrchestrator;
 import io.openems.edge.timedata.test.DummyTimedata;
 
@@ -63,23 +63,23 @@ public class PredictorProfileClusteringModelImplTest {
 		var clusterer = mock(Clusterer.class);
 		var classifier = mock(Classifier.class);
 		var oneHotEncoder = mock(OneHotEncoder.class);
-		sut.onModelsTrained(new ModelBundle(clusterer, classifier, oneHotEncoder, clock.instant()));
+		sut.onTrainingSuccess(new ModelBundle(clusterer, classifier, oneHotEncoder, clock.instant()));
 
-		var todaysProfile = createConstantProfile(0, 10.0);
-		var tomorrowsProfile = createConstantProfile(3, 30.0);
+		var todaysProfile = createConstantProfile(0, 10.0, 110.0);
+		var tomorrowsProfile = createConstantProfile(3, 30.0, 130.0);
 
 		when(orchestrator.predictProfiles(anyInt()))//
 				.thenReturn(List.of(//
 						todaysProfile, //
 						tomorrowsProfile));
 
-		var now = DateUtils.roundDownToQuarter(ZonedDateTime.now(clock));
+		var now = DateUtils.roundDownToQuarter(Instant.now(clock));
 		var baseTime = now.truncatedTo(ChronoUnit.DAYS);
 		int quarterIndex = (int) ChronoUnit.MINUTES.between(baseTime, now) / 15;
 
 		var expectedPredictedValues = Stream.concat(//
-				todaysProfile.values().getValues().stream().skip(quarterIndex), //
-				tomorrowsProfile.values().getValues().stream())//
+				todaysProfile.upperQuantileValues().getValues().stream().skip(quarterIndex), //
+				tomorrowsProfile.upperQuantileValues().getValues().stream())//
 				.map(d -> (int) Math.round(d))//
 				.toArray(Integer[]::new);
 
@@ -123,7 +123,7 @@ public class PredictorProfileClusteringModelImplTest {
 		var clusterer = mock(Clusterer.class);
 		var classifier = mock(Classifier.class);
 		var oneHotEncoder = mock(OneHotEncoder.class);
-		sut.onModelsTrained(new ModelBundle(clusterer, classifier, oneHotEncoder, clock.instant()));
+		sut.onTrainingSuccess(new ModelBundle(clusterer, classifier, oneHotEncoder, clock.instant()));
 
 		clock.leap(predictorConfig.maxModelAge().plusDays(1).toDays(), ChronoUnit.DAYS);
 
@@ -152,21 +152,23 @@ public class PredictorProfileClusteringModelImplTest {
 		var clusterer = mock(Clusterer.class);
 		var classifier = mock(Classifier.class);
 		var oneHotEncoder = mock(OneHotEncoder.class);
-		sut.onModelsTrained(new ModelBundle(clusterer, classifier, oneHotEncoder, clock.instant()));
+		sut.onTrainingSuccess(new ModelBundle(clusterer, classifier, oneHotEncoder, clock.instant()));
 
 		when(orchestrator.predictProfiles(anyInt()))//
-				.thenThrow(OpenemsNamedException.class);
+				.thenThrow(new PredictionException(PredictionError.INSUFFICIENT_PREDICTION_DATA, ""));
 
 		var prediction = sut.getPrediction(DUMMY_CHANNEL_ADDRESS);
 		assertEquals(Prediction.EMPTY_PREDICTION, prediction);
 	}
 
-	private static Profile createConstantProfile(int clusterIndex, double value) {
+	private static Profile createConstantProfile(int clusterIndex, double value, double upperQuantileValue) {
 		double[] values = new double[Profile.LENGTH];
+		double[] upperQuantileValues = new double[Profile.LENGTH];
 		for (int i = 0; i < Profile.LENGTH; i++) {
 			values[i] = value;
+			upperQuantileValues[i] = upperQuantileValue;
 		}
-		return Profile.fromArray(clusterIndex, values);
+		return Profile.fromArray(clusterIndex, values, upperQuantileValues);
 	}
 
 	private static class DummyPredictorConfig extends DefaultPredictorConfig {

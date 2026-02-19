@@ -5,10 +5,13 @@ import { TranslateService } from "@ngx-translate/core";
 import { User } from "src/app/shared/jsonrpc/shared";
 import { RouteService } from "src/app/shared/service/route.service";
 import { UserService } from "src/app/shared/service/user.service";
+import { TEnumKeys, TMutable } from "src/app/shared/type/utility";
+import { WidgetClass } from "src/app/shared/type/widget";
+import { Widgets } from "src/app/shared/type/widgets";
 import { Edge, EdgeConfig, Service } from "../../../shared";
 import { ArrayUtils } from "../../../utils/array/array.utils";
 import { AssertionUtils } from "../../../utils/assertions/assertions.utils";
-import { NavigationTree } from "../shared";
+import { NavigationConstants, NavigationTree } from "../shared";
 
 @Directive()
 export class NavigationService {
@@ -48,7 +51,9 @@ export class NavigationService {
         if (config == null) {
             return false;
         }
-        return config.hasFactories(["Evse.Controller.Single"]);
+
+        // If edgeconfig includes this factories, user gets forced to use new ui navigation
+        return config.hasFactories(["Evse.Controller.Single", "System.Fenecon.Industrial.L"]);
     }
 
     /**
@@ -75,10 +80,10 @@ export class NavigationService {
      * @param translate the translate service
      * @param currentUrl the current url
      */
-    public async updateNavigationNodes(currenUrl: string | null, edge: Edge, translate: TranslateService) {
+    public async updateNavigationNodes(currentUrl: string | null, edge: Edge, translate: TranslateService) {
         const navigationTree = await NavigationService.createNavigationTree(edge, translate);
         this.navigationTree.set(navigationTree);
-        this.initNavigation(currenUrl, navigationTree);
+        this.initNavigation(currentUrl, navigationTree);
     }
 
     /**
@@ -91,10 +96,11 @@ export class NavigationService {
         const currentUrl = this.routeService.currentUrl();
         AssertionUtils.assertIsDefined(currentUrl);
 
-        const currentSegments = currentUrl.split("/");
+        const currentPathWithoutParams = currentUrl.split(/[?]/, 1)[0];
+        const currentSegments = currentPathWithoutParams.split("/");
         const newSegments = link.routerLink.baseString.split("/");
 
-        if (ArrayUtils.containsAllStrings(currentSegments, newSegments)) {
+        if (ArrayUtils.containsAll({ strings: currentSegments, arr: newSegments })) {
 
             // Navigate backward
             const prevRoute = this.getPrevRoute(currentSegments, link.routerLink.baseString);
@@ -104,7 +110,10 @@ export class NavigationService {
             // Navigate forward
             const startIndex = currentSegments.findIndex(el => newSegments.find(i => i == el));
             const newRoute = [...currentSegments.slice(0, startIndex), ...newSegments];
-            this.router.navigate(newRoute);
+
+            this.router.navigate(newRoute, link.routerLink.queryParams
+                ? { queryParams: link.routerLink.queryParams }
+                : undefined);
         }
     }
 
@@ -116,6 +125,94 @@ export class NavigationService {
      */
     public goBack(): void {
         this.location.back();
+    }
+
+    /**
+     * Gets the widgets to build live and history view
+     *
+     * @param widgets the current widgets list
+     * @param user the current user
+     * @param edge the current edge
+     * @returns a new list with widgets
+     */
+    public getWidgets(widgets: Widgets, user: User | null, edge: Edge): Widgets {
+        const isNewNavigation = NavigationService.isNewNavigation(user, edge);
+        if (isNewNavigation === false) {
+            return widgets;
+        }
+
+        const newWidgets: TMutable<Widgets> = { ...widgets };
+        newWidgets.classes = ArrayUtils.removeMatching<(TEnumKeys<typeof WidgetClass>)[]>(widgets.classes, NavigationConstants.newClasses);
+        newWidgets.list = widgets.list?.filter(listItem => NavigationConstants.newWidgets.some(name => name != listItem.name)) ?? null;
+        return newWidgets;
+    }
+
+    setChildToParentNavigation(childNavigationTree: NavigationTree | null) {
+        this.initNavigation(this.routeService.currentUrl(), this.navigationTree());
+        const currentNode = this.currentNode();
+        if (currentNode == null || currentNode.parent == null || childNavigationTree == null) {
+            return;
+        }
+        this.navigationTree.update(tree => {
+            if (tree == null) {
+                return null;
+            }
+            if (currentNode == null || currentNode.parent == null) {
+                return null;
+            }
+            tree.updateNavigationTreeByAbsolutePath(this.navigationTree(), currentNode.parent.routerLink.baseString, node => {
+                node.children.push(childNavigationTree);
+            });
+            return tree;
+        });
+    }
+
+    /**
+     * Sets a child navigation tree to the current navigation node
+     *
+     * @info set parent to null for nested children
+     *
+     * @param parentNavigationId the parent navigation id
+     * @param childNavigationTree the child navigation tree
+     */
+    public setChildToCurrentNavigation(childNavigationTree: NavigationTree | null) {
+        const currentNode = this.currentNode();
+        if (currentNode == null || childNavigationTree == null) {
+            return;
+        }
+        this.navigationTree.update(tree => {
+            if (tree == null) {
+                return null;
+            }
+            tree.updateNavigationTreeByAbsolutePath(this.navigationTree(), currentNode.routerLink.baseString, node => {
+                childNavigationTree.parent = node;
+                node.children.push(childNavigationTree);
+            });
+            return tree;
+        });
+
+        this.initNavigation(this.routeService.currentUrl(), this.navigationTree());
+    }
+
+    /**
+     * Sets child navigation to currently active navigation node.
+     *
+     * @param newNavigationTree the new navigation tree to insert
+     * @returns
+     */
+    public setChildNavigationToCurrentNavigation(newNavigationTree: NavigationTree) {
+        const currentNavigationTree = this.navigationTree();
+        if (currentNavigationTree == null) {
+            return;
+        }
+
+        // Find the parent node by its ID
+        const parentNode = currentNavigationTree.findParentByUrl(this.routeService.getCurrentUrl());
+        parentNode?.setChildToCurrentNode(newNavigationTree);
+        newNavigationTree.parent = parentNode;
+
+        this.navigationTree.set(currentNavigationTree);
+        this.currentNode.set(newNavigationTree);
     }
 
     /**
@@ -133,10 +230,13 @@ export class NavigationService {
 
     /**
      * Sets the navigation position
+     *
+     * - bottom: action sheet navigation
+     * - left: side menu navigation
+     * - disabled: not visible
      */
     private setPosition() {
         const user = this.userService.currentUser();
-
         if (NavigationService.isNewNavigation(user, untracked(() => this.service.currentEdge()))) {
             this.position.set(this.service.isSmartphoneResolution ? "bottom" : "left");
         } else {
@@ -145,7 +245,7 @@ export class NavigationService {
     }
 
     /**
-     * Gets the previous route/navigation from a given key by splitting array at key
+     * Gets the previous route/navigation from a given key by splitting array at key.
      *
      * @param arr the array
      * @param key the key to find
@@ -161,7 +261,7 @@ export class NavigationService {
     }
 
     /**
-     * Finds the active node from a passed url
+     * Finds the active node from a passed url.
      *
      * @param nodes the nodes
      * @param currentUrl the current url
@@ -170,7 +270,7 @@ export class NavigationService {
     private findActiveNode(nodes: NavigationTree | null, currentUrl: string | null): NavigationTree | null {
 
         /**
-         * Converts a relative routerLink to absolute from root node
+         * Converts a relative routerLink to absolute from root node.
          *
          * @param tree the current navigation node
             * @returns a navigationTree
@@ -178,7 +278,7 @@ export class NavigationService {
         function convertRelativeToAbsoluteLink(tree: NavigationTree | null): NavigationTree | null {
 
             /**
-             * Builds the absolute link from root node to current node
+             * Builds the absolute link from root node to current node.
              *
              * @param node the current node
              * @returns a update navigation tree
@@ -196,7 +296,7 @@ export class NavigationService {
             }
 
             /**
-             * Traverses through the navigation tree
+             * Traverses through the navigation tree.
              *
              * @param node the current node
              */
@@ -231,10 +331,11 @@ export class NavigationService {
                 return null;
             }
 
-            const some = url.split("/").slice().reverse();
+            const urlWithoutQueryParmas = url.split(/[?]/, 1)[0];
+            const some = urlWithoutQueryParmas.split("/").slice().reverse();
             const urlSegments = tree.routerLink.baseString.split("/").slice().reverse();
 
-            const foundNode = ArrayUtils.containsAllStrings(some.slice(0, urlSegments.length), urlSegments);
+            const foundNode = ArrayUtils.containsAll({ strings: some.slice(0, urlSegments.length), arr: urlSegments });
             if (foundNode) {
                 return tree;
             }

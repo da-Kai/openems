@@ -14,16 +14,16 @@ import { ChartComponent } from "../chart/chart";
     templateUrl: "./overview.html",
     standalone: true,
     imports: [
-    ReactiveFormsModule,
-    IonicModule,
-    TranslateModule,
-    ChartComponentsModule,
-    PickdateComponentModule,
-    HistoryDataErrorModule,
-    ChartComponent,
-],
+        ReactiveFormsModule,
+        IonicModule,
+        TranslateModule,
+        ChartComponentsModule,
+        PickdateComponentModule,
+        HistoryDataErrorModule,
+        ChartComponent,
+    ],
     providers: [
         { provide: LOCALE_ID, useFactory: () => (Language.getByKey(localStorage.LANGUAGE) ?? Language.getByBrowserLang(navigator.language) ?? Language.DEFAULT).key },
     ],
 })
-export class OverviewComponent extends AbstractHistoryChartOverview { }
+export class ControllerPeakShavingTimeslotOverviewComponent extends AbstractHistoryChartOverview { }

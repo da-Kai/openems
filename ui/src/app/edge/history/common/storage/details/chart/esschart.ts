@@ -1,4 +1,4 @@
-import { Component } from "@angular/core";
+import { Component, ViewChild } from "@angular/core";
 import { ReactiveFormsModule } from "@angular/forms";
 import { TranslateService } from "@ngx-translate/core";
 import { BaseChartDirective } from "ng2-charts";
@@ -28,6 +28,7 @@ import { ChannelAddress, ChartConstants, EdgeConfig } from "../../../../../../sh
     ],
 })
 export class StorageEssChartComponent extends AbstractHistoryChart {
+    @ViewChild(BaseChartDirective) private chart?: BaseChartDirective;
 
     public static getChartData(translate: TranslateService, essComponent: EdgeConfig.Component, chartType: "line" | "bar", config: EdgeConfig): HistoryUtils.ChartData {
         AssertionUtils.assertIsDefined(essComponent);
@@ -74,13 +75,13 @@ export class StorageEssChartComponent extends AbstractHistoryChart {
             output: (data: HistoryUtils.ChannelData) => {
 
                 const output: HistoryUtils.DisplayValue[] = [{
-                    name: translate.instant("General.CHARGE"),
+                    name: translate.instant("GENERAL.CHARGE"),
                     ...StorageEssChartComponent.getChargeDisplayValues(essComponent.id, data, isHybridEss, chartType),
                     stack: 0,
                     color: ChartConstants.Colors.GREEN,
                 },
                 {
-                    name: translate.instant("General.DISCHARGE"),
+                    name: translate.instant("GENERAL.DISCHARGE"),
                     ...StorageEssChartComponent.getDischargeDisplayValues(essComponent.id, data, isHybridEss),
                     stack: 1,
                     color: ChartConstants.Colors.RED,
@@ -88,7 +89,7 @@ export class StorageEssChartComponent extends AbstractHistoryChart {
 
                 if (config.hasComponentNature("io.openems.edge.ess.api.AsymmetricEss", essComponent.id)) {
                     output.push(...Phase.THREE_PHASE.map((phase, i) => ({
-                        name: translate.instant("General.phase") + " " + phase,
+                        name: translate.instant("GENERAL.PHASE") + " " + phase,
                         converter: () => data[essComponent.id + "/ActivePower" + phase],
                         stack: 1,
                         color: ChartConstants.Colors.DEFAULT_PHASES_COLORS[i],
@@ -97,7 +98,7 @@ export class StorageEssChartComponent extends AbstractHistoryChart {
 
                 if (chartType === "line") {
                     output.push({
-                        name: translate.instant("General.soc"),
+                        name: translate.instant("GENERAL.SOC"),
                         converter: () => data["Soc"].map(el => Utils.multiplySafely(el, 1000)),
                         color: ChartConstants.Colors.GREY,
                         borderDash: [10, 10],
@@ -107,7 +108,7 @@ export class StorageEssChartComponent extends AbstractHistoryChart {
                 }
                 if (emergencyReserveComponent && isReserveSocEnabled) {
                     output.push({
-                        name: translate.instant("Edge.Index.EmergencyReserve.EMERGENCY_RESERVE"),
+                        name: translate.instant("EDGE.INDEX.EMERGENCY_RESERVE.EMERGENCY_RESERVE"),
                         converter: () => data["EmergencyReserve"].map(el => Utils.multiplySafely(el, 1000)),
                         color: ChartConstants.Colors.BLACK,
                         yAxisId: ChartAxis.RIGHT,
@@ -137,7 +138,7 @@ export class StorageEssChartComponent extends AbstractHistoryChart {
 
         if (config.hasComponentNature("io.openems.edge.ess.api.AsymmetricEss", componentId)) {
             inputChannel.push(...Phase.THREE_PHASE.map(phase => ({
-                name: translate.instant("General.phase") + " " + phase,
+                name: translate.instant("GENERAL.PHASE") + " " + phase,
                 powerChannel: new ChannelAddress(componentId, "ActivePower" + phase),
                 ...(chartType === "line" && { converter: HistoryUtils.ValueConverter.POSITIVE_AS_ZERO_AND_INVERT_NEGATIVE }),
             })));
@@ -175,6 +176,13 @@ export class StorageEssChartComponent extends AbstractHistoryChart {
             converter: () => data[essComponentId + "Discharge"],
             nameSuffix: (energyResponse: QueryHistoricTimeseriesEnergyResponse) => energyResponse.result.data[dischargeChannels.energyChannel.toString()],
         };
+    }
+
+    public ionViewDidEnter() {
+        setTimeout(() => {
+            this.chart?.chart?.resize();
+            this.chart?.update();
+        }, 0);
     }
 
     public override getChartData() {

@@ -65,13 +65,13 @@ public class FeneconCommercial92ClusterMaster
 	public enum Property implements Type<Property, FeneconCommercial92ClusterMaster, Parameter.BundleParameter> {
 		ALIAS(alias()), //
 
-		SAFETY_COUNTRY(AppDef.copyOfGeneric(safetyCountry(), def -> def //
+		SAFETY_COUNTRY(AppDef.copyOfGeneric(safetyCountry(), def -> def//
 				.setRequired(true))), //
 
 		LINK_FEED_IN(feedInLink()), //
 		// hidden until external limitation is implemented
 		FEED_IN_TYPE(externalLimitationType(ExternalLimitationType.EXTERNAL_LIMITATION,
-				ExternalLimitationType.DYNAMIC_EXTERNAL_LIMITATION) //
+				ExternalLimitationType.DYNAMIC_EXTERNAL_LIMITATION)//
 				.appendIsAllowedToSee(AppDef.FieldValuesBiPredicate.FALSE)), //
 		MAX_FEED_IN_POWER(maxFeedInPower(FEED_IN_TYPE)), //
 
@@ -154,8 +154,6 @@ public class FeneconCommercial92ClusterMaster
 
 			final var numberOfSlaves = this.getInt(p, Property.NUMBER_OF_SLAVES);
 
-			final var feedInType = this.getEnum(p, ExternalLimitationType.class, Property.FEED_IN_TYPE);
-
 			final var hasEssLimiter14a = this.getBoolean(p, Property.HAS_ESS_LIMITER_14A);
 
 			final var essId = "ess0";
@@ -174,7 +172,6 @@ public class FeneconCommercial92ClusterMaster
 											.collect(JsonUtils.toJsonArray())) //
 									.addProperty("startStop", "START") //
 									.build()), //
-					FeneconHomeComponents.predictor(bundle, t), //
 					FeneconHomeComponents.modbusInternal(bundle, t, "modbus0"), //
 					FeneconCommercialComponents.modbusToGridMeterAndExternal(bundle, t, modbusToGridMeterAndExternalId) //
 			);
@@ -216,7 +213,9 @@ public class FeneconCommercial92ClusterMaster
 					FeneconHomeComponents.selfConsumptionOptimization(t, essId, gridMeterId), //
 					FeneconHomeComponents.gridOptimizedCharge(t), //
 					FeneconHomeComponents.prepareBatteryExtension(), //
-					FeneconCommercialComponents.gridMeter(bundle, gridMeterId, modbusToGridMeterAndExternalId) //
+					FeneconCommercialComponents.gridMeter(bundle, gridMeterId, modbusToGridMeterAndExternalId), //
+					FeneconHomeComponents.predictionDefault(), //
+					FeneconHomeComponents.predictionUnmanagedConsumption()//
 			);
 
 			if (hasEssLimiter14a) {

@@ -1,5 +1,6 @@
 import { NgModule } from "@angular/core";
 import { HistoryDataErrorModule } from "src/app/shared/components/history-data-error/history-data-error.module";
+import { DomChangeDirective } from "src/app/shared/directive/oe-dom-change";
 import { SharedModule } from "../../shared/shared.module";
 import { ChpSocChartComponent } from "./chpsoc/chart.component";
 import { ChpSocWidgetComponent } from "./chpsoc/widget.component";
@@ -17,26 +18,27 @@ import { HistoryComponent } from "./history.component";
 import { HistoryParentComponent } from "./historyparent.component";
 
 @NgModule({
-  imports: [
-    Common,
-    Controller,
-    HistoryDataErrorModule,
-    SharedModule,
-  ],
-  declarations: [
-    ChpSocChartComponent,
-    ChpSocWidgetComponent,
-    DelayedSellToGridChartComponent,
-    DelayedSellToGridChartOverviewComponent,
-    DelayedSellToGridWidgetComponent,
-    HeatpumpFlatComponent,
-    TimeslotPeakshavingFlatComponent,
-    StorageFlatComponent,
-    SymmetricPeakshavingFlatComponent,
-    AsymmetricPeakshavingFlatComponent,
-    StorageFlatComponent,
-    HistoryComponent,
-    HistoryParentComponent,
-  ],
+    imports: [
+        Common,
+        Controller,
+        HistoryDataErrorModule,
+        SharedModule,
+        DomChangeDirective,
+    ],
+    declarations: [
+        ChpSocChartComponent,
+        ChpSocWidgetComponent,
+        DelayedSellToGridChartComponent,
+        DelayedSellToGridChartOverviewComponent,
+        DelayedSellToGridWidgetComponent,
+        HeatpumpFlatComponent,
+        TimeslotPeakshavingFlatComponent,
+        StorageFlatComponent,
+        SymmetricPeakshavingFlatComponent,
+        AsymmetricPeakshavingFlatComponent,
+        StorageFlatComponent,
+        HistoryComponent,
+        HistoryParentComponent,
+    ],
 })
 export class HistoryModule { }

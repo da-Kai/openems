@@ -6,21 +6,20 @@ import { AbstractHistoryChartOverview } from "src/app/shared/components/chart/ab
 import { ChartTypes } from "src/app/shared/components/chart/chart.types";
 import { Service } from "src/app/shared/shared";
 import { Language } from "src/app/shared/type/language";
-import tr from "./translation.json";
+import de from "./i18n/de.json";
+import en from "./i18n/en.json";
 
 @Component({
     selector: "enerixControl-overview",
     templateUrl: "./overview.html",
     standalone: false,
 })
-export class OverviewComponent extends AbstractHistoryChartOverview {
+export class ControllerEnerixOverviewComponent extends AbstractHistoryChartOverview {
     protected readonly STATES: string = `
-    1.${this.translate.instant("Edge.Index.Widgets.ENERIX_CONTROL.NO_INPUT")}
-    2.${this.translate.instant("Edge.Index.Widgets.ENERIX_CONTROL.NO_DISCHARGE")} 
+    1.${this.translate.instant("GENERAL.OFF")}
+    2.${this.translate.instant("EDGE.INDEX.WIDGETS.ENERIX_CONTROL.NO_DISCHARGE")}
+    3.${this.translate.instant("EDGE.INDEX.WIDGETS.ENERIX_CONTROL.CHARGE_FROM_GRID")}
     `;
-
-    // disabled till next release
-    // 3.${this.translate.instant("Edge.Index.Widgets.ENERIX_CONTROL.FORCE_CHARGE")}
 
     protected chartType: "line" | "bar" = "line";
 
@@ -31,8 +30,10 @@ export class OverviewComponent extends AbstractHistoryChartOverview {
         private translate: TranslateService,
     ) {
         super(service, route, modalCtrl);
-        Language.setAdditionalTranslationFile(tr, this.translate).then(({ lang, translations, shouldMerge }) => {
-            this.translate.setTranslation(lang, translations, shouldMerge);
+        Language.normalizeAdditionalTranslationFiles({ de: de, en: en }).then((translations) => {
+            for (const { lang, translation, shouldMerge } of translations) {
+                translate.setTranslation(lang, translation, shouldMerge);
+            }
         });
     }
 

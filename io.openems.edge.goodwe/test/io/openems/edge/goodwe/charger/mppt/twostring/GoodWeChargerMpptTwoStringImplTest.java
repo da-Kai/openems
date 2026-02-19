@@ -1,6 +1,5 @@
 package io.openems.edge.goodwe.charger.mppt.twostring;
 
-import io.openems.edge.common.test.DummyMeta;
 import org.junit.Test;
 
 import io.openems.common.test.DummyConfigurationAdmin;
@@ -11,6 +10,7 @@ import io.openems.edge.common.sum.DummySum;
 import io.openems.edge.common.test.AbstractComponentTest.TestCase;
 import io.openems.edge.common.test.ComponentTest;
 import io.openems.edge.common.test.DummyComponentManager;
+import io.openems.edge.common.test.DummyMeta;
 import io.openems.edge.common.test.DummySerialNumberStorage;
 import io.openems.edge.ess.dccharger.api.EssDcCharger;
 import io.openems.edge.ess.test.DummyPower;
@@ -24,7 +24,7 @@ import io.openems.edge.goodwe.common.enums.SafetyCountry;
 
 public class GoodWeChargerMpptTwoStringImplTest {
 
-	private static final DummyMeta META = new DummyMeta("meta0");
+	private static final DummyMeta META = new DummyMeta();
 
 	@Test
 	public void test() throws Exception {
