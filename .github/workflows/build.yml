@@ -82,7 +82,7 @@ jobs:
           directory: ./ui/
           token: ${{ secrets.CODECOV_TOKEN }}
 
-  chech-auxiliary-scripts:
+  check-auxiliary-scripts:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
