@@ -22,7 +22,6 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
@@ -63,7 +62,7 @@ public class IoWeidmuellerUr20Impl extends AbstractOpenemsModbusComponent
 	private static final int PROCESS_DATA_OUTPUT_BASE_REGISTER = 0x9000;
 	private static final int PROCESS_DATA_OUTPUT_BASE_COIL = 0x8000;
 
-	private final Logger log = LoggerFactory.getLogger(IoWeidmuellerUr20Impl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final ModbusProtocol modbusProtocol;
 	private final TreeMap<URemoteModule, List<BooleanReadChannel>> modules = new TreeMap<>();
 
@@ -107,8 +106,7 @@ public class IoWeidmuellerUr20Impl extends AbstractOpenemsModbusComponent
 					// Parse URemoteModule from moduleId
 					var moduleOpt = URemoteModule.getByModuleId(moduleId);
 					if (moduleOpt.isEmpty()) {
-						this.logError(this.log, "Unable to identify U-Remote-Module #" + moduleCount //
-								+ " [0x" + Long.toHexString(moduleId) + "]");
+						this.log.error("Unable to identify U-Remote-Module #{} [0x{}]", moduleCount, Long.toHexString(moduleId));
 						return;
 					}
 					var module = moduleOpt.get();
@@ -167,8 +165,7 @@ public class IoWeidmuellerUr20Impl extends AbstractOpenemsModbusComponent
 					}
 
 					if (tasks == null || tasks.length == 0) {
-						this.logError(this.log, "Unable to build Modbus-Task for U-Remote-Module #" + moduleCount //
-								+ " [" + module.name() + "]");
+						this.log.error("Unable to build Modbus-Task for U-Remote-Module #{} [{}]", moduleCount, module.name());
 						return;
 					}
 

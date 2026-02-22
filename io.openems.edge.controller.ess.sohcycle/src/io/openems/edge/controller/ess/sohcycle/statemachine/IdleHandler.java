@@ -13,7 +13,7 @@ public class IdleHandler extends StateHandler<State, Context> {
 	@Override
 	public State runAndGetNextState(Context context) {
 		if (context.config.isRunning()) {
-			context.logInfo(log,"Starting SoH Cycle");
+			log.info("Starting SoH Cycle");
 			return State.PREPARE;
 		}
 		return StateMachine.State.IDLE;

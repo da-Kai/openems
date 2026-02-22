@@ -19,7 +19,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 import io.openems.common.bridge.http.api.BridgeHttp;
@@ -51,7 +50,7 @@ public class TimeOfUseTariffEwsImpl extends AbstractOpenemsComponent
 	private static final String EWS_API_URL = "https://api.ews-schoenau.de/v1/dynamicprices/EWS-OEKO-DYN";
 	private static final int INTERNAL_ERROR = -1;
 
-	private final Logger log = LoggerFactory.getLogger(TimeOfUseTariffEwsImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final AtomicReference<TimeOfUsePrices> prices = new AtomicReference<>(EMPTY_PRICES);
 
 	@Reference
@@ -121,7 +120,7 @@ public class TimeOfUseTariffEwsImpl extends AbstractOpenemsComponent
 			throws OpenemsNamedException, ParserConfigurationException, SAXException, IOException {
 		switch (this.logVerbosity) {
 		case NONE -> doNothing();
-		case TRACE -> this.logInfo(this.log, response.toString());
+		case TRACE -> this.log.info(response.toString());
 		}
 
 		setValue(this, TimeOfUseTariffEws.ChannelId.HTTP_STATUS_CODE, response.status().code());
@@ -135,7 +134,7 @@ public class TimeOfUseTariffEwsImpl extends AbstractOpenemsComponent
 	private void handleError(HttpError error) {
 		switch (this.logVerbosity) {
 		case NONE -> doNothing();
-		case TRACE -> this.logInfo(this.log, error.toString());
+		case TRACE -> this.log.info(error.toString());
 		}
 
 		final var httpStatusCode = switch (error) {
@@ -148,6 +147,6 @@ public class TimeOfUseTariffEwsImpl extends AbstractOpenemsComponent
 		setValue(this, TimeOfUseTariffEws.ChannelId.STATUS_AUTHENTICATION_FAILED, authenticationFailed);
 		setValue(this, TimeOfUseTariffEws.ChannelId.STATUS_SERVER_ERROR, !authenticationFailed);
 
-		this.logWarn(this.log, "Unable to Update Entsoe Time-Of-Use Price: " + error.getMessage());
+		this.log.warn("Unable to Update Entsoe Time-Of-Use Price: {}", error.getMessage());
 	}
 }

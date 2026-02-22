@@ -28,7 +28,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.ed.edcom.Client;
 import com.ed.edcom.ClientListener;
@@ -56,7 +55,7 @@ import io.openems.edge.common.type.TypeUtils;
 public class KacoBlueplanetHybrid10CoreImpl extends AbstractOpenemsComponent
 		implements KacoBlueplanetHybrid10Core, OpenemsComponent, EventHandler {
 
-	private final Logger log = LoggerFactory.getLogger(KacoBlueplanetHybrid10CoreImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final ScheduledExecutorService configExecutor = Executors.newSingleThreadScheduledExecutor();
 
 	@Reference
@@ -91,13 +90,12 @@ public class KacoBlueplanetHybrid10CoreImpl extends AbstractOpenemsComponent
 					this.initialize(config, inverterAddress);
 					break; // stop forever loop
 				} catch (Exception e) {
-					this.logError(this.log, e.getMessage());
-					e.printStackTrace();
+					this.log.error(e.getMessage(), e);
 				}
 				try {
 					Thread.sleep(2000); // wait for next try
 				} catch (InterruptedException e) {
-					this.logError(this.log, e.getMessage());
+					this.log.debug("Initialization thread interrupted");
 				}
 			}
 		};
@@ -110,8 +108,7 @@ public class KacoBlueplanetHybrid10CoreImpl extends AbstractOpenemsComponent
 			try {
 				this.client.close();
 			} catch (IOException e) {
-				this.logError(this.log, e.getMessage());
-				e.printStackTrace();
+				this.log.error(e.getMessage(), e);
 			}
 		}
 
@@ -123,10 +120,10 @@ public class KacoBlueplanetHybrid10CoreImpl extends AbstractOpenemsComponent
 			this.configExecutor.shutdown();
 			this.configExecutor.awaitTermination(5, TimeUnit.SECONDS);
 		} catch (InterruptedException e) {
-			this.logWarn(this.log, "tasks interrupted");
+			this.log.warn("tasks interrupted");
 		} finally {
 			if (!this.configExecutor.isTerminated()) {
-				this.logWarn(this.log, "cancel non-finished tasks");
+				this.log.warn("cancel non-finished tasks");
 			}
 			this.configExecutor.shutdownNow();
 		}
@@ -184,7 +181,7 @@ public class KacoBlueplanetHybrid10CoreImpl extends AbstractOpenemsComponent
 			/*
 			 * IP address was set. No need for discovery.
 			 */
-			this.logInfo(this.log, "Kaco core was configured with static ip: " + inverterAddress.getHostAddress());
+			this.log.info("Kaco core was configured with static ip: {}", inverterAddress.getHostAddress());
 		} else {
 			/*
 			 * No IP address was set. Use discovery.
@@ -197,8 +194,8 @@ public class KacoBlueplanetHybrid10CoreImpl extends AbstractOpenemsComponent
 				Enumeration<InetAddress> localAddresses = iface.getInetAddresses();
 				while (localAddresses.hasMoreElements()) {
 					localAddress = localAddresses.nextElement();
-					this.logInfo(this.log, "Edcom start discovery on [" + iface.getDisplayName() + ", "
-							+ localAddress.getHostAddress() + "]");
+					this.log.info("Edcom start discovery on [{},{}]", iface.getDisplayName(),
+							localAddress.getHostAddress());
 					Discovery discovery = Discovery.getInstance(localAddress);
 
 					// Start discovery
@@ -218,7 +215,7 @@ public class KacoBlueplanetHybrid10CoreImpl extends AbstractOpenemsComponent
 					try {
 						discovery.close();
 					} catch (IOException e) {
-						this.logWarn(this.log, e.getMessage());
+						this.log.warn(e.getMessage());
 					}
 
 					// Get inverterAddress
@@ -226,7 +223,7 @@ public class KacoBlueplanetHybrid10CoreImpl extends AbstractOpenemsComponent
 						InetAddress[] addresses = inverter.getInetAddresses();
 						if (addresses.length > 0) {
 							inverterAddress = addresses[0]; // use the first address
-							this.logInfo(this.log, "Found inverter: " + inverterAddress.toString());
+							this.log.info("Found inverter: {}", inverterAddress);
 							break; // quit searching
 						}
 					}
@@ -345,19 +342,19 @@ public class KacoBlueplanetHybrid10CoreImpl extends AbstractOpenemsComponent
 			return false;
 		case 0: // access denied
 			this._setUserAccessDenied(true);
-			this.logWarn(this.log, "User Status: Access denied");
+			this.log.warn("User Status: Access denied");
 			break;
 		case 1: // no password required
 			this._setUserAccessDenied(false);
-			this.logInfo(this.log, "User Status: No password required");
+			this.log.info( "User Status: No password required");
 			break;
 		case 2: // password accepted
 			this._setUserAccessDenied(false);
-			this.logInfo(this.log, "User Status: Password accepted");
+			this.log.info("User Status: Password accepted");
 			break;
 		case 3: // energy depot
 			this._setUserAccessDenied(false);
-			this.logInfo(this.log, "User Status: EnergyDepot");
+			this.log.info("User Status: EnergyDepot");
 			break;
 		}
 
@@ -388,18 +385,18 @@ public class KacoBlueplanetHybrid10CoreImpl extends AbstractOpenemsComponent
 			this.channel(KacoBlueplanetHybrid10Core.ChannelId.MULTIPLE_ACCESS).setNextValue(false);
 			// Ident key accepted
 			if (this.accessBitTest(accessFeedb, 1)) {
-				this.logInfo(this.log, "Access Status: Ident Key Accepted");
+				this.log.info("Access Status: Ident Key Accepted");
 			} else {
-				this.logInfo(this.log, "Access Status: Ident Key Reject");
+				this.log.info("Access Status: Ident Key Reject");
 			}
 
 			// User key accepted
 			if (this.accessBitTest(accessFeedb, 2)) {
 				this._setUserAccessDenied(false);
-				this.logInfo(this.log, "Access Status: User Key Accepted");
+				this.log.info("Access Status: User Key Accepted");
 			} else {
 				this._setUserAccessDenied(true);
-				this.logInfo(this.log, "Access Status: User Key Reject");
+				this.log.info("Access Status: User Key Reject");
 			}
 		}
 		return true;
@@ -437,8 +434,7 @@ public class KacoBlueplanetHybrid10CoreImpl extends AbstractOpenemsComponent
 				try {
 					versionCom = Float.parseFloat(bpData.systemInfo.getComVersion());
 				} catch (NumberFormatException e) {
-					this.logWarn(this.log,
-							"Unable to parse Com-Version from [" + bpData.systemInfo.getComVersion() + "]");
+					this.log.warn("Unable to parse Com-Version from [{}]", bpData.systemInfo.getComVersion());
 				}
 			}
 		}

@@ -4,13 +4,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import eu.chargetime.ocpp.AuthenticationException;
 import eu.chargetime.ocpp.JSONServer;
@@ -32,11 +32,12 @@ import eu.chargetime.ocpp.model.core.ChangeAvailabilityRequest;
 import eu.chargetime.ocpp.model.core.GetConfigurationConfirmation;
 import eu.chargetime.ocpp.model.core.GetConfigurationRequest;
 import eu.chargetime.ocpp.model.core.KeyValueType;
+import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.evcs.ocpp.common.AbstractManagedOcppEvcsComponent;
 
 public class MyJsonServer {
 
-	private final Logger log = LoggerFactory.getLogger(MyJsonServer.class);
+	private final Logger log;
 
 	private final EvcsOcppServer parent;
 
@@ -58,6 +59,7 @@ public class MyJsonServer {
 
 	public MyJsonServer(EvcsOcppServer parent) {
 		this.parent = parent;
+		this.log = OpenemsComponent.getComponentLogger(MyJsonServer.class, parent);
 
 		this.coreProfile = new ServerCoreProfile(new CoreEventHandlerImpl(parent));
 		this.firmwareProfile = new ServerFirmwareManagementProfile(new FirmwareManagementEventHandlerImpl(parent));
@@ -84,9 +86,9 @@ public class MyJsonServer {
 
 			@Override
 			public void newSession(UUID sessionIndex, SessionInformation information) {
-				MyJsonServer.this.logDebug("New session [" + sessionIndex + "] " //
-						+ "Chargepoint [" + information.getIdentifier() + "] " //
-						+ "IP: " + information.getAddress());
+				MyJsonServer.this.debug() //
+						.ifPresent(l -> l.info("New session [{}] Chargepoint [{}] IP: {}", //
+								sessionIndex, information.getIdentifier(), information.getAddress()));
 
 				var ocppIdentifier = information.getIdentifier().replace("/", "");
 
@@ -107,7 +109,7 @@ public class MyJsonServer {
 
 			@Override
 			public void lostSession(UUID sessionIndex) {
-				MyJsonServer.this.logDebug("Session " + sessionIndex + " lost connection");
+				MyJsonServer.this.debug().ifPresent(l -> l.info("Session {} lost connection", sessionIndex));
 
 				var sessionEvcss = MyJsonServer.this.parent.activeEvcsSessions.getOrDefault(sessionIndex,
 						new ArrayList<>());
@@ -132,7 +134,8 @@ public class MyJsonServer {
 			@Override
 			public void authenticateSession(SessionInformation arg0, String arg1, byte[] arg2)
 					throws AuthenticationException {
-				MyJsonServer.this.logDebug("authenticateSession " + arg0 + "; " + arg1);
+				MyJsonServer.this.debug().ifPresent(l -> l.info("authenticateSession {}; {}", arg0, arg1));
+				;
 			}
 		});
 	}
@@ -165,14 +168,14 @@ public class MyJsonServer {
 	public void sendDefault(UUID session, Request request) {
 		try {
 			this.send(session, request).whenComplete((confirmation, throwable) -> {
-				this.logDebug(confirmation.toString());
+				this.debug().ifPresent(l -> l.info(confirmation.toString()));
 			});
 		} catch (OccurenceConstraintException e) {
-			this.logWarn("This is not a valid OCPP request: " + request);
+			this.log.warn("This is not a valid OCPP request: {}", request);
 		} catch (UnsupportedFeatureException e) {
-			this.logWarn("This feature is not implemented by the charging station: " + request);
+			this.log.warn("This feature is not implemented by the charging station: {}", request);
 		} catch (NotConnectedException e) {
-			this.logWarn("The server is not connected: " + request);
+			this.log.warn("The server is not connected: {}", request);
 		}
 	}
 
@@ -195,7 +198,7 @@ public class MyJsonServer {
 		}
 
 		var configuration = this.getConfiguration(sessionIndex);
-		this.logDebug(configuration.toString());
+		this.debug().ifPresent(l -> l.info(configuration.toString()));
 	}
 
 	/**
@@ -228,16 +231,16 @@ public class MyJsonServer {
 			}
 		} catch (OccurenceConstraintException | UnsupportedFeatureException | NotConnectedException
 				| InterruptedException | ExecutionException | java.util.concurrent.TimeoutException ex) {
-			this.logDebug(ex.getMessage());
+			this.debug().ifPresent(log -> log.error(ex.getMessage()));
 		}
 		return hash;
 	}
 
-	private void logWarn(String message) {
-		this.parent.logWarn(this.log, message);
-	}
-
-	private void logDebug(String message) {
-		this.parent.logDebug(this.log, message);
+	private Optional<Logger> debug() {
+		if (this.parent.config.debugMode()) {
+			return Optional.of(this.log);
+		} else {
+			return Optional.empty();
+		}
 	}
 }

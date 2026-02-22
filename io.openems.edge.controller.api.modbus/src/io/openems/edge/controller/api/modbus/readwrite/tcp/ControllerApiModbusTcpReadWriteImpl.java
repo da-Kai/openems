@@ -25,7 +25,6 @@ import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.ghgande.j2mod.modbus.ModbusException;
 import com.ghgande.j2mod.modbus.slave.ModbusSlaveFactory;
@@ -67,7 +66,7 @@ import io.openems.edge.timedata.api.utils.CalculateActiveTime;
 public class ControllerApiModbusTcpReadWriteImpl extends AbstractModbusApi implements ControllerApiModbusTcpReadWrite,
 		ModbusApi, Controller, OpenemsComponent, ComponentJsonApi, TimedataProvider, ModbusSlave {
 
-	private final Logger log = LoggerFactory.getLogger(ControllerApiModbusTcpReadWriteImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	private final CalculateActiveTime calculateCumulatedActiveTime = new CalculateActiveTime(this,
 			ControllerApiModbusTcpReadWrite.ChannelId.CUMULATED_ACTIVE_TIME);
@@ -163,7 +162,7 @@ public class ControllerApiModbusTcpReadWriteImpl extends AbstractModbusApi imple
 		try {
 			var pid = this.servicePid();
 			if (pid.isEmpty()) {
-				this.logInfo(this.log, "PID of " + this.id() + " is Empty");
+				this.log.info("PID of {} is Empty", this.id());
 				return;
 			}
 			c = this.cm.getConfiguration(pid, "?");
@@ -174,7 +173,7 @@ public class ControllerApiModbusTcpReadWriteImpl extends AbstractModbusApi imple
 				c.update(properties);
 			}
 		} catch (IOException | SecurityException e) {
-			this.logError(this.log, "ERROR: " + e.getMessage());
+			this.log.error( "ERROR: {}", e.getMessage());
 		}
 	}
 

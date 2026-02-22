@@ -37,7 +37,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -50,6 +49,7 @@ import io.openems.common.types.ConfigurationProperty;
 import io.openems.common.utils.InetAddressUtils;
 import io.openems.common.utils.JsonUtils;
 import io.openems.common.utils.StringUtils;
+import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.type.TypeUtils;
 import io.openems.edge.common.update.Updateable;
 import io.openems.edge.common.user.User;
@@ -376,16 +376,15 @@ public class OperatingSystemDebianSystemd implements OperatingSystem {
 	 * Asynchronously converts a InputStream to a String.
 	 */
 	private static class InputStreamToString implements Supplier<List<String>> {
-		private final Logger log = LoggerFactory.getLogger(InputStreamToString.class);
+		private final Logger log;
 
-		private final HostImpl parent;
 		private final String command;
 		private final InputStream stream;
 
 		public InputStreamToString(HostImpl parent, String command, InputStream stream) {
-			this.parent = parent;
 			this.command = StringUtils.toShortString(command, 20);
 			this.stream = stream;
+			this.log = OpenemsComponent.getComponentLogger(InputStreamToString.class, parent);
 		}
 
 		@Override
@@ -397,7 +396,7 @@ public class OperatingSystemDebianSystemd implements OperatingSystem {
 				reader = new BufferedReader(new InputStreamReader(this.stream));
 				while ((line = reader.readLine()) != null) {
 					result.add(line);
-					this.parent.logInfo(this.log, "[" + this.command + "] " + line);
+					this.log.info("[{}] {}", this.command, line);
 				}
 			} catch (Throwable e) {
 				result.add(e.getClass().getSimpleName() + ": " + line);

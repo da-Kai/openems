@@ -90,14 +90,13 @@ public class AggregatedInflux extends AbstractOpenemsBackendComponent implements
 	@Activate
 	private void activate(Config config) throws OpenemsNamedException, IllegalArgumentException {
 		this.config = config;
-		this.logInfo(this.log, "Activate [" //
-				+ "url=" + config.url() + ";"//
-				+ "bucket=" + config.bucket() + ";"//
-				+ "apiKey=" + (config.apiKey() != null ? "ok" : "NOT_SET") + ";"//
-				+ "measurementAvg=" + config.measurementAvg() //
-				+ "measurementMax=" + config.measurementsMax() //
-				+ (config.isReadOnly() ? ";READ_ONLY_MODE" : "") //
-				+ "]");
+		this.log.info("Activate [url={}; bucket={}; apiKey={}; measurementAvg={}measurementMax={}{}]", //
+				config.url(), //
+				config.bucket(), //
+				(config.apiKey() != null ? "ok" : "NOT_SET"), //
+				config.measurementAvg(), //
+				config.measurementsMax(), //
+				(config.isReadOnly() ? ";READ_ONLY_MODE" : ""));
 
 		this.zoneToMeasurement.clear();
 		this.zoneToMeasurement.putAll(parseMeasurementsByZone(config.measurementsMax()));
@@ -111,8 +110,9 @@ public class AggregatedInflux extends AbstractOpenemsBackendComponent implements
 				config.org(), config.apiKey(), config.bucket(), this.oem.getInfluxdbTag(), config.isReadOnly(),
 				config.poolSize(), config.maxQueueSize(), //
 				(throwable) -> {
-					this.logError(this.log, "Unable to write to InfluxDB. " + throwable.getClass().getSimpleName()
-							+ ": " + throwable.getMessage());
+					this.log.error("Unable to connect to InfluxDB. {}: {}", //
+							throwable.getClass().getSimpleName(), //
+							throwable.getMessage());
 				}, true /* enable safe write */, this.writeParametersAvgPoints, this.writeParametersMaxPoints);
 	}
 

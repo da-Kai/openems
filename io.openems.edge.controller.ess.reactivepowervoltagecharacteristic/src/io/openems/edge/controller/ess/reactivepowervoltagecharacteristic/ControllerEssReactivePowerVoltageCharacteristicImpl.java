@@ -15,7 +15,6 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
@@ -35,7 +34,7 @@ import io.openems.edge.meter.api.ElectricityMeter;
 public class ControllerEssReactivePowerVoltageCharacteristicImpl extends AbstractOpenemsComponent
 		implements ControllerEssReactivePowerVoltageCharacteristic, Controller, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(ControllerEssReactivePowerVoltageCharacteristicImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ConfigurationAdmin cm;
@@ -84,7 +83,7 @@ public class ControllerEssReactivePowerVoltageCharacteristicImpl extends Abstrac
 	public void run() throws OpenemsNamedException {
 		var gridMode = this.ess.getGridMode();
 		if (gridMode.isUndefined()) {
-			this.logWarn(this.log, "Grid-Mode is [UNDEFINED]");
+			this.log.warn("Grid-Mode is [UNDEFINED]");
 		}
 		switch (gridMode) {
 		case ON_GRID:

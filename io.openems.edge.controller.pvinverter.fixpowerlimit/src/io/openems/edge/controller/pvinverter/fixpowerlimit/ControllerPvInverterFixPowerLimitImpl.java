@@ -8,7 +8,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
@@ -26,7 +25,7 @@ import io.openems.edge.pvinverter.api.ManagedSymmetricPvInverter;
 public class ControllerPvInverterFixPowerLimitImpl extends AbstractOpenemsComponent
 		implements ControllerPvInverterFixPowerLimit, Controller, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(ControllerPvInverterFixPowerLimitImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ComponentManager componentManager;
@@ -60,7 +59,7 @@ public class ControllerPvInverterFixPowerLimitImpl extends AbstractOpenemsCompon
 			pvInverter = this.componentManager.getComponent(this.pvInverterId);
 			pvInverter.setActivePowerLimit(null);
 		} catch (OpenemsNamedException e) {
-			this.logError(this.log, e.getMessage());
+			this.log.error(e.getMessage());
 		}
 
 		super.deactivate();

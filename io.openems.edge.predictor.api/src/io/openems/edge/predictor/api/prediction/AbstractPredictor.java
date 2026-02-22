@@ -10,18 +10,16 @@ import java.util.Optional;
 
 import org.osgi.service.component.ComponentContext;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.ChannelAddress;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ClockProvider;
 import io.openems.edge.common.component.OpenemsComponent;
-import io.openems.edge.predictor.api.common.LogSeverity;
 
 public abstract class AbstractPredictor extends AbstractOpenemsComponent implements Predictor, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(AbstractPredictor.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	private final Map<ChannelAddress, Prediction> predictions = new HashMap<>();
 
@@ -97,22 +95,13 @@ public abstract class AbstractPredictor extends AbstractOpenemsComponent impleme
 		}
 		switch (this.logVerbosity) {
 		case NONE -> doNothing();
-		case REQUESTED_PREDICTIONS -> this.logInfo(this.log, "Prediction for [" + channelAddress + "]: " + prediction);
+		case REQUESTED_PREDICTIONS -> this.log.info("Prediction for [{}]: {}", channelAddress, prediction);
 		}
 		return prediction;
 	}
 
 	protected LogVerbosity getLogVerbosity() {
 		return this.logVerbosity;
-	}
-
-	protected void logWithSeverity(Logger log, LogSeverity severity, String message) {
-		switch (severity) {
-		case ERROR -> logError(log, message);
-		case WARNING -> logWarn(log, message);
-		case INFO -> logInfo(log, message);
-		case DEBUG -> logDebug(log, message);
-		}
 	}
 
 	private static ChannelAddress[] toChannelAddresses(String[] strings) throws OpenemsNamedException {

@@ -20,7 +20,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -51,7 +50,7 @@ import io.openems.edge.energy.api.handler.EshWithDifferentModes;
 public class ControllerEvseClusterImpl extends AbstractOpenemsComponent
 		implements OpenemsComponent, ControllerEvseCluster, Controller, ComponentJsonApi, EnergySchedulable {
 
-	private final Logger log = LoggerFactory.getLogger(ControllerEvseClusterImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ComponentManager componentManager;
@@ -126,7 +125,7 @@ public class ControllerEvseClusterImpl extends AbstractOpenemsComponent
 				.orElse(null);
 
 		calculate(this.componentManager.getClock(), this.config.distributionStrategy(), this.sum, this.ctrls, eshMode, //
-				this.config.logVerbosity(), message -> this.logInfo(this.log, message)) //
+				this.config.logVerbosity(), message -> this.log.info(message)) //
 				.streamEntries() //
 				.filter(e -> e.params.combinedAbilities().chargePointAbilities() != null) //
 				.forEach(e -> {

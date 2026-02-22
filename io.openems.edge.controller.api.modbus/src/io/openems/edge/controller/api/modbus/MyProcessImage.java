@@ -1,7 +1,6 @@
 package io.openems.edge.controller.api.modbus;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.ghgande.j2mod.modbus.procimg.DigitalIn;
 import com.ghgande.j2mod.modbus.procimg.DigitalOut;
@@ -14,6 +13,7 @@ import com.ghgande.j2mod.modbus.procimg.SimpleDigitalIn;
 import com.ghgande.j2mod.modbus.procimg.SimpleDigitalOut;
 import com.ghgande.j2mod.modbus.procimg.SimpleInputRegister;
 
+import io.openems.common.logger.ContextLogger;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.modbusslave.ModbusRecord;
 import io.openems.edge.common.modbusslave.ModbusRecordUint16Reserved;
@@ -23,18 +23,19 @@ import io.openems.edge.common.modbusslave.ModbusRecordUint16Reserved;
  */
 public class MyProcessImage implements ProcessImage {
 
-	private final Logger log = LoggerFactory.getLogger(MyProcessImage.class);
+	private final Logger log;
 
 	protected final AbstractModbusApi parent;
 
 	protected MyProcessImage(AbstractModbusApi parent) {
 		this.parent = parent;
+		this.log = new ContextLogger(MyProcessImage.class, parent.id());
 	}
 
 	@Override
 	public synchronized InputRegister[] getInputRegisterRange(int offset, int count) throws MyIllegalAddressException {
 		try {
-			this.parent.logDebug(this.log, "Reading Input Registers. Address [" + offset + "] Count [" + count + "].");
+			this.parent.log.debug("Reading Input Registers. Address [{}] Count [{}].", offset, count);
 			this.parent.incrementAccessCounter();
 			var registers = this.getRegisterRange(offset, count);
 			var result = new Register[registers.length];
@@ -45,14 +46,14 @@ public class MyProcessImage implements ProcessImage {
 
 		} catch (Exception e) {
 			this.parent.setProcessImageFault(this.parent.clock);
-			throw MyIllegalAddressException.fromWithLog(this::logWarn, //
+			throw MyIllegalAddressException.fromWithLog(this.log::warn, //
 					"getInputRegisterRange(" + offset + ", " + count + ") failed: " + e.getMessage());
 		}
 	}
 
 	@Override
 	public synchronized Register[] getRegisterRange(int offset, int count) throws MyIllegalAddressException {
-		this.parent.logDebug(this.log, "Reading Registers. Address [" + offset + "] Count [" + count + "].");
+		this.parent.log.debug("Reading Registers. Address [{}] Count [{}].", offset, count);
 		this.parent.incrementAccessCounter();
 
 		try {
@@ -63,7 +64,7 @@ public class MyProcessImage implements ProcessImage {
 			 */
 			var length = count * 2;
 			if (length < 0 || length + 2 > 255) {
-				throw MyIllegalAddressException.fromWithLog(this::logWarn, //
+				throw MyIllegalAddressException.fromWithLog(this.log::warn, //
 						"getRegisterRange(" + offset + ", " + count + ") failed: " //
 								+ "Invalid length: " + length + "; max. 126 registers allowed");
 			}
@@ -83,7 +84,7 @@ public class MyProcessImage implements ProcessImage {
 
 				// make sure this Record fits
 				if (result.length < i + registers.length) {
-					throw MyIllegalAddressException.fromWithLog(this::logWarn, //
+					throw MyIllegalAddressException.fromWithLog(this.log::warn, //
 							"getRegisterRange(" + offset + ", " + count + ") failed: " //
 									+ "Record for Modbus address [" + ref + "] does not fit in Result.");
 				}
@@ -98,14 +99,14 @@ public class MyProcessImage implements ProcessImage {
 
 		} catch (Exception e) {
 			this.parent.setProcessImageFault(this.parent.clock);
-			throw MyIllegalAddressException.fromWithLog(this::logWarn, //
+			throw MyIllegalAddressException.fromWithLog(this.log::warn, //
 					"getRegisterRange(" + offset + ", " + count + ") failed: " + e.getMessage());
 		}
 	}
 
 	@Override
 	public synchronized Register getRegister(int ref) throws MyIllegalAddressException {
-		this.parent.logDebug(this.log, "Get Register. Address [" + ref + "].");
+		this.log.debug("Get Register. Address [{}].", ref);
 		this.parent.incrementAccessCounter();
 
 		try {
@@ -113,7 +114,7 @@ public class MyProcessImage implements ProcessImage {
 
 			// make sure the ModbusRecord is available
 			if (record == null) {
-				throw MyIllegalAddressException.fromWithLog(this::logWarn, //
+				throw MyIllegalAddressException.fromWithLog(this.log::warn, //
 						"getRegister(" + ref + ") failed: " //
 								+ "Record for Modbus address [" + ref + "] is not available");
 			}
@@ -123,7 +124,7 @@ public class MyProcessImage implements ProcessImage {
 
 			// make sure this Record requires only one Register/Word
 			if (registers.length > 1) {
-				throw MyIllegalAddressException.fromWithLog(this::logWarn, //
+				throw MyIllegalAddressException.fromWithLog(this.log::warn, //
 						"getRegister(" + ref + ") failed: " //
 								+ "Record for Modbus address [" + ref + "] requires more than one Register");
 			}
@@ -132,7 +133,7 @@ public class MyProcessImage implements ProcessImage {
 
 		} catch (Exception e) {
 			this.parent.setProcessImageFault(this.parent.clock);
-			throw MyIllegalAddressException.fromWithLog(this::logWarn, //
+			throw MyIllegalAddressException.fromWithLog(this.log::warn, //
 					"getRegister(" + ref + ") failed: " + e.getMessage());
 		}
 	}
@@ -149,7 +150,7 @@ public class MyProcessImage implements ProcessImage {
 		{
 			var cmp = this.parent.getPossiblyDisabledComponent(record.getComponentId());
 			if (cmp != null && !cmp.isEnabled()) {
-				this.parent.logWarn(this.log, "Trying to access disabled Component [" + cmp.id() + "] for " + record);
+				this.log.warn("Trying to access disabled Component [{}] for {}", cmp.id(), record);
 				component = null;
 			} else {
 				component = cmp;
@@ -177,21 +178,21 @@ public class MyProcessImage implements ProcessImage {
 
 	@Override
 	public synchronized InputRegister getInputRegister(int ref) {
-		this.parent.logWarn(this.log, "getInputRegister is not implemented");
+		this.log.warn("getInputRegister is not implemented");
 		this.parent.setProcessImageFault(this.parent.clock);
 		return new SimpleInputRegister(0);
 	}
 
 	@Override
 	public synchronized int getInputRegisterCount() {
-		this.parent.logWarn(this.log, "getInputRegisterCount is not implemented");
+		this.log.warn("getInputRegisterCount is not implemented");
 		this.parent.setProcessImageFault(this.parent.clock);
 		return 0;
 	}
 
 	@Override
 	public synchronized DigitalOut[] getDigitalOutRange(int offset, int count) {
-		this.parent.logWarn(this.log, "getDigitalOutRange is not implemented");
+		this.log.warn("getDigitalOutRange is not implemented");
 		this.parent.setProcessImageFault(this.parent.clock);
 		var result = new DigitalOut[count];
 		for (var i = 0; i < count; i++) {
@@ -202,21 +203,21 @@ public class MyProcessImage implements ProcessImage {
 
 	@Override
 	public synchronized DigitalOut getDigitalOut(int ref) {
-		this.parent.logWarn(this.log, "getDigitalOut is not implemented");
+		this.log.warn("getDigitalOut is not implemented");
 		this.parent.setProcessImageFault(this.parent.clock);
 		return new SimpleDigitalOut(false);
 	}
 
 	@Override
 	public synchronized int getDigitalOutCount() {
-		this.parent.logWarn(this.log, "getDigitalOutCount is not implemented");
+		this.log.warn("getDigitalOutCount is not implemented");
 		this.parent.setProcessImageFault(this.parent.clock);
 		return 0;
 	}
 
 	@Override
 	public synchronized DigitalIn[] getDigitalInRange(int offset, int count) {
-		this.parent.logWarn(this.log, "getDigitalInRange is not implemented");
+		this.log.warn("getDigitalInRange is not implemented");
 		this.parent.setProcessImageFault(this.parent.clock);
 		var result = new DigitalIn[count];
 		for (var i = 0; i < count; i++) {
@@ -227,67 +228,63 @@ public class MyProcessImage implements ProcessImage {
 
 	@Override
 	public synchronized DigitalIn getDigitalIn(int ref) {
-		this.parent.logWarn(this.log, "getDigitalInRange is not implemented");
+		this.log.warn("getDigitalInRange is not implemented");
 		this.parent.setProcessImageFault(this.parent.clock);
 		return new SimpleDigitalIn(false);
 	}
 
 	@Override
 	public synchronized int getDigitalInCount() {
-		this.parent.logWarn(this.log, "getDigitalInRange is not implemented");
+		this.log.warn("getDigitalInRange is not implemented");
 		this.parent.setProcessImageFault(this.parent.clock);
 		return 0;
 	}
 
 	@Override
 	public synchronized int getRegisterCount() {
-		this.parent.logWarn(this.log, "getRegisterCount is not implemented");
+		this.log.warn("getRegisterCount is not implemented");
 		this.parent.setProcessImageFault(this.parent.clock);
 		return 0;
 	}
 
 	@Override
 	public synchronized File getFile(int ref) {
-		this.parent.logWarn(this.log, "getFile is not implemented");
+		this.log.warn("getFile is not implemented");
 		this.parent.setProcessImageFault(this.parent.clock);
 		return null;
 	}
 
 	@Override
 	public synchronized File getFileByNumber(int ref) {
-		this.parent.logWarn(this.log, "getFileByNumber is not implemented");
+		this.log.warn("getFileByNumber is not implemented");
 		return null;
 	}
 
 	@Override
 	public synchronized int getFileCount() {
-		this.parent.logWarn(this.log, "getFileByNumber is not implemented");
+		this.log.warn("getFileByNumber is not implemented");
 		this.parent.setProcessImageFault(this.parent.clock);
 		return 0;
 	}
 
 	@Override
 	public synchronized FIFO getFIFO(int ref) {
-		this.parent.logWarn(this.log, "getFIFO is not implemented");
+		this.log.warn("getFIFO is not implemented");
 		this.parent.setProcessImageFault(this.parent.clock);
 		return null;
 	}
 
 	@Override
 	public synchronized FIFO getFIFOByAddress(int ref) {
-		this.parent.logWarn(this.log, "getFIFOByAddress is not implemented");
+		this.log.warn("getFIFOByAddress is not implemented");
 		this.parent.setProcessImageFault(this.parent.clock);
 		return null;
 	}
 
 	@Override
 	public synchronized int getFIFOCount() {
-		this.parent.logWarn(this.log, "getFIFOCount is not implemented");
+		this.log.warn("getFIFOCount is not implemented");
 		this.parent.setProcessImageFault(this.parent.clock);
 		return 0;
-	}
-
-	private void logWarn(String message) {
-		this.parent.logWarn(this.log, message);
 	}
 }

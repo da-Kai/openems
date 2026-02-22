@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -14,8 +13,7 @@ import io.openems.edge.common.component.OpenemsComponent;
  */
 public class WriteHandler implements Runnable {
 
-	private final Logger log = LoggerFactory.getLogger(WriteHandler.class);
-
+	private final Logger log;
 	private final ManagedEvcs parent;
 
 	// Default power buffer for indicating a power increase or decrease in watt
@@ -23,6 +21,7 @@ public class WriteHandler implements Runnable {
 
 	public WriteHandler(ManagedEvcs parent) {
 		this.parent = parent;
+		this.log = OpenemsComponent.getComponentLogger(WriteHandler.class, parent);
 	}
 
 	/**
@@ -71,7 +70,7 @@ public class WriteHandler implements Runnable {
 
 			// Attention: Even if the state is set in here, the read state of an EVCS could
 			// be CHARGING and could overrides this state
-			this.logDebug("Maximum energy limit [" + energyLimit + "] reached");
+			this.debug().ifPresent(l -> l.info("Maximum energy limit [{}] reached", energyLimit));
 			this.parent._setStatus(Status.ENERGY_LIMIT_REACHED);
 
 			// Apply Charge Power
@@ -130,7 +129,7 @@ public class WriteHandler implements Runnable {
 	 */
 	protected void applyChargePower(int power) {
 		if (this.parent.isReadOnly()) {
-			this.logDebug("Failed to set charge Power because EVCS is read only");
+			this.debug().ifPresent(l -> l.info("Failed to set charge Power because EVCS is read only"));
 			return;
 		}
 		try {
@@ -143,19 +142,17 @@ public class WriteHandler implements Runnable {
 			}
 
 			if (sent) {
-				this.logDebug("Setting EVCS " + this.parent.alias() + " charge power to " + power + " W");
+				this.debug().ifPresent(l -> l.info("Setting EVCS {} charge power to {} W", this.parent.alias(), power));
 				this.parent.setDisplayText(power + " W");
 
 				this.parent._setSetChargePowerLimit(power);
 				this.nextPowerWrite = LocalDateTime.now().plusSeconds(this.parent.getWriteInterval());
 				this.lastTarget = power;
 			} else {
-				this.logDebug("Failed to set charge Power to " + this.parent.alias());
+				this.debug().ifPresent(l -> l.info("Failed to set charge Power to {}", this.parent.alias()));
 			}
 		} catch (Exception e) {
-			OpenemsComponent.logWarn(this.parent, this.log,
-					"Sending the charge power limit failed [" + this.parent.id() + "]: " + e.getMessage());
-			e.printStackTrace();
+			this.log.warn("Sending the charge power limit failed [{}]: {}", this.parent.id(), e.getMessage(), e);
 		}
 	}
 
@@ -178,8 +175,7 @@ public class WriteHandler implements Runnable {
 					|| this.nextEnergySessionWrite.isBefore(LocalDateTime.now())) {
 
 				this.parent._setSetEnergyLimit(energyLimit);
-				this.logDebug("Setting EVCS " + this.parent.alias() + " Energy Limit in this Session to [" + energyLimit
-						+ " Wh]");
+				this.debug().ifPresent(l -> l.info("Setting EVCS {} Energy Limit in this Session to to [{} Wh]", this.parent.alias(), energyLimit));
 				this.lastEnergySession = energyLimit;
 				this.nextEnergySessionWrite = LocalDateTime.now().plusSeconds(this.parent.getWriteInterval());
 			}
@@ -213,9 +209,7 @@ public class WriteHandler implements Runnable {
 						this.lastDisplay = text;
 					}
 				} catch (Exception e) {
-					OpenemsComponent.logWarn(this.parent, this.log,
-							"Setting the display text failed [" + this.parent.id() + "]: " + e.getMessage());
-					e.printStackTrace();
+					this.log.warn("Setting the display text failed [{}]: {}", this.parent.id(), e.getMessage(), e);
 				}
 			}
 		}
@@ -241,9 +235,11 @@ public class WriteHandler implements Runnable {
 		this.parent.getChargeStateHandler().applyNewChargeState(chargeStatus);
 	}
 
-	private void logDebug(String message) {
+	private Optional<Logger> debug() {
 		if (this.parent.getConfiguredDebugMode()) {
-			OpenemsComponent.logInfo(this.parent, this.log, message);
+			return Optional.of(this.log);
+		} else {
+			return Optional.empty();
 		}
 	}
 

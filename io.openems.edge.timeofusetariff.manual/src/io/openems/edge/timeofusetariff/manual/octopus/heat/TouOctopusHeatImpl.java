@@ -17,7 +17,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.jscalendar.JSCalendar;
@@ -39,7 +38,7 @@ import io.openems.edge.timeofusetariff.manual.octopus.Utils;
 public class TouOctopusHeatImpl extends AbstractOpenemsComponent
 		implements TouOctopusHeat, TimeOfUseTariff, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(TouOctopusHeatImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private Meta meta;
@@ -101,7 +100,7 @@ public class TouOctopusHeatImpl extends AbstractOpenemsComponent
 			final var ancillarySchedule = Utils.parseScheduleFromConfig(clock, this.config.ancillaryCosts());
 			this.ancillaryCostsHelper = new TouManualHelper(clock, ancillarySchedule, 0.0);
 		} catch (OpenemsNamedException e) {
-			this.logWarn(this.log, "Unable to parse Schedule: " + e.getMessage());
+			this.log.warn("Unable to parse Schedule: {}", e.getMessage());
 			this.ancillaryCostsHelper = EMPTY_TOU_MANUAL_HELPER;
 		}
 
@@ -125,6 +124,6 @@ public class TouOctopusHeatImpl extends AbstractOpenemsComponent
 				this.octopusHelper, //
 				this.ancillaryCostsHelper, //
 				this.config.ancillaryCosts(), //
-				msg -> this.logWarn(this.log, msg));
+				msg -> this.log.warn(msg));
 	}
 }

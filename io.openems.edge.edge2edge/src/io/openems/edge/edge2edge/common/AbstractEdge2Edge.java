@@ -19,7 +19,6 @@ import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Deactivate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsException;
@@ -54,7 +53,7 @@ import io.openems.edge.common.taskmanager.Priority;
 public abstract class AbstractEdge2Edge extends AbstractOpenemsModbusComponent
 		implements Edge2Edge, ModbusComponent, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(AbstractEdge2Edge.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	private final List<Function<AccessMode, ModbusSlaveNatureTable>> modbusSlaveNatureTableMethods;
 	private final ModbusProtocol modbusProtocol;
@@ -112,7 +111,7 @@ public abstract class AbstractEdge2Edge extends AbstractOpenemsModbusComponent
 										}
 
 										this._setMappingRemoteProtocolFault(false);
-										this.logInfo(this.log, "Finished reading remote Modbus/TCP protocol");
+										this.log.info("Finished reading remote Modbus/TCP protocol");
 									});
 								});
 					});
@@ -178,8 +177,7 @@ public abstract class AbstractEdge2Edge extends AbstractOpenemsModbusComponent
 								new OpenemsException("Unable to find remote Component with ID " + componentId));
 					}
 					if (remoteComponentId.equals(componentId)) {
-						this.logInfo(this.log,
-								"Found Remote-Component '" + componentId + "' on address " + startAddress);
+						this.log.info("Found Remote-Component '{}' on address {}", componentId, startAddress);
 						result.complete(startAddress);
 						return;
 					}
@@ -451,8 +449,8 @@ public abstract class AbstractEdge2Edge extends AbstractOpenemsModbusComponent
 
 					readElementOnce(FC3, this.modbusProtocol, ModbusUtils::doNotRetry,
 							new UnsignedWordElement(startAddress + 1)).thenAccept(lengthOfNatureBlock -> {
-								this.logInfo(this.log, "Found Remote-Nature '0x" + Integer.toHexString(hash & 0xffff)
-										+ "' on address " + startAddress);
+								this.log.info("Found Remote-Nature '0x{}' on address {}", //
+										Integer.toHexString(hash & 0xffff), startAddress);
 								// TODO get Remote-Nature name from this.modbusSlaveNatureTableMethods
 								natureStartAddresses.put(startAddress, hash);
 

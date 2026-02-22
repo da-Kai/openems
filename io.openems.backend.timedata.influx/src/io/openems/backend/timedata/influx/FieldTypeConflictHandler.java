@@ -5,7 +5,6 @@ import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
@@ -13,6 +12,7 @@ import com.google.gson.JsonElement;
 import com.influxdb.client.write.Point;
 import com.influxdb.exceptions.InfluxException;
 
+import io.openems.common.logger.ContextLogger;
 import io.openems.common.utils.JsonUtils;
 
 /**
@@ -24,12 +24,11 @@ public class FieldTypeConflictHandler {
 	private static final Pattern FIELD_TYPE_CONFLICT_EXCEPTION_PATTERN = Pattern.compile(
 			"partial write: field type conflict: input field \"(?<channel>[^\"]*+)\" on measurement \"data\" is type (?<thisType>\\w+), already exists as type (?<requiredType>\\w+) dropped=\\d++$");
 
-	private final Logger log = LoggerFactory.getLogger(FieldTypeConflictHandler.class);
-	private final TimedataInfluxDb parent;
+	private final Logger log;
 	private final ConcurrentHashMap<String, BiConsumer<Point, JsonElement>> specialCaseFieldHandlers = new ConcurrentHashMap<>();
 
-	public FieldTypeConflictHandler(TimedataInfluxDb parent) {
-		this.parent = parent;
+	public FieldTypeConflictHandler(String name) {
+		this.log = new ContextLogger(FieldTypeConflictHandler.class, name);
 	}
 
 	/**
@@ -54,17 +53,15 @@ public class FieldTypeConflictHandler {
 
 		if (this.specialCaseFieldHandlers.containsKey(field)) {
 			// Special handling had already been added.
-			this.parent.logWarn(this.log, "Special field handler for message [" + message + "] is already existing");
+			this.log.warn("Special field handler for message [{}] is already existing", message);
 			return false;
 		}
 
 		this.specialCaseFieldHandlers.computeIfAbsent(field, t -> this.createHandler(t, requiredType));
 
-		this.parent.logInfo(this.log,
-				"Add handler for [" + field + "] from [" + thisType + "] to [" + requiredType.name().toLowerCase()
-						+ "]\n" //
-						+ "Add predefined FieldTypeConflictHandler: this.createAndAddHandler(\"" + field
-						+ "\", RequiredType." + requiredType.name() + ");");
+		this.log.info("Add handler for [{}] from [{}] to [{}]\nAdd predefined FieldTypeConflictHandler: this.createAndAddHandler(\"{}\", RequiredType.{});", 
+				field, thisType, requiredType.name().toLowerCase(), //
+				field, requiredType.name()); //
 
 		return true;
 	}
@@ -93,8 +90,7 @@ public class FieldTypeConflictHandler {
 		case INTEGER -> (builder, jValue) -> {
 			final var value = getAsFieldTypeLong(jValue);
 			if (value == null) {
-				this.parent.logWarn(this.log,
-						"Unable to convert field [" + field + "] value [" + jValue + "] to integer");
+				this.log.warn("Unable to convert field [{}] value [{}] to integer", field, jValue);
 				return;
 			}
 			builder.addField(field, value);
@@ -103,8 +99,7 @@ public class FieldTypeConflictHandler {
 		case FLOAT -> (builder, jValue) -> {
 			final var value = getAsFieldTypeDouble(jValue);
 			if (value == null) {
-				this.parent.logWarn(this.log,
-						"Unable to convert field [" + field + "] value [" + jValue + "] to float");
+				this.log.warn("Unable to convert field [{}] value [{}] to float", field, jValue);
 				return;
 			}
 			builder.addField(field, value);

@@ -25,7 +25,6 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.TreeBasedTable;
@@ -37,6 +36,7 @@ import com.google.gson.JsonPrimitive;
 import io.openems.common.channel.AccessMode;
 import io.openems.common.jsonrpc.notification.AggregatedDataNotification;
 import io.openems.common.jsonrpc.notification.TimestampedDataNotification;
+import io.openems.common.logger.ContextLogger;
 import io.openems.common.timedata.DurationUnit;
 import io.openems.common.types.OpenemsType;
 import io.openems.common.utils.ThreadPoolUtils;
@@ -59,7 +59,7 @@ public class SendChannelValuesWorker {
 	private static final int AGGREGATION_MINUTES = 5;
 	private static final int SEND_VALUES_OF_ALL_CHANNELS_AFTER_SECONDS = 300; /* 5 minutes */
 
-	private final Logger log = LoggerFactory.getLogger(SendChannelValuesWorker.class);
+	private final Logger log;
 
 	private final ControllerApiBackendImpl parent;
 	private final ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.SECONDS,
@@ -93,6 +93,7 @@ public class SendChannelValuesWorker {
 
 	protected SendChannelValuesWorker(ControllerApiBackendImpl parent) {
 		this.parent = parent;
+		this.log = new ContextLogger(SendChannelValuesWorker.class, parent.id());
 	}
 
 	/**
@@ -157,13 +158,13 @@ public class SendChannelValuesWorker {
 									// simple/stupid merge function to avoid
 									// 'java.lang.IllegalArgumentException Duplicate Key'
 									(t, u) -> {
-										this.parent.logWarn(this.log, "Duplicate Key [" + t.toString() + "]");
+										this.log.warn("Duplicate Key [{}]", t);
 										return t;
 									}));
 		} catch (Exception e) {
 			// ConcurrentModificationException can happen if Channels are dynamically added
 			// or removed
-			this.parent.logWarn(this.log, "Unable to collect date: " + e.getMessage());
+			this.log.warn("Unable to collect date: {}", e.getMessage());
 			return ImmutableMap.of();
 		}
 	}
@@ -400,8 +401,7 @@ public class SendChannelValuesWorker {
 
 			// Debug-Log
 			if (this.parent.parent.config.debugMode()) {
-				this.parent.parent.logInfo(this.parent.log,
-						"Sending [" + sendValuesMap.size() + " values]: " + sendValuesMap);
+				this.parent.log.info("Sending [{} values]: {}", sendValuesMap.size(), sendValuesMap);
 			}
 
 			// Try to send

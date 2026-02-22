@@ -30,7 +30,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 import io.openems.common.bridge.http.api.BridgeHttp;
@@ -63,7 +62,7 @@ public class TouEntsoeImpl extends AbstractOpenemsComponent implements TouEntsoe
 
 	private static final int INTERNAL_ERROR = -1;
 
-	private final Logger log = LoggerFactory.getLogger(TouEntsoeImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final AtomicReference<TimeOfUsePrices> prices = new AtomicReference<>(TimeOfUsePrices.EMPTY_PRICES);
 
 	@Reference
@@ -184,7 +183,7 @@ public class TouEntsoeImpl extends AbstractOpenemsComponent implements TouEntsoe
 		setValue(this, TouEntsoe.ChannelId.HTTP_STATUS_CODE, httpStatusCode);
 		setValue(this, TouEntsoe.ChannelId.UNABLE_TO_UPDATE_PRICES, true);
 
-		this.logWarn(this.log, "Unable to Update Entsoe Time-Of-Use Price: " + error.getMessage());
+		this.log.warn("Unable to Update Entsoe Time-Of-Use Price: {}", error.getMessage());
 	}
 
 	/**
@@ -226,7 +225,7 @@ public class TouEntsoeImpl extends AbstractOpenemsComponent implements TouEntsoe
 	private void applyConfig(Config config) {
 		this.securityToken = definedOrElse(config.securityToken(), this.oem.getEntsoeToken());
 		if (this.securityToken == null) {
-			this.logError(this.log, "Please configure Security Token to access ENTSO-E");
+			this.log.error("Please configure Security Token to access ENTSO-E");
 			return;
 		}
 
@@ -235,11 +234,11 @@ public class TouEntsoeImpl extends AbstractOpenemsComponent implements TouEntsoe
 
 		try {
 			final var schedule = parseToSchedule(clock, config.biddingZone(), config.ancillaryCosts(),
-					msg -> this.logWarn(this.log, msg));
+					msg -> this.log.warn(msg));
 			this.helper = new TouManualHelper(clock, schedule, 0.0);
 
 		} catch (OpenemsNamedException e) {
-			this.logWarn(this.log, "Unable to parse Schedule: " + e.getMessage());
+			this.log.warn("Unable to parse Schedule: {}", e.getMessage());
 			this.helper = EMPTY_TOU_MANUAL_HELPER;
 		}
 	}

@@ -26,7 +26,6 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
@@ -78,7 +77,7 @@ public class BatteryInverterRefuStore88kImpl extends AbstractOpenemsModbusCompon
 
 	protected static final double EFFICIENCY_FACTOR = 0.98;
 
-	private final Logger log = LoggerFactory.getLogger(BatteryInverterRefuStore88kImpl.class);
+	private final Logger log;
 	private final StateMachine stateMachine = new StateMachine(State.UNDEFINED);
 
 	private final CalculateEnergyFromPower calculateChargeEnergy = new CalculateEnergyFromPower(this,
@@ -110,6 +109,7 @@ public class BatteryInverterRefuStore88kImpl extends AbstractOpenemsModbusCompon
 				StartStoppable.ChannelId.values(), //
 				BatteryInverterRefuStore88k.ChannelId.values() //
 		);
+		this.log = OpenemsComponent.getComponentLogger(this);
 		this._setGridMode(GridMode.ON_GRID);
 	}
 
@@ -169,7 +169,7 @@ public class BatteryInverterRefuStore88kImpl extends AbstractOpenemsModbusCompon
 
 		} catch (OpenemsNamedException e) {
 			this.channel(BatteryInverterRefuStore88k.ChannelId.RUN_FAILED).setNextValue(true);
-			this.logError(this.log, "StateMachine failed: " + e.getMessage());
+			this.log.error("StateMachine failed: {}", e.getMessage());
 		}
 	}
 

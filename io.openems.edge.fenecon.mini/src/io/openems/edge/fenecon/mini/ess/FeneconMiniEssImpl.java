@@ -26,7 +26,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -84,7 +83,7 @@ public class FeneconMiniEssImpl extends AbstractOpenemsModbusComponent
 		implements FeneconMiniEss, ManagedSinglePhaseEss, ManagedAsymmetricEss, ManagedSymmetricEss, SinglePhaseEss,
 		AsymmetricEss, SymmetricEss, ModbusComponent, OpenemsComponent, ModbusSlave, TimedataProvider, EventHandler {
 
-	private final Logger log = LoggerFactory.getLogger(FeneconMiniEssImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final MaxApparentPowerHandler maxApparentPowerHandler = new MaxApparentPowerHandler(this);
 	private final StateMachine stateMachine = new StateMachine(State.UNDEFINED);
 	private final CalculateEnergyFromPower calculateChargeEnergy = new CalculateEnergyFromPower(this,
@@ -569,7 +568,7 @@ public class FeneconMiniEssImpl extends AbstractOpenemsModbusComponent
 
 		} catch (OpenemsNamedException e) {
 			this.channel(FeneconMiniEss.ChannelId.RUN_FAILED).setNextValue(true);
-			this.logError(this.log, "StateMachine failed: " + e.getMessage());
+			this.log.error("StateMachine failed: {}", e.getMessage());
 		}
 	}
 
@@ -639,10 +638,5 @@ public class FeneconMiniEssImpl extends AbstractOpenemsModbusComponent
 	@Override
 	public Timedata getTimedata() {
 		return this.timedata;
-	}
-
-	@Override
-	protected void logInfo(Logger log, String message) {
-		super.logInfo(log, message);
 	}
 }

@@ -37,7 +37,6 @@ import org.osgi.service.component.runtime.ServiceComponentRuntime;
 import org.osgi.service.event.EventAdmin;
 import org.osgi.service.metatype.MetaTypeService;
 import org.osgi.service.metatype.annotations.Designate;
-import org.slf4j.Logger;
 
 import com.google.gson.JsonNull;
 
@@ -314,21 +313,6 @@ public class ComponentManagerImpl extends AbstractOpenemsComponent
 			return null;
 		}
 		return String.join("|", logs);
-	}
-
-	@Override
-	protected void logInfo(Logger log, String message) {
-		super.logInfo(log, message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		super.logWarn(log, message);
-	}
-
-	@Override
-	protected void logError(Logger log, String message) {
-		super.logError(log, message);
 	}
 
 	@Override

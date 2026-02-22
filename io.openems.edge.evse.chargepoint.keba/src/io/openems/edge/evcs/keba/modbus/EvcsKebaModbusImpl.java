@@ -32,7 +32,7 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.slf4j.spi.LoggingEventBuilder;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -88,7 +88,7 @@ import io.openems.edge.timedata.api.TimedataProvider;
 public class EvcsKebaModbusImpl extends KebaModbus implements EvcsKeba, ManagedEvcs, Evcs, DeprecatedEvcs,
 		ElectricityMeter, OpenemsComponent, EventHandler, ModbusSlave, ModbusComponent, TimedataProvider {
 
-	private final Logger log = LoggerFactory.getLogger(EvcsKebaModbusImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final KebaUtils kebaUtils = new KebaUtils(this);
 	private final KebaModbusUtils kebaModbusUtils = new KebaModbusUtils(this);
 
@@ -276,9 +276,12 @@ public class EvcsKebaModbusImpl extends KebaModbus implements EvcsKeba, ManagedE
 		return this.chargeStateHandler;
 	}
 
-	@Override
-	public void logDebug(String message) {
-		this.logDebug(this.log, message);
+	public LoggingEventBuilder debug() {
+		if (this.config.debugMode()) {
+			return this.log.atInfo();
+		} else {
+			return this.log.atDebug();
+		}
 	}
 
 	private void setEnableOnce() {
@@ -291,9 +294,10 @@ public class EvcsKebaModbusImpl extends KebaModbus implements EvcsKeba, ManagedE
 				this.setSetEnable(SetEnable.ENABLE);
 				this.setEnableSet = true;
 			} catch (OpenemsNamedException e) {
-				this.logDebug(
-						"A problem occurred while setting the EVCS KEBA P40 charging station 'Enable user' to 'enable'.");
-				e.printStackTrace();
+				this.debug() //
+					.setMessage("A problem occurred while setting the EVCS KEBA P40 charging station 'Enable user' to 'enable'.") //
+					.addArgument(e) //
+					.log();
 			}
 		}
 	}

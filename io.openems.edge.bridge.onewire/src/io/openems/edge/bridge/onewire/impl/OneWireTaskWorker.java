@@ -4,7 +4,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.dalsemi.onewire.OneWireException;
 import com.dalsemi.onewire.adapter.DSPortAdapter;
@@ -12,13 +11,14 @@ import com.dalsemi.onewire.adapter.PDKAdapterUSB;
 
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.common.jsonrpc.base.JsonrpcRequest;
+import io.openems.common.logger.ContextLogger;
 import io.openems.common.worker.AbstractImmediateWorker;
 import io.openems.edge.bridge.onewire.jsonrpc.GetDeviceResponse;
 import io.openems.edge.bridge.onewire.jsonrpc.GetDevicesRequest;
 
 public class OneWireTaskWorker extends AbstractImmediateWorker {
 
-	private final Logger log = LoggerFactory.getLogger(OneWireTaskWorker.class);
+	private final Logger log;
 	private final CopyOnWriteArrayList<Consumer<DSPortAdapter>> tasks = new CopyOnWriteArrayList<>();
 	private final BridgeOnewireImpl parent;
 	private final String port;
@@ -28,6 +28,7 @@ public class OneWireTaskWorker extends AbstractImmediateWorker {
 	public OneWireTaskWorker(BridgeOnewireImpl parent, String port) {
 		this.parent = parent;
 		this.port = port;
+		this.log = new ContextLogger(OneWireTaskWorker.class, "Bridge.Onewire");
 	}
 
 	@Override
@@ -36,7 +37,7 @@ public class OneWireTaskWorker extends AbstractImmediateWorker {
 		try {
 			adapter = this.getAdapter();
 		} catch (OpenemsException e) {
-			this.parent.logError(this.log, e.getMessage());
+			this.log.error(e.getMessage());
 			Thread.sleep(5000);
 			return;
 		}
@@ -78,7 +79,7 @@ public class OneWireTaskWorker extends AbstractImmediateWorker {
 			try {
 				this._adapter.freePort();
 			} catch (OneWireException e) {
-				this.parent.logError(this.log, e.getMessage());
+				this.log.error(e.getMessage());
 			}
 		}
 		super.deactivate();

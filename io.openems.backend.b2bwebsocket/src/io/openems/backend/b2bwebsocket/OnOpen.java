@@ -7,7 +7,6 @@ import java.util.Base64;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import org.java_websocket.WebSocket;
@@ -25,15 +24,12 @@ public class OnOpen implements io.openems.common.websocket.OnOpen {
 	private final Logger log = LoggerFactory.getLogger(OnOpen.class);
 	private final Supplier<Metadata> metadata;
 	private final Supplier<AuthUserPasswordAuthenticationService> userAuthService;
-	private final BiConsumer<Logger, String> logInfo;
 
 	public OnOpen(//
 			Supplier<Metadata> metadata, //
-			Supplier<AuthUserPasswordAuthenticationService> userAuthService, //
-			BiConsumer<Logger, String> logInfo) {
+			Supplier<AuthUserPasswordAuthenticationService> userAuthService) {
 		this.metadata = metadata;
 		this.userAuthService = userAuthService;
-		this.logInfo = logInfo;
 	}
 
 	@Override
@@ -81,7 +77,7 @@ public class OnOpen implements io.openems.common.websocket.OnOpen {
 
 		WsData wsData = ws.getAttachment();
 		wsData.setUser(user);
-		this.logInfo.accept(this.log, "User [" + user.getName() + "] logged in");
+		this.log.info("User [{}] logged in", user.getName());
 
 		return null; // No error
 	}

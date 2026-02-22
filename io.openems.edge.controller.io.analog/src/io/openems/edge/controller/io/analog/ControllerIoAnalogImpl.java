@@ -17,7 +17,6 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
@@ -45,7 +44,7 @@ public class ControllerIoAnalogImpl extends AbstractOpenemsComponent
 	 */
 	private static final int DEFAULT_DEBOUNCE_SEC = 3;
 
-	private final Logger log = LoggerFactory.getLogger(ControllerIoAnalogImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	private final CalculateEnergyFromPower calculateCumulatedEnergy = new CalculateEnergyFromPower(this,
 			ControllerIoAnalog.ChannelId.CUMULATED_ACTIVE_ENERGY);
@@ -196,7 +195,7 @@ public class ControllerIoAnalogImpl extends AbstractOpenemsComponent
 		var outputPercent = calculateSetPointFromPower(this.config.maximumPower(), power, this.config.powerBehaviour());
 		var currentValue = this.analogOutput.getDebugSetOutputPercent();
 		if (!currentValue.isDefined() || currentValue.get() != outputPercent) {
-			this.logInfo(this.log, "Set output [" + this.config.analogOutput_id() + "] to " + power + "W.");
+			this.log.info("Set output [{}] to {}W.", this.config.analogOutput_id(), power);
 			this.analogOutput.setOutputPercent(outputPercent);
 			this.lastOutputPower = power;
 		}

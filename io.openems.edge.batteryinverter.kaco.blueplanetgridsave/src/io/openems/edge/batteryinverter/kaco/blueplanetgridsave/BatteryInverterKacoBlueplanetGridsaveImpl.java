@@ -26,7 +26,6 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
 
@@ -78,7 +77,7 @@ import io.openems.edge.timedata.api.utils.CalculateEnergyFromPower;
 public class BatteryInverterKacoBlueplanetGridsaveImpl extends AbstractSunSpecBatteryInverter
 		implements BatteryInverterKacoBlueplanetGridsave, ManagedSymmetricBatteryInverter, SymmetricBatteryInverter,
 		ModbusComponent, ModbusSlave, OpenemsComponent, TimedataProvider, StartStoppable,
-        BatteryInverterErrorAcknowledge {
+		BatteryInverterErrorAcknowledge {
 
 	private static final int UNIT_ID = 1;
 	private static final int READ_FROM_MODBUS_BLOCK = 1;
@@ -86,7 +85,7 @@ public class BatteryInverterKacoBlueplanetGridsaveImpl extends AbstractSunSpecBa
 	private static final int DC_MAX_VOLTAGE_LIMIT = 1315;
 
 	private final StateMachine stateMachine = new StateMachine(State.UNDEFINED);
-	private final Logger log = LoggerFactory.getLogger(BatteryInverterKacoBlueplanetGridsaveImpl.class);
+	private final Logger log;
 	private final AtomicReference<StartStop> startStopTarget = new AtomicReference<>(StartStop.UNDEFINED);
 
 	private final CalculateEnergyFromPower calculateChargeEnergy = new CalculateEnergyFromPower(this,
@@ -165,6 +164,7 @@ public class BatteryInverterKacoBlueplanetGridsaveImpl extends AbstractSunSpecBa
 				BatteryInverterErrorAcknowledge.ChannelId.values(), //
 				BatteryInverterKacoBlueplanetGridsave.ChannelId.values() //
 		);
+		this.log = OpenemsComponent.getComponentLogger(this);
 		this._setGridMode(ON_GRID);
 		this._setDcMinVoltage(DC_MIN_VOLTAGE_LIMIT);
 		this._setDcMaxVoltage(DC_MAX_VOLTAGE_LIMIT);
@@ -240,7 +240,7 @@ public class BatteryInverterKacoBlueplanetGridsaveImpl extends AbstractSunSpecBa
 			this._setRunFailed(false);
 		} catch (OpenemsNamedException e) {
 			this._setRunFailed(true);
-			this.logError(this.log, "StateMachine failed: " + e.getMessage());
+			this.log.error("StateMachine failed: {}", e.getMessage());
 		}
 	}
 

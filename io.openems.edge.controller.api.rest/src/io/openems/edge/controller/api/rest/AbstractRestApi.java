@@ -13,7 +13,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Deactivate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -24,16 +23,15 @@ import io.openems.edge.common.user.UserService;
 import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.api.common.ApiWorker;
 import io.openems.edge.controller.api.common.handler.ComponentConfigRequestHandler;
-import io.openems.edge.controller.api.rest.readonly.ControllerApiRestReadOnlyImpl;
 
 public abstract class AbstractRestApi extends AbstractOpenemsComponent
 		implements RestApi, Controller, OpenemsComponent {
 
 	public static final boolean DEFAULT_DEBUG_MODE = true;
 
-	protected final ApiWorker apiWorker = new ApiWorker(this);
+	protected final ApiWorker apiWorker = new ApiWorker(this.id());
 
-	private final Logger log = LoggerFactory.getLogger(ControllerApiRestReadOnlyImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final String implementationName;
 
 	private Server server = null;
@@ -84,12 +82,11 @@ public abstract class AbstractRestApi extends AbstractOpenemsComponent
 			this.server.addBean(new AcceptRateLimit(10, 5, TimeUnit.SECONDS, this.server));
 			this.server.addBean(new NetworkConnectionLimit(connectionlimit, this.server));
 			this.server.start();
-			this.logInfo(this.log, this.implementationName + " started on port [" + port + "].");
+			this.log.info("{} started on port [{}].", this.implementationName, port);
 			this._setUnableToStart(false);
 
 		} catch (Exception e) {
-			this.logError(this.log,
-					"Unable to start " + this.implementationName + " on port [" + port + "]: " + e.getMessage());
+			this.log.error("Unable to start {} on port [{}]: {}", this.implementationName, port, e.getMessage());
 			this._setUnableToStart(true);
 		}
 		this.getRpcRestHandler().setOnCall(call -> {
@@ -105,7 +102,7 @@ public abstract class AbstractRestApi extends AbstractOpenemsComponent
 			try {
 				this.server.stop();
 			} catch (Exception e) {
-				this.logWarn(this.log, this.implementationName + " failed to stop: " + e.getMessage());
+				this.log.warn("{} failed to stop: {}", this.implementationName, e.getMessage());
 			}
 		}
 	}
@@ -113,21 +110,6 @@ public abstract class AbstractRestApi extends AbstractOpenemsComponent
 	@Override
 	public void run() throws OpenemsNamedException {
 		this.apiWorker.run();
-	}
-
-	@Override
-	protected void logInfo(Logger log, String message) {
-		super.logInfo(log, message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		super.logWarn(log, message);
-	}
-
-	@Override
-	protected void logError(Logger log, String message) {
-		super.logError(log, message);
 	}
 
 	protected boolean isDebugModeEnabled() {

@@ -3,27 +3,26 @@ package io.openems.edge.evcs.ocpp.server;
 import java.util.UUID;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import eu.chargetime.ocpp.feature.profile.ServerFirmwareManagementEventHandler;
 import eu.chargetime.ocpp.model.firmware.DiagnosticsStatusNotificationConfirmation;
 import eu.chargetime.ocpp.model.firmware.DiagnosticsStatusNotificationRequest;
 import eu.chargetime.ocpp.model.firmware.FirmwareStatusNotificationConfirmation;
 import eu.chargetime.ocpp.model.firmware.FirmwareStatusNotificationRequest;
+import io.openems.edge.common.component.OpenemsComponent;
 
 public class FirmwareManagementEventHandlerImpl implements ServerFirmwareManagementEventHandler {
 
-	private final Logger log = LoggerFactory.getLogger(FirmwareManagementEventHandlerImpl.class);
-	private final EvcsOcppServer parent;
+	private final Logger log;
 
-	public FirmwareManagementEventHandlerImpl(EvcsOcppServer parent) {
-		this.parent = parent;
+	public FirmwareManagementEventHandlerImpl(OpenemsComponent parent) {
+		this.log = OpenemsComponent.getComponentLogger(FirmwareManagementEventHandlerImpl.class, parent);
 	}
 
 	@Override
 	public DiagnosticsStatusNotificationConfirmation handleDiagnosticsStatusNotificationRequest(UUID sessionIndex,
 			DiagnosticsStatusNotificationRequest request) {
-		this.parent.logInfo(this.log, "Handle DiagnosticsStatusNotificationRequest");
+		this.log.info("Handle DiagnosticsStatusNotificationRequest");
 
 		return new DiagnosticsStatusNotificationConfirmation();
 	}
@@ -31,7 +30,7 @@ public class FirmwareManagementEventHandlerImpl implements ServerFirmwareManagem
 	@Override
 	public FirmwareStatusNotificationConfirmation handleFirmwareStatusNotificationRequest(UUID sessionIndex,
 			FirmwareStatusNotificationRequest request) {
-		this.parent.logInfo(this.log, "Handle FirmwareStatusNotificationRequest");
+		this.log.info("Handle FirmwareStatusNotificationRequest");
 
 		return new FirmwareStatusNotificationConfirmation();
 	}

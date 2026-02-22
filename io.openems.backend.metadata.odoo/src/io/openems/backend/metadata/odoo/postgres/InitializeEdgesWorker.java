@@ -7,19 +7,19 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.zaxxer.hikari.HikariDataSource;
 
 import io.openems.backend.metadata.odoo.Field;
 import io.openems.backend.metadata.odoo.Field.EdgeDevice;
+import io.openems.common.logger.ContextLogger;
 import io.openems.common.utils.ThreadPoolUtils;
 
 public class InitializeEdgesWorker {
 
 	protected final PostgresHandler parent;
 
-	private final Logger log = LoggerFactory.getLogger(InitializeEdgesWorker.class);
+	private final Logger log;
 	private final HikariDataSource dataSource;
 	private final Runnable onFinished;
 
@@ -28,7 +28,8 @@ public class InitializeEdgesWorker {
 	 */
 	private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-	public InitializeEdgesWorker(PostgresHandler parent, HikariDataSource dataSource, Runnable onFinished) {
+	public InitializeEdgesWorker(String name, PostgresHandler parent, HikariDataSource dataSource, Runnable onFinished) {
+		this.log = new ContextLogger(InitializeEdgesWorker.class, name);
 		this.parent = parent;
 		this.dataSource = dataSource;
 		this.onFinished = onFinished;
@@ -40,13 +41,13 @@ public class InitializeEdgesWorker {
 	public synchronized void start() {
 		this.executor.execute(() -> {
 			try (var con = this.dataSource.getConnection()) {
-				this.parent.logInfo(this.log, "Caching Edges from Postgres [started]");
+				this.log.info("Caching Edges from Postgres [started]");
 				this.markAllEdgesAsOffline(con);
 				this.readAllEdgesFromPostgres(con);
-				this.parent.logInfo(this.log, "Caching Edges from Postgres [finished]");
+				this.log.info("Caching Edges from Postgres [finished]");
 			} catch (SQLException e) {
-				this.parent.logWarn(this.log, "Caching Edges from Postgres [canceled]");
-				this.logError("Unable to connect do dataSource. ", e);
+				this.log.info("Caching Edges from Postgres [canceled]");
+				this.log.error("Unable to connect do dataSource. ", e);
 			}
 			this.onFinished.run();
 		});
@@ -64,7 +65,7 @@ public class InitializeEdgesWorker {
 		try (var pst = this.psUpdateAllEdgesOffline(con)) {
 			pst.execute();
 		} catch (SQLException e) {
-			this.logError("Unable to mark Edges offline. ", e);
+			this.log.error("Unable to mark Edges offline.", e);
 		}
 	}
 
@@ -77,28 +78,21 @@ public class InitializeEdgesWorker {
 				try {
 					this.parent.edgeCache.addOrUpdate(rs);
 				} catch (Exception e) {
-					this.logError("Unable to read Edge: ", e);
+					this.log.error("Unable to read Edge.", e);
 				}
 				counter++;
 			}
 			this.logCachingProgress(counter, 1);
 		} catch (SQLException e) {
-			this.logError("Unable to initialize Edges: ", e);
+			this.log.error("Unable to initialize Edges.", e);
 		}
 	}
 
 	private void logCachingProgress(int count, int interval) {
 		if (count % interval == 0 && count > 0) {
-			this.parent.logInfo(this.log, String.format("Caching Edges from Postgres [%1$6s]", count));
+			final var formated = String.format("%1$6s", count);
+			this.log.info("Caching Edges from Postgres [{}]", formated);
 		}
-	}
-
-	private void logError(String msg, Throwable error) {
-		this.parent.logError(this.log, new StringBuilder(msg) //
-				.append(error.getClass().getSimpleName()) //
-				.append(": ").append(error.getMessage()) //
-				.toString());
-		this.log.error(error.getMessage(), error);
 	}
 
 	/**

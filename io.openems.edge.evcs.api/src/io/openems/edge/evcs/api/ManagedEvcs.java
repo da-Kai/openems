@@ -1,6 +1,8 @@
 package io.openems.edge.evcs.api;
 
 import org.osgi.annotation.versioning.ProviderType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.channel.PersistencePriority;
@@ -23,6 +25,8 @@ import io.openems.edge.common.type.TypeUtils;
 
 @ProviderType
 public interface ManagedEvcs extends Evcs {
+
+	public static final Logger INTERNAL_LOGGER = LoggerFactory.getLogger(ManagedEvcs.class);
 
 	/**
 	 * Get the {@link EvcsPower}.
@@ -156,13 +160,6 @@ public interface ManagedEvcs extends Evcs {
 	 */
 	public ChargeStateHandler getChargeStateHandler();
 
-	/**
-	 * Log debug using {@link ManagedEvcs} Logger.
-	 * 
-	 * @param message message
-	 */
-	public void logDebug(String message);
-
 	public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 
 		/**
@@ -183,9 +180,9 @@ public interface ManagedEvcs extends Evcs {
 		 * <li>Unit: W
 		 * </ul>
 		 */
-		POWER_PRECISION(Doc.of(OpenemsType.DOUBLE) //
-				.unit(Unit.WATT) //
-				.accessMode(AccessMode.READ_ONLY) //
+		POWER_PRECISION(Doc.of(OpenemsType.DOUBLE)//
+				.unit(Unit.WATT)//
+				.accessMode(AccessMode.READ_ONLY)//
 				.persistencePriority(PersistencePriority.HIGH)), //
 
 		/**
@@ -216,9 +213,9 @@ public interface ManagedEvcs extends Evcs {
 		 * <li>Unit: W
 		 * </ul>
 		 */
-		SET_CHARGE_POWER_LIMIT(Doc.of(OpenemsType.INTEGER) //
-				.unit(Unit.WATT) //
-				.persistencePriority(PersistencePriority.HIGH) //
+		SET_CHARGE_POWER_LIMIT(Doc.of(OpenemsType.INTEGER)//
+				.unit(Unit.WATT)//
+				.persistencePriority(PersistencePriority.HIGH)//
 				.accessMode(AccessMode.READ_WRITE)), //
 
 		/**
@@ -264,7 +261,7 @@ public interface ManagedEvcs extends Evcs {
 						evcs.setChargePowerLimit(filterOutput);
 
 						if (evcs instanceof ManagedEvcs me) {
-							me.logDebug("Filter: " + value + " -> " + filterOutput);
+							INTERNAL_LOGGER.debug("ManagedEvcs {}: Filter: {} -> {}", me.id(), value, filterOutput);
 						}
 					}
 				})), //
@@ -278,8 +275,8 @@ public interface ManagedEvcs extends Evcs {
 		 * <li>Type: Boolean
 		 * </ul>
 		 */
-		IS_CLUSTERED(Doc.of(OpenemsType.BOOLEAN) //
-				.accessMode(AccessMode.READ_ONLY) //
+		IS_CLUSTERED(Doc.of(OpenemsType.BOOLEAN)//
+				.accessMode(AccessMode.READ_ONLY)//
 				.persistencePriority(PersistencePriority.HIGH)), //
 
 		/**
@@ -294,8 +291,8 @@ public interface ManagedEvcs extends Evcs {
 		 * <li>Type: ChargeMode
 		 * </ul>
 		 */
-		CHARGE_MODE(Doc.of(ChargeMode.values()) //
-				.accessMode(AccessMode.READ_ONLY) //
+		CHARGE_MODE(Doc.of(ChargeMode.values())//
+				.accessMode(AccessMode.READ_ONLY)//
 				.persistencePriority(PersistencePriority.HIGH)), //
 
 		/**
@@ -311,7 +308,7 @@ public interface ManagedEvcs extends Evcs {
 		 * <li>Type: String
 		 * </ul>
 		 */
-		SET_DISPLAY_TEXT(Doc.of(OpenemsType.STRING) //
+		SET_DISPLAY_TEXT(Doc.of(OpenemsType.STRING)//
 				.accessMode(AccessMode.READ_WRITE)),
 
 		/**
@@ -325,8 +322,8 @@ public interface ManagedEvcs extends Evcs {
 		 * <li>Unit: W
 		 * </ul>
 		 */
-		SET_CHARGE_POWER_REQUEST(Doc.of(OpenemsType.INTEGER) //
-				.unit(Unit.WATT) //
+		SET_CHARGE_POWER_REQUEST(Doc.of(OpenemsType.INTEGER)//
+				.unit(Unit.WATT)//
 				.accessMode(AccessMode.READ_WRITE)),
 
 		/**
@@ -339,8 +336,8 @@ public interface ManagedEvcs extends Evcs {
 		 * <li>Unit: Wh
 		 * </ul>
 		 */
-		SET_ENERGY_LIMIT(Doc.of(OpenemsType.INTEGER) //
-				.unit(Unit.WATT_HOURS) //
+		SET_ENERGY_LIMIT(Doc.of(OpenemsType.INTEGER)//
+				.unit(Unit.WATT_HOURS)//
 				.accessMode(AccessMode.READ_WRITE)),
 
 		/**
@@ -356,8 +353,8 @@ public interface ManagedEvcs extends Evcs {
 		 * <li>Type: {@link ChargeState}
 		 * </ul>
 		 */
-		CHARGE_STATE(Doc.of(ChargeState.values()) //
-				.accessMode(AccessMode.READ_ONLY) //
+		CHARGE_STATE(Doc.of(ChargeState.values())//
+				.accessMode(AccessMode.READ_ONLY)//
 				.persistencePriority(PersistencePriority.HIGH));
 
 		private final Doc doc;

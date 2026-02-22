@@ -24,7 +24,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -73,7 +72,7 @@ public class BydBatteryBoxCommercialC130Impl extends AbstractOpenemsModbusCompon
 	private static final int OLD_VERSION_DEFAULT_CHARGE_MAX_VOLTAGE = 820;
 	private static final int OLD_VERSION_DEFAULT_DISCHARGE_MIN_VOLTAGE = 638;
 
-	private final Logger log = LoggerFactory.getLogger(BydBatteryBoxCommercialC130Impl.class);
+	private final Logger log;
 	private final StateMachine stateMachine = new StateMachine(State.UNDEFINED);
 
 	@Reference
@@ -100,6 +99,7 @@ public class BydBatteryBoxCommercialC130Impl extends AbstractOpenemsModbusCompon
 				BydBatteryBoxCommercialC130.ChannelId.values(), //
 				BatteryProtection.ChannelId.values() //
 		);
+		this.log = OpenemsComponent.getComponentLogger(this);
 	}
 
 	@Activate
@@ -167,7 +167,7 @@ public class BydBatteryBoxCommercialC130Impl extends AbstractOpenemsModbusCompon
 
 		} catch (OpenemsNamedException e) {
 			this.channel(BydBatteryBoxCommercialC130.ChannelId.RUN_FAILED).setNextValue(true);
-			this.logError(this.log, "StateMachine failed: " + e.getMessage());
+			this.log.error("StateMachine failed: {}", e.getMessage());
 		}
 	}
 
@@ -943,15 +943,16 @@ public class BydBatteryBoxCommercialC130Impl extends AbstractOpenemsModbusCompon
 
 	private boolean isModbusProtocolInitialized = false;
 	private final Consumer<Integer> onRegister0x2100Update = value -> {
+		final var self = BydBatteryBoxCommercialC130Impl.this;
 		if (value == null) {
 			// ignore invalid values; modbus bridge has no connection yet
 			return;
 		}
-		if (BydBatteryBoxCommercialC130Impl.this.isModbusProtocolInitialized) {
+		if (self.isModbusProtocolInitialized) {
 			// execute only once
 			return;
 		}
-		BydBatteryBoxCommercialC130Impl.this.isModbusProtocolInitialized = true;
+		self.isModbusProtocolInitialized = true;
 
 		// Try to read MODULE_QTY Register
 		readElementOnce(FC3, this.getModbusProtocol(), ModbusUtils::doNotRetry, new UnsignedWordElement(0x210D))
@@ -971,8 +972,7 @@ public class BydBatteryBoxCommercialC130Impl extends AbstractOpenemsModbusCompon
 												SCALE_FACTOR_MINUS_1) //
 						));
 					} else {
-						BydBatteryBoxCommercialC130Impl.this.logInfo(BydBatteryBoxCommercialC130Impl.this.log,
-								"Detected old hardware version. Registers are not available. Setting default values.");
+						self.log.info("Detected old hardware version. Registers are not available. Setting default values.");
 
 						this._setChargeMaxVoltage(OLD_VERSION_DEFAULT_CHARGE_MAX_VOLTAGE);
 						this._setDischargeMinVoltage(OLD_VERSION_DEFAULT_DISCHARGE_MIN_VOLTAGE);

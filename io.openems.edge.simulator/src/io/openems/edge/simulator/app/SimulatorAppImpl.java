@@ -31,7 +31,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
@@ -85,7 +84,7 @@ public class SimulatorAppImpl extends AbstractOpenemsComponent implements Simula
 
 	private static final long MILLISECONDS_BETWEEN_LOGS = 5_000;
 
-	private final Logger log = LoggerFactory.getLogger(SimulatorAppImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ConfigurationAdmin cm;
@@ -172,7 +171,7 @@ public class SimulatorAppImpl extends AbstractOpenemsComponent implements Simula
 	 */
 	private synchronized CompletableFuture<ExecuteSimulationResponse> handleExecuteSimulationRequest(User user,
 			ExecuteSimulationRequest request) throws OpenemsNamedException {
-		this.logInfo(this.log, "Starting Simulation");
+		this.log.info("Starting Simulation");
 
 		this.deleteAllConfigurations(user);
 
@@ -185,15 +184,15 @@ public class SimulatorAppImpl extends AbstractOpenemsComponent implements Simula
 		// Create Components
 		Set<String> simulatorComponentIds = new HashSet<>();
 		for (var createRequest : request.components) {
-			this.logInfo(this.log, "Create Component [" + createRequest.getComponentId() + "] from ["
-					+ createRequest.getFactoryPid() + "]");
+			this.log.info("Create Component [{}] from [{}]", createRequest.getComponentId(),
+					createRequest.getFactoryPid());
 			simulatorComponentIds.add(createRequest.getComponentId());
 			this.componentManager.handleCreateComponentConfigRequest(user,
 					new CreateComponentConfig.Request(createRequest.getFactoryPid(), createRequest.getProperties()));
 		}
 		this.waitForComponentsToActivate(simulatorComponentIds);
 
-		this.logInfo(this.log, "All Simulator-Components are activated!");
+		this.log.info("All Simulator-Components are activated!");
 
 		// prepare response
 		var response = new CompletableFuture<ExecuteSimulationResponse>();
@@ -253,7 +252,10 @@ public class SimulatorAppImpl extends AbstractOpenemsComponent implements Simula
 		var now = ZonedDateTime.now(currentSimulation.clock);
 
 		if (System.currentTimeMillis() - MILLISECONDS_BETWEEN_LOGS > this.lastLogMessage) {
-			this.logInfo(this.log, "Simulating " + now.withZoneSameInstant(ZoneId.of("UTC")));
+			this.log.atInfo() //
+					.setMessage("Simulating {}") //
+					.addArgument(() -> now.withZoneSameInstant(ZoneId.of("UTC"))) //
+					.log();
 			this.lastLogMessage = System.currentTimeMillis();
 		}
 
@@ -343,14 +345,14 @@ public class SimulatorAppImpl extends AbstractOpenemsComponent implements Simula
 			}
 		}
 		this.waitForComponentsToDeactivate(deletedComponents);
-		this.logInfo(this.log, "All Components are deactivated!");
+		this.log.info("All Components are deactivated!");
 	}
 
 	/**
 	 * Stop the Simulation.
 	 */
 	private void stopSimulation() {
-		this.logInfo(this.log, "Stopping Simulation");
+		this.log.info("Stopping Simulation");
 
 		var currentSimulation = this.currentSimulation;
 		final User user;
@@ -369,7 +371,7 @@ public class SimulatorAppImpl extends AbstractOpenemsComponent implements Simula
 		try {
 			this.deleteAllConfigurations(user);
 		} catch (OpenemsNamedException e) {
-			this.logError(this.log, "Unable to stop Simulation: " + e.getMessage());
+			this.log.error("Unable to stop Simulation: {}", e.getMessage());
 			e.printStackTrace();
 		}
 	}
@@ -382,7 +384,7 @@ public class SimulatorAppImpl extends AbstractOpenemsComponent implements Simula
 	 * @throws OpenemsNamedException on error
 	 */
 	private void deleteComponent(User user, String componentId) throws OpenemsNamedException {
-		this.logInfo(this.log, "Delete Component [" + componentId + "]");
+		this.log.info("Delete Component [{}]", componentId);
 		var deleteComponentConfigRequest = new DeleteComponentConfig.Request(componentId);
 		this.componentManager.handleDeleteComponentConfigRequest(user, deleteComponentConfigRequest);
 	}
@@ -399,7 +401,7 @@ public class SimulatorAppImpl extends AbstractOpenemsComponent implements Simula
 			properties.put("cycleTime", cycleTime);
 			config.update(properties);
 		} catch (IOException e) {
-			this.logError(this.log, "Unable to configure Core Cycle-Time. " + e.getClass() + ": " + e.getMessage());
+			this.log.error("Unable to configure Core Cycle-Time. {}: {}", e.getClass(), e.getMessage());
 		}
 	}
 
@@ -414,8 +416,7 @@ public class SimulatorAppImpl extends AbstractOpenemsComponent implements Simula
 			properties.put("enablePid", false);
 			config.update(properties);
 		} catch (IOException e) {
-			this.logError(this.log,
-					"Unable to configure Ess.Power enabledPid. " + e.getClass() + ": " + e.getMessage());
+			this.log.error("Unable to configure Ess.Power enabledPid. {}: {}", e.getClass(), e.getMessage());
 		}
 	}
 
@@ -430,11 +431,11 @@ public class SimulatorAppImpl extends AbstractOpenemsComponent implements Simula
 				// finished
 				return;
 			}
-			this.logInfo(this.log, "Still waiting for [" + simulatorComponentIds + "] to activate");
+			this.log.info("Still waiting for [{}] to activate", simulatorComponentIds);
 			try {
 				Thread.sleep(500);
 			} catch (InterruptedException e) {
-				this.log.warn(e.getClass().getSimpleName() + ": " + e.getMessage());
+				this.log.warn("{}: {}", e.getClass().getSimpleName(), e.getMessage());
 			}
 		}
 		throw new OpenemsException("Timeout while waiting for [" + simulatorComponentIds + "] to activate");

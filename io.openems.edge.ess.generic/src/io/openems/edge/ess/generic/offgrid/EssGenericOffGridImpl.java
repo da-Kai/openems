@@ -23,7 +23,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -67,7 +66,7 @@ public class EssGenericOffGridImpl
 		implements EssGenericManagedSymmetric, OffGridEss, GenericManagedEss, ManagedSymmetricEss, SymmetricEss,
 		OpenemsComponent, EventHandler, StartStoppable, ModbusSlave, CycleProvider {
 
-	private final Logger log = LoggerFactory.getLogger(EssGenericOffGridImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final StateMachine stateMachine = new StateMachine(UNDEFINED);
 	private final ChannelManager channelManager = new ChannelManager(this);
 	private final AtomicBoolean fromOffToOnGrid = new AtomicBoolean(false);
@@ -144,7 +143,7 @@ public class EssGenericOffGridImpl
 			this.channel(EssGenericOffGrid.ChannelId.RUN_FAILED).setNextValue(false);
 		} catch (OpenemsNamedException e) {
 			this.channel(EssGenericOffGrid.ChannelId.RUN_FAILED).setNextValue(true);
-			this.logError(this.log, "StateMachine failed: " + e.getMessage());
+			this.log.error("StateMachine failed: {}", e.getMessage());
 		}
 	}
 

@@ -21,7 +21,6 @@ import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.InvalidValueException;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -45,7 +44,7 @@ public class ControllerEssTimeslotPeakshavingImpl extends AbstractOpenemsCompone
 
 	private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("H:mm");
 
-	private final Logger log = LoggerFactory.getLogger(ControllerEssTimeslotPeakshavingImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ComponentManager componentManager;
@@ -202,7 +201,7 @@ public class ControllerEssTimeslotPeakshavingImpl extends AbstractOpenemsCompone
 		var gridMode = ess.getGridMode();
 		switch (gridMode) {
 		case UNDEFINED:
-			this.logWarn(this.log, "Grid-Mode is [UNDEFINED]");
+			this.log.warn("Grid-Mode is [UNDEFINED]");
 			break;
 		case ON_GRID:
 			break;

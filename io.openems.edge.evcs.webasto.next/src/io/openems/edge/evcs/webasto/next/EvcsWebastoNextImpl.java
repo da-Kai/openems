@@ -17,8 +17,6 @@ import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
@@ -61,8 +59,6 @@ public class EvcsWebastoNextImpl extends AbstractOpenemsModbusComponent implemen
 		ElectricityMeter, ModbusComponent, OpenemsComponent, EventHandler {
 
 	private static final int DEFAULT_LIFE_BIT = 1;
-
-	private final Logger log = LoggerFactory.getLogger(EvcsWebastoNext.class);
 
 	/** Handles charge states. */
 	private final ChargeStateHandler chargeStateHandler = new ChargeStateHandler(this);
@@ -292,14 +288,7 @@ public class EvcsWebastoNextImpl extends AbstractOpenemsModbusComponent implemen
 	public ChargeStateHandler getChargeStateHandler() {
 		return this.chargeStateHandler;
 	}
-
-	@Override
-	public void logDebug(String message) {
-		if (this.config.debugMode()) {
-			this.logInfo(this.log, message);
-		}
-	}
-
+	
 	@Override
 	public void handleEvent(Event event) {
 		if (!this.isEnabled()) {

@@ -5,8 +5,8 @@ import java.util.Map;
 
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import io.openems.common.logger.ContextLogger;
 import io.openems.common.websocket.AbstractWebsocketClient;
 import io.openems.common.websocket.OnClose;
 import io.openems.common.websocket.OnError;
@@ -17,7 +17,7 @@ import io.openems.common.websocket.WsData;
 
 public class TestClient extends AbstractWebsocketClient<WsData> {
 
-	private final Logger log = LoggerFactory.getLogger(TestClient.class);
+	private final Logger log;
 
 	private OnOpen onOpen;
 	private OnRequest onRequest;
@@ -27,21 +27,22 @@ public class TestClient extends AbstractWebsocketClient<WsData> {
 
 	protected TestClient(URI serverUri, Map<String, String> httpHeaders) {
 		super("JsonTest.Unittest", serverUri, httpHeaders);
+		this.log = new ContextLogger(TestClient.class, this.getName());
 		this.onOpen = (ws, handshake) -> {
 			return null;
 		};
 		this.onRequest = (ws, request) -> {
-			this.log.info("OnRequest: " + request);
+			this.log.info("OnRequest: {}", request);
 			return null;
 		};
 		this.onNotification = (ws, notification) -> {
-			this.log.info("OnNotification: " + notification);
+			this.log.info("OnNotification: {}", notification);
 		};
 		this.onError = (ws, ex) -> {
-			this.log.info("onError: " + ex.getMessage());
+			this.log.info("onError: {}", ex.getMessage());
 		};
 		this.onClose = (ws, code, reason, remote) -> {
-			this.log.info("onClose: " + reason);
+			this.log.info("onClose: {}", reason);
 		};
 	}
 
@@ -101,22 +102,12 @@ public class TestClient extends AbstractWebsocketClient<WsData> {
 	}
 
 	@Override
-	protected void logInfo(Logger log, String message) {
-		log.info(message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		log.warn(message);
-	}
-
-	@Override
-	protected void logError(Logger log, String message) {
-		log.error(message);
-	}
-
-	@Override
 	protected void execute(Runnable command) {
 		command.run();
+	}
+
+	@Override
+	protected Logger getLogger() {
+		return this.log;
 	}
 }

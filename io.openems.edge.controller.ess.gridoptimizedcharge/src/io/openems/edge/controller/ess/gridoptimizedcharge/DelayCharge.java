@@ -91,7 +91,9 @@ public class DelayCharge {
 			StateChannel noValidManualTargetTime = this.parent
 					.channel(ControllerEssGridOptimizedCharge.ChannelId.NO_VALID_MANUAL_TARGET_TIME);
 			noValidManualTargetTime.setNextValue(true);
-			this.parent.logDebug(noValidManualTargetTime.channelDoc().getText());
+			this.parent.debug() //
+				.setMessage(() -> noValidManualTargetTime.channelDoc().getText()) //
+				.log();
 		}
 
 		var targetMinute = targetTime.get(MINUTE_OF_DAY);
@@ -169,8 +171,10 @@ public class DelayCharge {
 
 		// Displays the production values once, if debug mode is activated.
 		if (this.predictionDebugLog) {
-			this.parent.logDebug("Production: " + Arrays.toString(hourlyProduction));
-			this.parent.logDebug("Consumption: " + Arrays.toString(hourlyConsumption));
+			this.parent.debug().setMessage("Production: {}")
+					.addArgument(() -> Arrays.toString(hourlyProduction)).log();
+			this.parent.debug().setMessage("Consumption: {}")
+					.addArgument(() -> Arrays.toString(hourlyConsumption)).log();
 			this.predictionDebugLog = false;
 		}
 
@@ -192,7 +196,7 @@ public class DelayCharge {
 
 			// No target minute calculated - Production may never be higher than consumption
 			this.setDelayChargeStateAndLimit(DelayChargeState.TARGET_MINUTE_NOT_CALCULATED, null);
-			this.parent.logDebug("No target minute calculated - Production may never be higher than consumption");
+			this.parent.debug().setMessage("No target minute calculated - Production may never be higher than consumption").log();
 			return null;
 
 		} else {
@@ -332,7 +336,7 @@ public class DelayCharge {
 		// Avoid discharging the ESS
 		if (calculatedPower < 0) {
 			this.setDelayChargeStateAndLimit(DelayChargeState.NO_CHARGE_LIMIT, null);
-			this.parent.logDebug("System would charge from the grid under these constraints");
+			this.parent.debug().setMessage("System would charge from the grid under these constraints");
 			this.parent.channel(ControllerEssGridOptimizedCharge.ChannelId.DELAY_CHARGE_NEGATIVE_LIMIT)
 					.setNextValue(true);
 			return null;

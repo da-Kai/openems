@@ -6,10 +6,10 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import eu.chargetime.ocpp.feature.profile.ServerCoreEventHandler;
 import eu.chargetime.ocpp.model.core.AuthorizationStatus;
@@ -36,6 +36,7 @@ import eu.chargetime.ocpp.model.core.StatusNotificationRequest;
 import eu.chargetime.ocpp.model.core.StopTransactionConfirmation;
 import eu.chargetime.ocpp.model.core.StopTransactionRequest;
 import eu.chargetime.ocpp.model.core.ValueFormat;
+import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.evcs.api.Status;
 import io.openems.edge.evcs.ocpp.common.AbstractManagedOcppEvcsComponent;
 import io.openems.edge.evcs.ocpp.common.ChargingProperty;
@@ -43,31 +44,33 @@ import io.openems.edge.evcs.ocpp.common.OcppInformations;
 
 public class CoreEventHandlerImpl implements ServerCoreEventHandler {
 
-	private final Logger log = LoggerFactory.getLogger(CoreEventHandlerImpl.class);
+	private final Logger log;
 
 	private final EvcsOcppServer parent;
 
 	public CoreEventHandlerImpl(EvcsOcppServer parent) {
 		this.parent = parent;
+		this.log = OpenemsComponent.getComponentLogger(CoreEventHandlerImpl.class, parent);
 	}
 
 	@Override
 	public BootNotificationConfirmation handleBootNotificationRequest(UUID sessionIndex,
 			BootNotificationRequest request) {
 
-		this.logDebug("Handle BootNotificationRequest: " + request);
+		this.debug().ifPresent(l -> l.info("Handle BootNotificationRequest: {}", request));
+
 
 		var response = new BootNotificationConfirmation(Instant.now().atZone(ZoneOffset.UTC), 100,
 				RegistrationStatus.Accepted);
-		this.logDebug("Send BootNotificationConfirmation: " + response.toString());
+		this.debug().ifPresent(l -> l.info("Send BootNotificationConfirmation: {}", response));
 
 		return response;
 	}
 
 	@Override
 	public AuthorizeConfirmation handleAuthorizeRequest(UUID sessionIndex, AuthorizeRequest request) {
-
-		this.logDebug("Handle AuthorizeRequest: " + request);
+		
+		this.debug().ifPresent(l -> l.info("Handle AuthorizeRequest: {}", request));
 
 		var tag = new IdTagInfo(AuthorizationStatus.Accepted);
 		tag.setParentIdTag(request.getIdTag());
@@ -77,20 +80,20 @@ public class CoreEventHandlerImpl implements ServerCoreEventHandler {
 	@Override
 	public DataTransferConfirmation handleDataTransferRequest(UUID sessionIndex, DataTransferRequest request) {
 
-		this.logDebug("Handle DataTransferRequest: " + request);
+		this.debug().ifPresent(l -> l.info("Handle DataTransferRequest: {}", request));
 		return new DataTransferConfirmation(DataTransferStatus.Accepted);
 	}
 
 	@Override
 	public HeartbeatConfirmation handleHeartbeatRequest(UUID sessionIndex, HeartbeatRequest request) {
 
-		this.logDebug("Handle HeartbeatRequest: " + request);
+		this.debug().ifPresent(l -> l.info("Handle HeartbeatRequest: {}", request));
 		return new HeartbeatConfirmation(Instant.now().atZone(ZoneOffset.UTC));
 	}
 
 	@Override
 	public MeterValuesConfirmation handleMeterValuesRequest(UUID sessionIndex, MeterValuesRequest request) {
-		this.logDebug("Handle MeterValuesRequest: " + request);
+		this.debug().ifPresent(l -> l.info("Handle MeterValuesRequest: {}", request));
 
 		var evcs = this.getEvcsBySessionIndexAndConnector(sessionIndex, request.getConnectorId());
 		if (evcs == null) {
@@ -127,7 +130,9 @@ public class CoreEventHandlerImpl implements ServerCoreEventHandler {
 					var measurand = OcppInformations
 							.valueOf("CORE_METER_VALUES_" + measurandString.replace(".", "_").toUpperCase());
 
-					this.logDebug(measurandString + ": " + val + " " + unitString + " Phases: " + phases);
+					final String valStr = val;
+					this.debug().ifPresent(l -> l.info("{}: {} {} Phases: {}", //
+							measurandString, valStr, unitString, phases));
 
 					if (evcs.getSupportedMeasurements().contains(measurand)) {
 
@@ -253,7 +258,7 @@ public class CoreEventHandlerImpl implements ServerCoreEventHandler {
 	public StatusNotificationConfirmation handleStatusNotificationRequest(UUID sessionIndex,
 			StatusNotificationRequest request) {
 
-		this.logDebug("Handle StatusNotificationRequest: " + request);
+		this.debug().ifPresent(logger -> logger.info("Handle StatusNotificationRequest: {}", request));
 		var evcs = this.getEvcsBySessionIndexAndConnector(sessionIndex, request.getConnectorId());
 		if (evcs == null) {
 			return new StatusNotificationConfirmation();
@@ -298,7 +303,7 @@ public class CoreEventHandlerImpl implements ServerCoreEventHandler {
 			evcsStatus = Status.READY_FOR_CHARGING;
 		}
 		case Reserved -> {
-			this.logDebug("Reservation currently not supported");
+			this.debug().ifPresent(l -> l.info("Reservation currently not supported"));
 		}
 		case SuspendedEV -> {
 			evcsStatus = Status.CHARGING_REJECTED;
@@ -307,7 +312,7 @@ public class CoreEventHandlerImpl implements ServerCoreEventHandler {
 			evcsStatus = Status.CHARGING_REJECTED;
 		}
 		case Unavailable -> {
-			this.logDebug("Charging Station is Unavailable.");
+			this.debug().ifPresent(l -> l.info("Charging Station is Unavailable."));
 			evcs._setChargingstationCommunicationFailed(true);
 			evcsStatus = Status.ERROR;
 		}
@@ -326,8 +331,9 @@ public class CoreEventHandlerImpl implements ServerCoreEventHandler {
 	@Override
 	public StartTransactionConfirmation handleStartTransactionRequest(UUID sessionIndex,
 			StartTransactionRequest request) {
-
-		this.logDebug("Handle StartTransactionRequest: " + request);
+		
+		this.debug().ifPresent(logger -> 
+		logger.info("Handle StartTransactionRequest: {}", request));
 
 		var idTagInfo = new IdTagInfo(AuthorizationStatus.Accepted);
 		idTagInfo.setParentIdTag(request.getIdTag());
@@ -338,7 +344,8 @@ public class CoreEventHandlerImpl implements ServerCoreEventHandler {
 	@Override
 	public StopTransactionConfirmation handleStopTransactionRequest(UUID sessionIndex, StopTransactionRequest request) {
 
-		this.logDebug("Handle StopTransactionRequest: " + request);
+		this.debug().ifPresent(logger -> 
+			logger.info("Handle StopTransactionRequest: {}", request));
 
 		var tag = new IdTagInfo(AuthorizationStatus.Accepted);
 		tag.setParentIdTag(request.getIdTag());
@@ -395,7 +402,8 @@ public class CoreEventHandlerImpl implements ServerCoreEventHandler {
 				}
 			}
 		}
-		this.logDebug("No Chargingstation for session " + sessionIndex + " and connector " + connectorId + " found.");
+		this.debug().ifPresent(logger -> 
+			logger.info("No Chargingstation for session {} and connector {} found.", sessionIndex, connectorId));
 		return null;
 	}
 
@@ -458,14 +466,19 @@ public class CoreEventHandlerImpl implements ServerCoreEventHandler {
 		var lastEnergy = lastMeterValue.getTotalMeterEnergy();
 
 		var power = (int) Math.round((currentEnergy - lastEnergy) / (diffseconds / 3600.0));
-
-		this.logDebug("Last: " + String.valueOf(lastEnergy) + "Wh, Current: " + String.valueOf(currentEnergy)
-				+ "Wh. Calculated Power: " + power + "; Sekunden differenz: " + diffseconds);
+		
+		this.debug().ifPresent(logger -> 
+			logger.info("Last: {} Wh, Current: {} Wh. Calculated Power: {}; Sekunden differenz: {}", 
+				lastEnergy, currentEnergy, power, diffseconds));
 
 		return power;
 	}
-
-	private void logDebug(String message) {
-		this.parent.logDebug(this.log, message);
+	
+	private Optional<Logger> debug() {
+		if (this.parent.config.debugMode()) {
+			return Optional.of(this.log);
+		} else {
+			return Optional.empty();
+		}
 	}
 }

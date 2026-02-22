@@ -20,7 +20,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 
@@ -51,7 +50,7 @@ import io.openems.edge.timedata.api.utils.CalculateEnergyFromPower;
 public class SamsungEssGridMeterImpl extends AbstractOpenemsComponent
 		implements SamsungEssGridMeter, ElectricityMeter, OpenemsComponent, EventHandler, TimedataProvider {
 
-	private final Logger log = LoggerFactory.getLogger(SamsungEssGridMeterImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final CalculateEnergyFromPower calculateProductionEnergy = new CalculateEnergyFromPower(this,
 			ElectricityMeter.ChannelId.ACTIVE_PRODUCTION_ENERGY);
 	private final CalculateEnergyFromPower calculateConsumptionEnergy = new CalculateEnergyFromPower(this,
@@ -124,7 +123,7 @@ public class SamsungEssGridMeterImpl extends AbstractOpenemsComponent
 		String currentGridStatus = "Unknown";
 
 		if (error != null) {
-			this.logDebug(this.log, error.getMessage());
+			this.log.debug(error.getMessage());
 		} else {
 			try {
 
@@ -153,7 +152,7 @@ public class SamsungEssGridMeterImpl extends AbstractOpenemsComponent
 
 				}
 			} catch (OpenemsNamedException e) {
-				this.logDebug(this.log, e.getMessage());
+				this.log.debug(e.getMessage());
 			}
 		}
 

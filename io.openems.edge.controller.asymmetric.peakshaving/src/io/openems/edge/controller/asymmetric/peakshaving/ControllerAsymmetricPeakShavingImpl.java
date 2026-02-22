@@ -8,7 +8,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
@@ -28,7 +27,7 @@ import io.openems.edge.meter.api.ElectricityMeter;
 public class ControllerAsymmetricPeakShavingImpl extends AbstractOpenemsComponent
 		implements ControllerAsymmetricPeakShaving, Controller, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(ControllerAsymmetricPeakShavingImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ComponentManager componentManager;
@@ -65,11 +64,10 @@ public class ControllerAsymmetricPeakShavingImpl extends AbstractOpenemsComponen
 		 */
 		var gridMode = ess.getGridMode();
 		if (gridMode.isUndefined()) {
-			this.logWarn(this.log, "Grid-Mode is [UNDEFINED]");
+			this.log.warn("Grid-Mode is [UNDEFINED]");
 		}
 		switch (gridMode) {
-		case ON_GRID:
-		case UNDEFINED:
+		case ON_GRID, UNDEFINED:
 			break;
 		case OFF_GRID:
 			return;

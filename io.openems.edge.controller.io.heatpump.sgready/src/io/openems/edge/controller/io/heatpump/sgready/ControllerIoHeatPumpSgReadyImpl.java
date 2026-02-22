@@ -17,7 +17,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.ChannelAddress;
@@ -45,7 +44,7 @@ import io.openems.edge.timedata.api.TimedataProvider;
 public class ControllerIoHeatPumpSgReadyImpl extends AbstractOpenemsComponent
 		implements Controller, OpenemsComponent, ControllerIoHeatPumpSgReady, EventHandler, TimedataProvider {
 
-	private final Logger log = LoggerFactory.getLogger(ControllerIoHeatPumpSgReadyImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	/*
 	 * Status definitions for each state. Are responsible for the time calculation
@@ -286,15 +285,14 @@ public class ControllerIoHeatPumpSgReadyImpl extends AbstractOpenemsComponent
 		var currentValueOpt = outputChannel.value().asOptional();
 
 		if (!currentValueOpt.isPresent() || currentValueOpt.get() != value) {
-			this.logDebug(this.log, "Set output [" + outputChannel.address() + "] " + value + ".");
+			this.logInDebugMode("Set output [{}] {}.",  outputChannel.address(), value);
 			outputChannel.setNextWriteValue(value);
 		}
 	}
 
-	@Override
-	protected void logDebug(Logger log, String message) {
+	protected void logInDebugMode(String message, Object... args) {
 		if (this.config.debugMode()) {
-			this.logInfo(this.log, message);
+			this.log.info(message);
 		}
 	}
 

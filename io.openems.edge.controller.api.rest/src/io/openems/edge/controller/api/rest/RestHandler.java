@@ -20,7 +20,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonObject;
 
@@ -32,6 +31,7 @@ import io.openems.common.jsonrpc.base.JsonrpcMessage;
 import io.openems.common.jsonrpc.base.JsonrpcRequest;
 import io.openems.common.jsonrpc.base.JsonrpcResponseSuccess;
 import io.openems.common.jsonrpc.request.SetChannelValueRequest;
+import io.openems.common.logger.ContextLogger;
 import io.openems.common.session.Role;
 import io.openems.common.types.ChannelAddress;
 import io.openems.common.utils.JettyUtils;
@@ -43,11 +43,12 @@ import io.openems.edge.common.user.User;
 
 public class RestHandler extends Handler.Abstract {
 
-	private final Logger log = LoggerFactory.getLogger(RestHandler.class);
+	private final Logger log;
 	private final AbstractRestApi parent;
 
 	public RestHandler(AbstractRestApi parent) {
 		this.parent = parent;
+		this.log = new ContextLogger(RestHandler.class, parent.id());
 	}
 
 	@Override
@@ -70,7 +71,7 @@ public class RestHandler extends Handler.Abstract {
 			// Debug log for URIs with square brackets
 			if (target.contains("[") || target.contains("]")) {
 				if (this.parent.isDebugModeEnabled()) {
-					this.parent.logInfo(this.log, "Processing URI with square brackets: " + target);
+					this.log.info("Processing URI with square brackets: {}", target);
 				}
 			}
 
@@ -103,7 +104,7 @@ public class RestHandler extends Handler.Abstract {
 
 		} catch (Exception e) {
 			if (this.parent.isDebugModeEnabled()) {
-				this.parent.logError(this.log, "REST call failed: " + e.getMessage());
+				this.log.error("REST call failed: {}", e.getMessage());
 			}
 			callback.failed(e);
 			return false;
@@ -190,8 +191,7 @@ public class RestHandler extends Handler.Abstract {
 		final var channelId = targets.get(1);
 
 		if (this.parent.isDebugModeEnabled()) {
-			this.parent.logInfo(this.log,
-					"Processing channel request - componentId: [" + componentId + "], channelId: [" + channelId + "]");
+			this.log.info("Processing channel request - componentId: [{}], channelId: [{}]", componentId, channelId);
 		}
 
 		var channelAddress = new ChannelAddress(componentId, channelId);
@@ -217,7 +217,7 @@ public class RestHandler extends Handler.Abstract {
 		var components = this.parent.getComponentManager().getEnabledComponents();
 
 		if (this.parent.isDebugModeEnabled()) {
-			this.parent.logInfo(this.log, "Looking for channels matching [" + channelAddress.toString() + "]");
+			this.log.info("Looking for channels matching [{}]", channelAddress.toString());
 		}
 
 		// Get channels with proper handling of square brackets
@@ -232,8 +232,7 @@ public class RestHandler extends Handler.Abstract {
 		// If no channel matches, send a 404.
 		if (channels.isEmpty()) {
 			if (this.parent.isDebugModeEnabled()) {
-				this.parent.logWarn(this.log, "REST call by User [" + user.getName() + "]: GET Channel ["
-						+ channelAddress.toString() + "] Result [No Match]");
+				this.log.warn("REST call by User [{}]: GET Channel [{}] Result [No Match]", user.getName(), channelAddress.toString());
 			}
 			response.setStatus(HttpStatus.NOT_FOUND_404);
 			return false;
@@ -256,9 +255,7 @@ public class RestHandler extends Handler.Abstract {
 				: channeljson;
 
 		if (this.parent.isDebugModeEnabled()) {
-			this.parent.logInfo(this.log, "REST call by User [" + user.getName() + "]: GET " //
-					+ "Channel [" + channelAddress + "] " //
-					+ "Result [" + result.toString() + "]");
+			this.log.info("REST call by User [{}]: GET Channel [{}] Result [{}]", user.getName(), channelAddress, result);
 		}
 
 		return sendOkResponse(response, result);
@@ -298,9 +295,8 @@ public class RestHandler extends Handler.Abstract {
 		var jValue = jHttpPost.get("value");
 
 		if (this.parent.isDebugModeEnabled()) {
-			this.parent.logInfo(this.log, "REST call by User [" + user.getName() + "]: POST " //
-					+ "Channel [" + channelAddress.toString() + "] " //
-					+ "value [" + jValue + "]");
+			this.log.info("REST call by User [{}]: POST Channel [{}] value [{}]", //
+					user.getName(), channelAddress.toString(), jValue);
 		}
 
 		// Dispatch the set channel value request.
@@ -321,8 +317,7 @@ public class RestHandler extends Handler.Abstract {
 			}
 			var json = parseJson(request);
 			if (this.parent.isDebugModeEnabled()) {
-				this.parent.logInfo(this.log,
-						"REST/JsonRpc call by User [" + user.getName() + "]: " + StringUtils.toShortString(json, 100));
+				this.log.info("REST/JsonRpc call by User [{}]: {}", user.getName(), StringUtils.toShortString(json, 100));
 			}
 
 			if (!json.has("jsonrpc")) {

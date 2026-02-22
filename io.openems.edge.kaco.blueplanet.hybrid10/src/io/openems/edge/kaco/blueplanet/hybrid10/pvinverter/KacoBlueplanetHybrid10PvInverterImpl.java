@@ -21,7 +21,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -52,7 +51,7 @@ public class KacoBlueplanetHybrid10PvInverterImpl extends AbstractOpenemsCompone
 		implements KacoBlueplanetHybrid10PvInverter, ManagedSymmetricPvInverter, ElectricityMeter, OpenemsComponent,
 		TimedataProvider, EventHandler, ModbusSlave {
 
-	private final Logger log = LoggerFactory.getLogger(KacoBlueplanetHybrid10PvInverterImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final SetPvLimitHandler setPvLimitHandler = new SetPvLimitHandler(this,
 			ManagedSymmetricPvInverter.ChannelId.ACTIVE_POWER_LIMIT);
 	private final CalculateEnergyFromPower calculateEnergy = new CalculateEnergyFromPower(this,
@@ -101,7 +100,7 @@ public class KacoBlueplanetHybrid10PvInverterImpl extends AbstractOpenemsCompone
 			this.setActivePowerLimit(null);
 			this.setPvLimitHandler.run();
 		} catch (OpenemsNamedException e) {
-			this.logError(this.log, e.getMessage());
+			this.log.error(e.getMessage());
 		}
 		super.deactivate();
 	}
@@ -201,16 +200,6 @@ public class KacoBlueplanetHybrid10PvInverterImpl extends AbstractOpenemsCompone
 	@Override
 	public String debugLog() {
 		return "L:" + this.getActivePower().asString();
-	}
-
-	@Override
-	protected void logInfo(Logger log, String message) {
-		super.logInfo(log, message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		super.logWarn(log, message);
 	}
 
 	@Override

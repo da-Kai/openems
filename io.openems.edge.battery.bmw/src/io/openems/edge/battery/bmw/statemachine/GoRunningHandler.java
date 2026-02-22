@@ -5,12 +5,12 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.bridge.http.api.BridgeHttp.Endpoint;
 import io.openems.common.bridge.http.api.HttpResponse;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
+import io.openems.common.logger.ContextLogger;
 import io.openems.common.timedata.Timeout;
 import io.openems.common.utils.EnumUtils;
 import io.openems.common.utils.JsonUtils;
@@ -24,7 +24,7 @@ public class GoRunningHandler extends StateHandler<State, Context> {
 	private static final String URI_STATE = "bcsPowerState";
 	private static final String URI_RELEASE = "releaseStatus";
 
-	private final Logger log = LoggerFactory.getLogger(GoRunningHandler.class);
+	private final Logger log;
 	private final Timeout timeout = Timeout.ofSeconds(TIMEOUT_SECONDS);
 	private final Map<String, CycleEndpoint> activeEndpoints = new HashMap<>();
 
@@ -34,6 +34,10 @@ public class GoRunningHandler extends StateHandler<State, Context> {
 	private boolean resultRelease = false;
 
 	protected static record GoRunningState(GoRunningSubState subState) {
+	}
+	
+	public GoRunningHandler() {
+		this.log = new ContextLogger(GoRunningHandler.class, "Battery.BMW");
 	}
 
 	@Override
@@ -115,8 +119,7 @@ public class GoRunningHandler extends StateHandler<State, Context> {
 				1, //
 				endpoint, //
 				success -> this.handleResponse(success, endpoint, consumer), //
-				error -> context.logWarn(this.log, //
-						"Failed to retrieve component value from URI [" + endpoint.url() + "]: " + error.getMessage()));
+				error -> log.warn("Failed to retrieve component value from URI [{}]: {}", endpoint.url(), error.getMessage()));
 
 		this.activeEndpoints.put(uri, cycle);
 	}

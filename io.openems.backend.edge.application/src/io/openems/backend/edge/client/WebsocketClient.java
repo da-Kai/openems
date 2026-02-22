@@ -14,7 +14,6 @@ import java.util.function.Consumer;
 
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -29,6 +28,7 @@ import io.openems.common.jsonrpc.base.JsonrpcRequest;
 import io.openems.common.jsonrpc.base.JsonrpcResponseSuccess;
 import io.openems.common.jsonrpc.notification.EdgeRpcNotification;
 import io.openems.common.jsonrpc.request.EdgeRpcRequest;
+import io.openems.common.logger.ContextLogger;
 import io.openems.common.websocket.AbstractWebsocketClient;
 import io.openems.common.websocket.ClientReconnectorWorker;
 import io.openems.common.websocket.OnClose;
@@ -37,7 +37,7 @@ import io.openems.common.websocket.WsData;
 
 public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 
-	private final Logger log = LoggerFactory.getLogger(WebsocketClient.class);
+	private final Logger log;
 	private final ThreadPoolExecutor executor;
 
 	private final OnNotification onNotification;
@@ -73,13 +73,13 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 		this.onNotification = new OnNotification(//
 				name, //
 				sendNotificationToEdge, //
-				updateCache, //
-				this::logWarn);
+				updateCache);
 		this.onRequest = new OnRequest(//
 				name, //
 				sendRequestToEdge);
-		this.onError = new OnError(//
-				this::logError);
+		this.onError = new OnError(name);
+		
+		this.log = new ContextLogger(WebsocketClient.class, name);
 	}
 
 	/**
@@ -110,7 +110,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 					var response = getAsJsonObject(getAsJsonObject(r.getResult(), "payload"), "result");
 					result.complete(new GenericJsonrpcResponseSuccess(request.id, response));
 				} catch (OpenemsNamedException e) {
-					this.logError(this.log, e.getMessage());
+					this.log.error(e.getMessage());
 					result.completeExceptionally(e);
 				}
 			} else {
@@ -161,21 +161,6 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 		return new WsData(ws);
 	}
 
-	@Override
-	protected void logInfo(Logger log, String message) {
-		log.info("[" + this.getName() + "] " + message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		log.warn("[" + this.getName() + "] " + message);
-	}
-
-	@Override
-	protected void logError(Logger log, String message) {
-		log.error("[" + this.getName() + "] " + message);
-	}
-
 	public boolean isConnected() {
 		return this.ws.isOpen();
 	}
@@ -183,5 +168,10 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	@Override
 	protected void execute(Runnable command) {
 		this.executor.execute(command);
+	}
+
+	@Override
+	protected Logger getLogger() {
+		return this.log;
 	}
 }

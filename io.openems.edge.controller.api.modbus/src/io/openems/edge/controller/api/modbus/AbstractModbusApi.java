@@ -82,7 +82,7 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 	/**
 	 * Holds the link between Modbus address and ModbusRecord.
 	 */
-	protected final ApiWorker apiWorker = new ApiWorker(this,
+	protected final ApiWorker apiWorker = new ApiWorker(this.id(), //
 			new WriteHandler(this.handleWrites(), this::setOverrideStatus, this.handleTimeouts()));
 
 	private CommonConfig config;
@@ -170,7 +170,7 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 	}
 
 	protected void onStarted() {
-		AbstractModbusApi.this.logInfo(this.log, "ModbusApi started.");
+		AbstractModbusApi.this.log.info("ModbusApi started.");
 	}
 
 	protected Consumer<Entry<WriteChannel<?>, WriteObject>> handleWrites() {
@@ -191,8 +191,6 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 
 		private static final int DEFAULT_WAIT_TIME = 5000; // 5 seconds
 
-		private final Logger log = LoggerFactory.getLogger(AbstractWorker.class);
-
 		private com.ghgande.j2mod.modbus.slave.ModbusSlave slave = null;
 
 		private CommonConfig currentConfig = null;
@@ -212,7 +210,7 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 					}
 				} catch (ModbusException e) {
 					ModbusSlaveFactory.close(this.slave);
-					AbstractModbusApi.this.logError(this.log, "Unable to start Modbus-Api: " + e.getMessage());
+					AbstractModbusApi.this.log.error("Unable to start Modbus-Api: {}", e.getMessage());
 					AbstractModbusApi.this._setUnableToStart(true);
 				}
 
@@ -220,7 +218,7 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 				// regular check for errors
 				String error = this.slave.getError();
 				if (error != null) {
-					AbstractModbusApi.this.logError(this.log, "Unable to start Modbus-Api: " + error);
+					AbstractModbusApi.this.log.error("Unable to start Modbus-Api: {}", error);
 					AbstractModbusApi.this._setUnableToStart(true);
 					this.stopSlave();
 				} else if (!this.currentConfig.equals(AbstractModbusApi.this.config)) {
@@ -279,7 +277,7 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 
 	protected synchronized void addComponent(OpenemsComponent component) {
 		if (!(component instanceof ModbusSlave ms)) {
-			this.logError(this.log, "Component [" + component.id() + "] does not implement ModbusSlave");
+			this.log.error("Component [{}] does not implement ModbusSlave", component.id());
 			this.invalidComponents.add(component);
 			this._setComponentNoModbusApiFault(true);
 			return;
@@ -317,21 +315,6 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 						r.updateValue(null);
 					}
 				});
-	}
-
-	@Override
-	protected void logDebug(Logger log, String message) {
-		super.logDebug(log, message);
-	}
-
-	@Override
-	protected void logInfo(Logger log, String message) {
-		super.logInfo(log, message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		super.logWarn(log, message);
 	}
 
 	/**
@@ -378,7 +361,7 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 			r.onWriteValue(value -> {
 				var readChannel = component.channel(r.getChannelId());
 				if (!(readChannel instanceof WriteChannel wc)) {
-					this.logWarn(this.log, "Unable to write to Read-Only-Channel [" + readChannel.address() + "]");
+					this.log.warn("Unable to write to Read-Only-Channel [{}]", readChannel.address());
 					return;
 				}
 				this.apiWorker.addValue(wc, new WritePojo(value));
@@ -407,8 +390,7 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 			// find next component in order
 			var component = this.getPossiblyDisabledComponent(id);
 			if (component == null) { // This should never happen
-				this.logWarn(this.log, "Required Component [" + id + "] " //
-						+ "is not available. Component may not implement ModbusSlave or is not active.");
+				this.log.warn("Required Component [{}] is not available. Component may not implement ModbusSlave or is not active.", id);
 				continue;
 			}
 

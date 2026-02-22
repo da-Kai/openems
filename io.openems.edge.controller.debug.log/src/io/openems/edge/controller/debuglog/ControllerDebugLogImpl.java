@@ -20,7 +20,6 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.TreeMultimap;
@@ -43,7 +42,7 @@ public class ControllerDebugLogImpl extends AbstractOpenemsComponent
 
 	private static final Pattern COMPONENT_ID_PATTERN = Pattern.compile("(\\D++)(\\d++)$");
 
-	private final Logger log = LoggerFactory.getLogger(ControllerDebugLogImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final TreeMultimap<String, String> additionalChannels = TreeMultimap.create();
 	private final Set<String> ignoreComponents = new HashSet<>();
 
@@ -106,7 +105,7 @@ public class ControllerDebugLogImpl extends AbstractOpenemsComponent
 
 	@Override
 	public void run() throws OpenemsNamedException {
-		this.logInfo(this.log, this.getLogMessage());
+		this.log.info(this.getLogMessage());
 	}
 
 	protected String getLogMessage() {

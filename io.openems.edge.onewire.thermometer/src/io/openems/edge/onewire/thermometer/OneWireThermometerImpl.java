@@ -14,7 +14,6 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.dalsemi.onewire.OneWireException;
 import com.dalsemi.onewire.adapter.DSPortAdapter;
@@ -36,7 +35,7 @@ import io.openems.edge.thermometer.api.Thermometer;
 )
 public class OneWireThermometerImpl extends AbstractOpenemsComponent implements Thermometer, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(OneWireThermometerImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ConfigurationAdmin cm;
@@ -91,7 +90,7 @@ public class OneWireThermometerImpl extends AbstractOpenemsComponent implements 
 			this._setCommunicationFailed(false);
 
 		} catch (OneWireException | OpenemsException e) {
-			this.logError(this.log, e.getMessage());
+			this.log.error(e.getMessage());
 
 			this._setTemperature(null);
 			this._setCommunicationFailed(true);

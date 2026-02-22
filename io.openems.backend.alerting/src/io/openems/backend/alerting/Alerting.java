@@ -90,7 +90,7 @@ public class Alerting extends AbstractOpenemsBackendComponent implements EventHa
 
 	@Activate
 	protected void activate(Config config) {
-		this.logInfo(this.log, "Activate");
+		this.log.info("Activate");
 		this.scheduler.start();
 
 		if (config.notifyOnOffline()) {
@@ -105,7 +105,7 @@ public class Alerting extends AbstractOpenemsBackendComponent implements EventHa
 
 	@Deactivate
 	protected void deactivate() {
-		this.logInfo(this.log, "Deactivate");
+		this.log.info("Deactivate");
 		this.handler.forEach(Handler::stop);
 		this.handler.clear();
 		this.scheduler.stop();

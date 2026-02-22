@@ -196,7 +196,7 @@ public class MeterSocomecSinglephaseImpl extends AbstractSocomecMeter implements
 	}
 
 	private void thisIsNotASinglePhaseMeter() {
-		this.logError(this.log, "This is not a singlephase meter!");
+		this.log.error("This is not a singlephase meter!");
 		this.channel(MeterSocomecSinglephase.ChannelId.NOT_A_SINGLEPHASE_METER).setNextValue(true);
 	}
 

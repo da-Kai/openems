@@ -25,7 +25,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -78,7 +77,7 @@ public class BatterySoltaroSingleRackVersionCImpl extends AbstractOpenemsModbusC
 
 	private static final int WATCHDOG = 60;
 
-	private final Logger log = LoggerFactory.getLogger(BatterySoltaroSingleRackVersionCImpl.class);
+	private final Logger log;
 	private final StateMachine stateMachine = new StateMachine(State.UNDEFINED);
 
 	@Reference
@@ -105,6 +104,7 @@ public class BatterySoltaroSingleRackVersionCImpl extends AbstractOpenemsModbusC
 				BatterySoltaroSingleRackVersionC.ChannelId.values(), //
 				BatteryProtection.ChannelId.values() //
 		);
+		this.log = OpenemsComponent.getComponentLogger(this);
 	}
 
 	@Activate
@@ -198,7 +198,7 @@ public class BatterySoltaroSingleRackVersionCImpl extends AbstractOpenemsModbusC
 
 		} catch (OpenemsNamedException e) {
 			this.channel(BatterySoltaroSingleRackVersionC.ChannelId.RUN_FAILED).setNextValue(true);
-			this.logError(this.log, "StateMachine failed: " + e.getMessage());
+			this.log.error("StateMachine failed: {}", e.getMessage());
 		}
 	}
 

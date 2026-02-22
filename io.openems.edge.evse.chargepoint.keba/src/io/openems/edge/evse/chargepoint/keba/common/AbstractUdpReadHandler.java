@@ -8,8 +8,6 @@ import static io.openems.common.utils.JsonUtils.getAsOptionalString;
 import static io.openems.common.utils.JsonUtils.parseToJsonObject;
 import static io.openems.common.utils.JsonUtils.prettyToString;
 import static io.openems.edge.common.channel.ChannelUtils.setValue;
-import static io.openems.edge.common.component.OpenemsComponent.logInfo;
-import static io.openems.edge.common.component.OpenemsComponent.logWarn;
 import static java.lang.Math.round;
 
 import java.math.BigInteger;
@@ -18,13 +16,13 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonObject;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.OptionsEnum;
 import io.openems.edge.common.channel.ChannelId;
+import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.evse.chargepoint.keba.common.enums.CableState;
 import io.openems.edge.evse.chargepoint.keba.common.enums.ChargingState;
 import io.openems.edge.evse.chargepoint.keba.common.enums.LogVerbosity;
@@ -41,12 +39,13 @@ public abstract class AbstractUdpReadHandler<T extends KebaUdp> implements BiCon
 
 	protected final T parent;
 
-	private final Logger log = LoggerFactory.getLogger(AbstractUdpReadHandler.class);
+	private final Logger log;
 	private final EnumMap<Report, Boolean> receiveReport = new EnumMap<Report, Boolean>(Report.class);
 	private final EnergySessionHandler energySessionHandler = new EnergySessionHandler();
 
 	protected AbstractUdpReadHandler(T parent) {
 		this.parent = parent;
+		this.log = OpenemsComponent.getComponentLogger(AbstractUdpReadHandler.class, parent);
 	}
 
 	@Override
@@ -56,14 +55,14 @@ public abstract class AbstractUdpReadHandler<T extends KebaUdp> implements BiCon
 		if (message.startsWith("TCH-OK")) {
 			switch (logVerbosity) {
 			case DEBUG_LOG, WRITES -> doNothing();
-			case UDP_REPORTS -> logInfo(keba, this.log, "KEBA confirmed reception of command: TCH-OK");
+			case UDP_REPORTS -> log.info("KEBA confirmed reception of command: TCH-OK");
 			}
 			keba.triggerQuery();
 			return;
 		}
 
 		if (message.startsWith("TCH-ERR")) {
-			logWarn(keba, this.log, "KEBA reported command error: TCH-ERR");
+			this.log.warn("KEBA reported command error: TCH-ERR");
 			keba.triggerQuery();
 			return;
 		}
@@ -73,14 +72,14 @@ public abstract class AbstractUdpReadHandler<T extends KebaUdp> implements BiCon
 		try {
 			j = parseToJsonObject(message);
 		} catch (OpenemsNamedException e) {
-			this.log.error("Error while parsing KEBA message: " + e.getMessage());
+			this.log.error("Error while parsing KEBA message: {}", e.getMessage());
 			return;
 		}
 
 		// Log Report (if requested by config)
 		switch (logVerbosity) {
 		case DEBUG_LOG, WRITES -> doNothing();
-		case UDP_REPORTS -> logInfo(keba, this.log, (prettyToString(j)));
+		case UDP_REPORTS -> this.log.atInfo().setMessage(() -> prettyToString(j)).log();
 		}
 
 		final var report = switch (getAsOptionalString(j, "ID").orElse("")) {

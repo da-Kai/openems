@@ -14,7 +14,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.paho.mqttv5.common.packet.MqttProperties;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Table;
@@ -22,6 +21,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.JsonElement;
 
 import io.openems.common.channel.AccessMode;
+import io.openems.common.logger.ContextLogger;
 import io.openems.common.utils.StringUtils;
 import io.openems.common.utils.ThreadPoolUtils;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -48,7 +48,7 @@ public class SendChannelValuesWorker {
 		MQTT_PROPERTIES.setMessageExpiryInterval(Long.valueOf(SEND_VALUES_OF_ALL_CHANNELS_AFTER_SECONDS * 2));
 	}
 
-	private final Logger log = LoggerFactory.getLogger(SendChannelValuesWorker.class);
+	private final Logger log;
 	private final ControllerApiMqttImpl parent;
 
 	private final ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.SECONDS,
@@ -73,6 +73,7 @@ public class SendChannelValuesWorker {
 
 	protected SendChannelValuesWorker(ControllerApiMqttImpl parent) {
 		this.parent = parent;
+		this.log = new ContextLogger(SendChannelValuesWorker.class, parent.id());
 	}
 
 	/**
@@ -209,8 +210,7 @@ public class SendChannelValuesWorker {
 			// Successful?
 			if (allSendSuccessful) {
 				if (!sendTopics.isEmpty()) {
-					this.parent.parent.logInfo(this.parent.log, "Successfully sent MQTT topics: "
-							+ StringUtils.toShortString(String.join(", ", sendTopics), 100));
+					this.parent.log.info("Successfully sent MQTT topics: {}", StringUtils.toShortString(String.join(", ", sendTopics), 100));
 				}
 
 				// update information for next runs
@@ -220,8 +220,7 @@ public class SendChannelValuesWorker {
 					this.parent.lastSendValuesOfAllChannels = this.timestamp;
 				}
 			} else {
-				this.parent.parent.logWarn(this.parent.log, "Error while sending MQTT topics: "
-						+ StringUtils.toShortString(String.join(", ", sendTopics), 100));
+				this.parent.log.warn("Error while sending MQTT topics: {}", StringUtils.toShortString(String.join(", ", sendTopics), 100));
 			}
 		}
 

@@ -108,18 +108,16 @@ public class MetadataFile extends AbstractMetadata implements Metadata, EventHan
 
 	@Activate
 	private void activate(Config config) {
-		this.log.info("Activate [path=" + config.path() + "]");
+		this.log.info("Activate [path={}]", config.path());
 		this.path = config.path();
 
 		// Read the data async
-		CompletableFuture.runAsync(() -> {
-			this.refreshData();
-		});
+		CompletableFuture.runAsync(this::refreshData);
 	}
 
 	@Deactivate
 	private void deactivate() {
-		this.logInfo(this.log, "Deactivate");
+		this.log.info("Deactivate");
 	}
 
 	@Override
@@ -178,8 +176,7 @@ public class MetadataFile extends AbstractMetadata implements Metadata, EventHan
 					sb.append(line);
 				}
 			} catch (IOException e) {
-				this.logWarn(this.log, "Unable to read file [" + this.path + "]: " + e.getMessage());
-				this.log.warn(e.getMessage(), e);
+				this.log.warn("Unable to read file [{}]", this.path, e);
 				return;
 			}
 
@@ -202,8 +199,7 @@ public class MetadataFile extends AbstractMetadata implements Metadata, EventHan
 					));
 				}
 			} catch (OpenemsNamedException e) {
-				this.logWarn(this.log, "Unable to JSON-parse file [" + this.path + "]: " + e.getMessage());
-				this.log.warn(e.getMessage(), e);
+				this.log.warn("Unable to JSON-parse file [{}]", this.path, e);
 				return;
 			}
 
@@ -385,11 +381,10 @@ public class MetadataFile extends AbstractMetadata implements Metadata, EventHan
 
 	@Override
 	public void logGenericSystemLog(GenericSystemLog systemLog) {
-		this.logInfo(this.log,
-				"%s on %s executed %s [%s]".formatted(systemLog.user().getId(), systemLog.edgeId(), systemLog.teaser(),
-						systemLog.getValues().entrySet().stream() //
-								.map(t -> t.getKey() + "=" + t.getValue()) //
-								.collect(joining(", "))));
+		this.log.info("{} on {} executed {} [{}]", systemLog.user().getId(), systemLog.edgeId(), systemLog.teaser(),
+				systemLog.getValues().entrySet().stream() //
+						.map(t -> t.getKey() + "=" + t.getValue()) //
+						.collect(joining(", ")));
 	}
 
 	@Override

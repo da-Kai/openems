@@ -128,22 +128,12 @@ public class TestClient extends AbstractWebsocketClient<WsData> implements AutoC
 	}
 
 	@Override
-	protected void logInfo(Logger log, String message) {
-		log.info(message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		log.warn(message);
-	}
-
-	@Override
-	protected void logError(Logger log, String message) {
-		log.error(message);
-	}
-
-	@Override
 	protected void execute(Runnable command) {
 		command.run();
+	}
+
+	@Override
+	protected Logger getLogger() {
+		return this.log;
 	}
 }

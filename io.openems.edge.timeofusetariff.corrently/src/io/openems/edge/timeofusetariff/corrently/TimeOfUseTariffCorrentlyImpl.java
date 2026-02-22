@@ -25,7 +25,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableSortedMap;
 
@@ -51,7 +50,7 @@ public class TimeOfUseTariffCorrentlyImpl extends AbstractOpenemsComponent
 
 	private static final String CORRENTLY_API_URL = "https://api.corrently.io/v2.0/gsi/marketdata?zip=";
 
-	private final Logger log = LoggerFactory.getLogger(TimeOfUseTariffCorrentlyImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 	private final AtomicReference<TimeOfUsePrices> prices = new AtomicReference<>(TimeOfUsePrices.EMPTY_PRICES);
 
@@ -109,7 +108,7 @@ public class TimeOfUseTariffCorrentlyImpl extends AbstractOpenemsComponent
 			this.prices.set(parsePrices(response.body().string()));
 
 		} catch (IOException | OpenemsNamedException e) {
-			this.logWarn(this.log, "Unable to Update Corrently Time-Of-Use Price: " + e.getMessage());
+			this.log.warn("Unable to Update Corrently Time-Of-Use Price: {}", e.getMessage());
 			httpStatusCode = 0;
 		}
 

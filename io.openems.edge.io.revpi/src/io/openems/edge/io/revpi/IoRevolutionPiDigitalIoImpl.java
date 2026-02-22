@@ -15,7 +15,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.edge.common.channel.BooleanReadChannel;
@@ -41,7 +40,7 @@ public class IoRevolutionPiDigitalIoImpl extends AbstractOpenemsComponent
 
 	private static final Object INVALIDATE_CHANNEL = null;
 
-	private final Logger log = LoggerFactory.getLogger(IoRevolutionPiDigitalIoImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final BooleanWriteChannel[] channelOut;
 	private final BooleanReadChannel[] channelIn;
 	private final BooleanReadChannel[] channelOutDbg;
@@ -129,7 +128,7 @@ public class IoRevolutionPiDigitalIoImpl extends AbstractOpenemsComponent
 		try {
 			this.revPiHardware.close();
 		} catch (IOException e) {
-			this.logError(this.log, "Exception on closing driver ex: " + e.getMessage());
+			this.log.error("Exception on closing driver ex: {}", e.getMessage());
 		}
 		this.revPiHardware = null;
 	}
@@ -152,7 +151,7 @@ public class IoRevolutionPiDigitalIoImpl extends AbstractOpenemsComponent
 				var in = this.revPiHardware.getDataOut(idx + 1);
 				this.channelOut[idx].setNextWriteValue(in);
 			} catch (Exception e) {
-				this.logError(this.log, "Unable to update channel values ex: " + e.getMessage());
+				this.log.error("Unable to update channel values ex: {}", e.getMessage());
 				this.channelOut[idx].setNextValue(INVALIDATE_CHANNEL);
 			}
 		}
@@ -171,7 +170,7 @@ public class IoRevolutionPiDigitalIoImpl extends AbstractOpenemsComponent
 					this.channelIn[i].setNextValue(in);
 				}
 			} catch (Exception e) {
-				this.logError(this.log, "Unable to update channel values ex: " + e.getMessage());
+				this.log.error("Unable to update channel values ex: {}", e.getMessage());
 				this.channelIn[i].setNextValue(INVALIDATE_CHANNEL);
 			}
 		}
@@ -199,11 +198,11 @@ public class IoRevolutionPiDigitalIoImpl extends AbstractOpenemsComponent
 				if (this.revPiHardware != null) {
 					this.revPiHardware.setDataOut(idx + 1, writeValue.get());
 				}
-				this.logInfo(this.log, this.channelOut[idx].channelId() + " " + writeValue.get());
+				this.log.info("{} {}", this.channelOut[idx].channelId(), writeValue.get());
 				this.channelOut[idx].setNextValue(writeValue.get());
 
 			} catch (Exception e) {
-				this.logError(this.log, "Unable to update channel out values ex: " + e.getMessage());
+				this.log.error("Unable to update channel out values ex: {}", e.getMessage());
 				this.channelOut[idx].setNextValue(INVALIDATE_CHANNEL);
 			}
 		}

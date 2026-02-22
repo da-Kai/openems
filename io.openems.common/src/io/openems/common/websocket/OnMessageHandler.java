@@ -14,7 +14,6 @@ import java.util.function.BiPredicate;
 
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.jsonrpc.base.JsonrpcMessage;
@@ -23,35 +22,35 @@ import io.openems.common.jsonrpc.base.JsonrpcRequest;
 import io.openems.common.jsonrpc.base.JsonrpcResponse;
 import io.openems.common.jsonrpc.base.JsonrpcResponseError;
 import io.openems.common.jsonrpc.base.JsonrpcResponseSuccess;
+import io.openems.common.logger.ContextLogger;
 
 /**
  * Handler for WebSocket OnMessage event.
  */
 public final class OnMessageHandler implements Runnable {
 
-	private final Logger log = LoggerFactory.getLogger(OnMessageHandler.class);
+	private final Logger log;
 	private final WebSocket ws;
 	private final String message;
 	private final OnRequest onRequest;
 	private final OnNotification onNotification;
 	private final BiPredicate<WebSocket, JsonrpcMessage> sendMessage;
 	private final BiConsumer<Throwable, String> handleInternalError;
-	private final BiConsumer<Logger, String> logWarn;
 
 	public OnMessageHandler(//
+			String name,
 			WebSocket ws, String message, //
 			OnRequest onRequest, //
 			OnNotification onNotification, //
 			BiPredicate<WebSocket, JsonrpcMessage> sendMessage, //
-			BiConsumer<Throwable, String> handleInternalError, //
-			BiConsumer<Logger, String> logWarn) {
+			BiConsumer<Throwable, String> handleInternalError) {
 		this.ws = ws;
 		this.message = message;
 		this.onRequest = onRequest;
 		this.onNotification = onNotification;
 		this.sendMessage = sendMessage;
 		this.handleInternalError = handleInternalError;
-		this.logWarn = logWarn;
+		this.log = new ContextLogger(OnMessageHandler.class, name);
 	}
 
 	@Override
@@ -144,7 +143,7 @@ public final class OnMessageHandler implements Runnable {
 		log //
 				.append("for Request ") //
 				.append(toShortString(simplifyJsonrpcMessage(request), 200));
-		this.logWarn.accept(this.log, log.toString());
+		this.log.warn(log.toString());
 
 		// Get JSON-RPC Response Error
 		this.sendMessage.test(ws, switch (t) {

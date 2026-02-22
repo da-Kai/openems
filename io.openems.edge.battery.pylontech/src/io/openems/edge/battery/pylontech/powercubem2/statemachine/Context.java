@@ -1,23 +1,24 @@
 package io.openems.edge.battery.pylontech.powercubem2.statemachine;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.edge.battery.pylontech.powercubem2.PylontechPowercubeM2Battery;
 import io.openems.edge.battery.pylontech.powercubem2.Status;
 import io.openems.edge.common.channel.IntegerWriteChannel;
+import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.statemachine.AbstractContext;
 
 public class Context extends AbstractContext<PylontechPowercubeM2Battery> {
 
 	protected final IntegerWriteChannel batteryWakeSleepChannel;
 
-	private final Logger log = LoggerFactory.getLogger(Context.class);
+	private final Logger log;
 
 	public Context(PylontechPowercubeM2Battery parent, IntegerWriteChannel batteryWakeSleepChannel) {
 		super(parent);
 		this.batteryWakeSleepChannel = batteryWakeSleepChannel;
+		this.log = OpenemsComponent.getComponentLogger(Context.class, parent);
 	}
 
 	/**
@@ -44,21 +45,20 @@ public class Context extends AbstractContext<PylontechPowercubeM2Battery> {
 	public void setBatteryWakeSleep(boolean setBatteryAwake) throws OpenemsNamedException {
 		if (setBatteryAwake) {
 			if (this.batteryWakeSleepChannel == null) {
-				this.logInfo(this.log,
+				this.log.info(
 						"Battery Wake/Sleep channel not provided to State Machine context. Cannot SWITCH BATTERY ON.");
 				return;
 			} else {
-				this.logInfo(this.log, "Setting Battery Wake/Sleep Channel to WAKE.");
+				this.log.info("Setting Battery Wake/Sleep Channel to WAKE.");
 			}
 			// Write the WAKE value (0x55) to the Wake/sleep channel
 			this.batteryWakeSleepChannel.setNextWriteValue(0x55);
 		} else {
 			if (this.batteryWakeSleepChannel == null) {
-				this.logInfo(this.log,
-						"Battery Wake/Sleep channel not provided to State Machine. Cannot SWITCH BATTERY OFF.");
+				this.log.info("Battery Wake/Sleep channel not provided to State Machine. Cannot SWITCH BATTERY OFF.");
 				return;
 			} else {
-				this.logInfo(this.log, "Setting Battery Wake/Sleep Channel to SLEEP.");
+				this.log.info("Setting Battery Wake/Sleep Channel to SLEEP.");
 			}
 			// Write the SLEEP value (0xAA) to the Wake/sleep channel
 			this.batteryWakeSleepChannel.setNextWriteValue(0xAA);

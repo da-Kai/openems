@@ -21,7 +21,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -53,7 +52,7 @@ import io.openems.edge.pvinverter.api.ManagedSymmetricPvInverter;
 public class PvInverterClusterImpl extends AbstractOpenemsComponent implements PvInverterCluster,
 		ManagedSymmetricPvInverter, ElectricityMeter, OpenemsComponent, EventHandler, ModbusSlave {
 
-	private final Logger log = LoggerFactory.getLogger(PvInverterClusterImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ComponentManager componentManager;
@@ -103,7 +102,7 @@ public class PvInverterClusterImpl extends AbstractOpenemsComponent implements P
 
 		} catch (OpenemsNamedException e) {
 			setValue(this, PvInverterCluster.ChannelId.EXECUTION_FAILED, true);
-			this.logError(this.log, "Failed to distribute PV-Limit: " + e.getMessage());
+			this.log.error("Failed to distribute PV-Limit: {}", e.getMessage());
 		}
 	}
 

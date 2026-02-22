@@ -12,7 +12,6 @@ import java.util.function.Supplier;
 import org.java_websocket.WebSocket;
 import org.osgi.service.event.EventAdmin;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.backend.common.edge.jsonrpc.ConnectedEdges;
 import io.openems.backend.common.metadata.Edge;
@@ -32,12 +31,13 @@ import io.openems.common.jsonrpc.notification.LogMessageNotification;
 import io.openems.common.jsonrpc.notification.ResendDataNotification;
 import io.openems.common.jsonrpc.notification.SystemLogNotification;
 import io.openems.common.jsonrpc.notification.TimestampedDataNotification;
+import io.openems.common.logger.ContextLogger;
 import io.openems.common.types.ChannelAddress;
 import io.openems.common.types.SemanticVersion;
 
 public class OnNotification implements io.openems.common.websocket.OnNotification {
 
-	private final Logger log = LoggerFactory.getLogger(OnNotification.class);
+	private final Logger log;
 
 	private final String name;
 	private final Supplier<EventAdmin> eventAdmin;
@@ -45,8 +45,6 @@ public class OnNotification implements io.openems.common.websocket.OnNotificatio
 	private final Supplier<TimedataManager> timedataManager;
 	private final Function<String, Optional<Edge>> getEdge;
 	private final BiConsumer<String, SystemLogNotification> handleSystemLogNotification;
-	private final BiConsumer<Logger, String> logInfo;
-	private final BiConsumer<Logger, String> logWarn;
 
 	public OnNotification(//
 			String name, //
@@ -54,17 +52,14 @@ public class OnNotification implements io.openems.common.websocket.OnNotificatio
 			Supplier<UiWebsocket> uiWebsocket, //
 			Supplier<TimedataManager> timedataManager, //
 			Function<String, Optional<Edge>> getEdge, //
-			BiConsumer<String, SystemLogNotification> handleSystemLogNotification, //
-			BiConsumer<Logger, String> logInfo, //
-			BiConsumer<Logger, String> logWarn) {
+			BiConsumer<String, SystemLogNotification> handleSystemLogNotification) {
 		this.name = name;
 		this.eventAdmin = eventAdmin;
 		this.uiWebsocket = uiWebsocket;
 		this.timedataManager = timedataManager;
 		this.getEdge = getEdge;
 		this.handleSystemLogNotification = handleSystemLogNotification;
-		this.logInfo = logInfo;
-		this.logWarn = logWarn;
+		this.log = new ContextLogger(OnNotification.class, name);
 	}
 
 	@Override
@@ -79,7 +74,7 @@ public class OnNotification implements io.openems.common.websocket.OnNotificatio
 			case EdgeRpcNotification.METHOD //
 				-> this.handleEdgeRpcNotification(EdgeRpcNotification.from(notification), wsData);
 			default //
-				-> this.logWarn.accept(this.log, "Unhandled Notification: " + notification);
+				-> this.log.warn("Unhandled Notification: {}", notification);
 			}
 		}
 	}
@@ -157,7 +152,7 @@ public class OnNotification implements io.openems.common.websocket.OnNotificatio
 		case LogMessageNotification.METHOD //
 			-> this.handleLogMessageNotification(LogMessageNotification.from(notification), edgeId);
 		default //
-			-> this.logWarn.accept(this.log, "[" + edgeId + "] Unhandled Notification: " + notification);
+			-> this.log.warn("{}] Unhandled Notification: {}", edgeId, notification);
 		}
 	}
 
@@ -244,8 +239,7 @@ public class OnNotification implements io.openems.common.websocket.OnNotificatio
 	 * @param message the {@link ResendDataNotification}
 	 * @param edgeId  the Edge-ID
 	 */
-	private void handleResendDataNotification(ResendDataNotification message, String edgeId)
-			throws OpenemsNamedException {
+	private void handleResendDataNotification(ResendDataNotification message, String edgeId) {
 		var timedataManager = this.timedataManager.get();
 		if (timedataManager != null) {
 			timedataManager.write(edgeId, message);
@@ -258,8 +252,7 @@ public class OnNotification implements io.openems.common.websocket.OnNotificatio
 	 * @param message the {@link SystemLogNotification}
 	 * @param edgeId  the Edge-ID
 	 */
-	private void handleSystemLogNotification(SystemLogNotification message, String edgeId)
-			throws OpenemsNamedException {
+	private void handleSystemLogNotification(SystemLogNotification message, String edgeId) {
 		this.handleSystemLogNotification.accept(edgeId, message);
 	}
 
@@ -269,11 +262,8 @@ public class OnNotification implements io.openems.common.websocket.OnNotificatio
 	 * @param message the {@link LogMessageNotification}
 	 * @param edgeId  the Edge-ID
 	 */
-	private void handleLogMessageNotification(LogMessageNotification message, String edgeId)
-			throws OpenemsNamedException {
-		this.logInfo.accept(this.log, "Edge [" + edgeId + "] " //
-				+ message.level.getName() + "-Message: " //
-				+ message.msg);
+	private void handleLogMessageNotification(LogMessageNotification message, String edgeId) {
+		this.log.info("Edge [{}] {}-Message: {}", edgeId, message.level.getName(), message.msg);
 	}
 
 	private void announceOnline(String edgeId) {

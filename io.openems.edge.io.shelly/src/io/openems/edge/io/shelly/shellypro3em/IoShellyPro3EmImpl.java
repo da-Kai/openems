@@ -25,7 +25,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 
@@ -60,7 +59,7 @@ public class IoShellyPro3EmImpl extends AbstractOpenemsComponent
 	private final CalculateEnergyFromPower calculateConsumptionEnergy = new CalculateEnergyFromPower(this,
 			ElectricityMeter.ChannelId.ACTIVE_CONSUMPTION_ENERGY);
 
-	private final Logger log = LoggerFactory.getLogger(IoShellyPro3EmImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	private MeterType meterType = null;
 	private boolean invert = false;
@@ -145,7 +144,7 @@ public class IoShellyPro3EmImpl extends AbstractOpenemsComponent
 		boolean noLoadCondition = false;
 
 		if (error != null) {
-			this.logDebug(this.log, error.getMessage());
+			this.log.debug(error.getMessage());
 
 		} else {
 			try {
@@ -180,7 +179,7 @@ public class IoShellyPro3EmImpl extends AbstractOpenemsComponent
 				currentL3 = invert.apply(round(getAsFloat(response, "c_current") * 1000));
 
 			} catch (OpenemsNamedException e) {
-				this.logDebug(this.log, e.getMessage());
+				this.log.debug(e.getMessage());
 			}
 		}
 

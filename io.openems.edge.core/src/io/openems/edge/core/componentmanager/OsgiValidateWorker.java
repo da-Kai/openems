@@ -16,7 +16,6 @@ import org.osgi.service.cm.ConfigurationEvent;
 import org.osgi.service.component.runtime.ServiceComponentRuntime;
 import org.osgi.service.component.runtime.dto.ComponentConfigurationDTO;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.edge.common.component.ComponentManager;
@@ -52,7 +51,7 @@ public class OsgiValidateWorker extends ComponentManagerWorker {
 	private static final int REGULAR_CYCLE_TIME = 60_000; // in ms
 	private static final int RESTART_COMPONENTS_AFTER = 3;
 
-	private final Logger log = LoggerFactory.getLogger(OsgiValidateWorker.class);
+	private final Logger log;
 
 	/**
 	 * Map from Component-ID to defect details.
@@ -71,6 +70,7 @@ public class OsgiValidateWorker extends ComponentManagerWorker {
 
 	public OsgiValidateWorker(ComponentManagerImpl parent) {
 		super(parent);
+		this.log = OpenemsComponent.getComponentLogger(OsgiValidateWorker.class, parent);
 	}
 
 	@Override
@@ -112,14 +112,13 @@ public class OsgiValidateWorker extends ComponentManagerWorker {
 				var componentId = entry.getKey();
 				// Update Configuration to try to restart Component
 				try {
-					this.parent.logInfo(this.log, "Trying to restart Component [" + componentId + "]");
+					this.log.info("Trying to restart Component [{}]", componentId);
 					var config = this.parent.getExistingConfigForId(componentId);
 					var properties = config.getProperties();
 					config.update(properties);
 
 				} catch (IOException | OpenemsNamedException e) {
-					this.parent.logError(this.log, "Unable to restart Component [" + componentId + "]");
-					e.printStackTrace();
+					this.log.error("Unable to restart Component [{}]", componentId, e);
 				}
 				// Remove from list
 				it.remove();
@@ -273,8 +272,7 @@ public class OsgiValidateWorker extends ComponentManagerWorker {
 			}
 			return new Configuration[0];
 		} catch (Exception e) {
-			this.parent.logError(this.log, e.getMessage());
-			e.printStackTrace();
+			this.log.error(e.getMessage(), e);
 			return new Configuration[0];
 		}
 	}
@@ -294,8 +292,7 @@ public class OsgiValidateWorker extends ComponentManagerWorker {
 			}
 			return new Configuration[0];
 		} catch (Exception e) {
-			this.parent.logError(this.log, e.getMessage());
-			e.printStackTrace();
+			this.log.error(e.getMessage(), e);
 			return new Configuration[0];
 		}
 	}

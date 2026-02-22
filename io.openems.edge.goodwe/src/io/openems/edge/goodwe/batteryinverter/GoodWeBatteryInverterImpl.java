@@ -28,7 +28,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.OptionsEnum;
@@ -94,7 +93,7 @@ public class GoodWeBatteryInverterImpl extends AbstractGoodWe implements GoodWeB
 	private static final int MODULE_MIN_VOLTAGE = 42;
 
 	private final AtomicReference<StartStop> startStopTarget = new AtomicReference<>(StartStop.UNDEFINED);
-	private final Logger log = LoggerFactory.getLogger(GoodWeBatteryInverterImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final StateMachine stateMachine = new StateMachine(State.UNDEFINED);
 
 	private final ServiceBinder<GoodWeBatteryInverterUpdateParams, GoodWeBatteryInverterUpdateable> updateServiceBinder = new ServiceBinder<>(
@@ -252,7 +251,7 @@ public class GoodWeBatteryInverterImpl extends AbstractGoodWe implements GoodWeB
 
 		} catch (OpenemsNamedException e) {
 			this.channel(GoodWeBatteryInverter.ChannelId.RUN_FAILED).setNextValue(true);
-			this.logError(this.log, "StateMachine failed: " + e.getMessage());
+			this.log.error("StateMachine failed: {}", e.getMessage());
 		}
 	}
 
@@ -548,16 +547,16 @@ public class GoodWeBatteryInverterImpl extends AbstractGoodWe implements GoodWeB
 						&& !Objects.equals(bmsOfflineSocUnderMin.get(), setOfflineSocUnderMin)) {
 
 			// Update is required
-			this.logInfo(this.log, "Update for PV-Master BMS Registers is required." //
-					+ " Voltages" //
-					+ " [Discharge " + bmsDischargeMinVoltage.get() + " -> " + setDischargeMinVoltage + "]" //
-					+ " [Charge " + bmsChargeMaxVoltage.get() + " -> " + setChargeMaxVoltage + "]" //
-					+ " Currents " //
-					+ " [Charge " + bmsChargeMaxCurrent.get() + " -> " + setChargeMaxCurrent + "]" //
-					+ " [Discharge " + bmsDischargeMaxCurrent.get() + " -> " + setDischargeMaxCurrent + "]" //
-					+ " MinSoc [" //
-					+ " [On-Grid " + bmsSocUnderMin.get() + " -> " + setSocUnderMin + "] " //
-					+ " [Off-Grid " + bmsOfflineSocUnderMin.get() + " -> " + setOfflineSocUnderMin + "]");
+			this.log.info("Update for PV-Master BMS Registers is required. " //
+					+ "Voltages [Discharge {} -> {}] [Charge {} -> {}] " //
+					+ "Currents [Charge {} -> {}] [Discharge {} -> {}] " //
+					+ "MinSoc [On-Grid {} -> {}] [Off-Grid {} -> {}]", //
+					bmsDischargeMinVoltage.get(), setDischargeMinVoltage, //
+					bmsChargeMaxVoltage.get(), setChargeMaxVoltage, //
+					bmsChargeMaxCurrent.get(), setChargeMaxCurrent, //
+					bmsDischargeMaxCurrent.get(), setDischargeMaxCurrent, //
+					bmsSocUnderMin.get(), setSocUnderMin, //
+					bmsOfflineSocUnderMin.get(), setOfflineSocUnderMin);
 
 			// Registers 45352
 			this.writeToChannel(GoodWe.ChannelId.BMS_CHARGE_MAX_VOLTAGE, setChargeMaxVoltage); // [150-600]
@@ -577,11 +576,11 @@ public class GoodWeBatteryInverterImpl extends AbstractGoodWe implements GoodWeB
 		if (doSetBmsVoltage(battery, bmsChargeMaxVoltage, setChargeMaxVoltage, bmsDischargeMinVoltage,
 				setDischargeMinVoltage)) {
 			// Update is required
-			this.logInfo(this.log, "Update for BMS Registers." //
-					+ " Voltages" //
-					+ " [Discharge " + bmsDischargeMinVoltage.get() + " -> " + setDischargeMinVoltage + "]" //
-					+ " [Charge " + bmsChargeMaxVoltage.get() + " -> " + setChargeMaxVoltage
-					+ "]. This can take up to 10 minutes.");
+			this.log.info("Update for BMS Registers. " //
+					+ "Voltages [Discharge {} -> {}] [Charge {} -> {}]. " //
+					+ "This can take up to 10 minutes.", //
+					bmsDischargeMinVoltage.get(), setDischargeMinVoltage, //
+					bmsChargeMaxVoltage.get(), setChargeMaxVoltage);
 
 			this.writeToChannel(GoodWe.ChannelId.BMS_CHARGE_MAX_VOLTAGE, setChargeMaxVoltage);
 			this.writeToChannel(GoodWe.ChannelId.BMS_DISCHARGE_MIN_VOLTAGE, setDischargeMinVoltage);

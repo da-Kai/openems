@@ -6,13 +6,11 @@ import java.util.Optional;
 
 import org.postgresql.Driver;
 import org.postgresql.ds.PGSimpleDataSource;
-import org.slf4j.Logger;
 
 import com.zaxxer.hikari.HikariDataSource;
 
 import io.openems.backend.metadata.odoo.Config;
 import io.openems.backend.metadata.odoo.EdgeCache;
-import io.openems.backend.metadata.odoo.MetadataOdoo;
 import io.openems.backend.metadata.odoo.MyEdge;
 
 public class PostgresHandler {
@@ -21,20 +19,16 @@ public class PostgresHandler {
 
 	protected final EdgeCache edgeCache;
 
-	private final MetadataOdoo parent;
 	private final HikariDataSource dataSource;
 	private final InitializeEdgesWorker initializeEdgesWorker;
 	private final PeriodicWriteWorker periodicWriteWorker;
 
-	public PostgresHandler(MetadataOdoo parent, EdgeCache edgeCache, Config config, Runnable onInitialized)
+	public PostgresHandler(String name, EdgeCache edgeCache, Config config, Runnable onInitialized)
 			throws SQLException {
-		this.parent = parent;
 		this.edgeCache = edgeCache;
 		this.dataSource = this.getDataSource(config);
 		this.edge = new PgEdgeHandler(this.dataSource);
-		this.initializeEdgesWorker = new InitializeEdgesWorker(this, this.dataSource, () -> {
-			onInitialized.run();
-		});
+		this.initializeEdgesWorker = new InitializeEdgesWorker(name, this, this.dataSource, onInitialized::run);
 		this.initializeEdgesWorker.start();
 		this.periodicWriteWorker = new PeriodicWriteWorker(this);
 		this.periodicWriteWorker.start();
@@ -89,17 +83,5 @@ public class PostgresHandler {
 
 	protected Connection getConnection() throws SQLException {
 		return this.dataSource.getConnection();
-	}
-
-	protected void logInfo(Logger log, String message) {
-		this.parent.logInfo(log, message);
-	}
-
-	protected void logWarn(Logger log, String message) {
-		this.parent.logWarn(log, message);
-	}
-
-	protected void logError(Logger log, String message) {
-		this.parent.logError(log, message);
 	}
 }

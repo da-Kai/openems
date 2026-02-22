@@ -1,8 +1,9 @@
 package io.openems.backend.uiwebsocket.impl;
 
 import org.java_websocket.WebSocket;
-import org.slf4j.Logger;
 
+import io.openems.backend.common.metadata.User;
+import io.openems.common.jsonrpc.base.JsonrpcNotification;
 import io.openems.common.websocket.AbstractWebsocketServer;
 import io.openems.common.websocket.OnClose;
 import io.openems.common.websocket.OnOpen;
@@ -20,9 +21,18 @@ public class WebsocketServer extends AbstractWebsocketServer<WsData> {
 		super(name, port, poolSize);
 		this.parent = parent;
 		this.onRequest = new OnRequest(parent);
-		this.onNotification = new OnNotification(parent);
-		this.onError = new OnError(parent);
+		this.onNotification = new OnNotification(name, this::assertUser);
+		this.onError = new OnError(name);
 		this.requestLimit = requestLimit;
+	}
+	
+	private User assertUser(WsData wsData, JsonrpcNotification notification) {
+		try {
+			return this.parent.assertUser(wsData, notification);
+		} catch (Exception e) {
+			// ignore
+			return null;
+		}
 	}
 
 	@Override
@@ -53,20 +63,5 @@ public class WebsocketServer extends AbstractWebsocketServer<WsData> {
 	@Override
 	protected OnClose getOnClose() {
 		return this.onClose;
-	}
-
-	@Override
-	protected void logInfo(Logger log, String message) {
-		this.parent.logInfo(log, message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		this.parent.logWarn(log, message);
-	}
-
-	@Override
-	protected void logError(Logger log, String message) {
-		this.parent.logError(log, message);
 	}
 }

@@ -23,7 +23,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.NotImplementedException;
@@ -90,7 +89,7 @@ public class BatterySoltaroClusterVersionBImpl extends AbstractOpenemsModbusComp
 	// are used or not
 	private static final Map<Integer, RackInfo> RACK_INFO = createRackInfo();
 
-	private final Logger log = LoggerFactory.getLogger(BatterySoltaroClusterVersionBImpl.class);
+	private final Logger log;
 
 	@Reference
 	private ConfigurationAdmin cm;
@@ -126,6 +125,7 @@ public class BatterySoltaroClusterVersionBImpl extends AbstractOpenemsModbusComp
 				BatterySoltaroClusterVersionB.ChannelId.values(), //
 				BatteryProtection.ChannelId.values() //
 		);
+		this.log = OpenemsComponent.getComponentLogger(this);
 	}
 
 	@Override
@@ -424,7 +424,7 @@ public class BatterySoltaroClusterVersionBImpl extends AbstractOpenemsModbusComp
 			try {
 				sleepChannel.setNextWriteValue(0x1);
 			} catch (OpenemsNamedException e) {
-				this.logError(this.log, "Error while trying to sleep the system!");
+				this.log.error("Error while trying to sleep the system!");
 			}
 			this.setStateMachineState(State.UNDEFINED);
 		}
@@ -437,7 +437,7 @@ public class BatterySoltaroClusterVersionBImpl extends AbstractOpenemsModbusComp
 		try {
 			resetMasterChannel.setNextWriteValue(0x1);
 		} catch (OpenemsNamedException e) {
-			this.logError(this.log, "Error while trying to reset the master!");
+			this.log.error("Error while trying to reset the master!");
 		}
 
 		for (SingleRack rack : this.racks.values()) {
@@ -445,7 +445,7 @@ public class BatterySoltaroClusterVersionBImpl extends AbstractOpenemsModbusComp
 			try {
 				resetChannel.setNextWriteValue(0x1);
 			} catch (OpenemsNamedException e) {
-				this.logError(this.log, "Error while trying to reset the system!");
+				this.log.error("Error while trying to reset the system!");
 			}
 		}
 	}
@@ -463,7 +463,7 @@ public class BatterySoltaroClusterVersionBImpl extends AbstractOpenemsModbusComp
 				}
 			}
 		} catch (OpenemsNamedException e) {
-			this.logError(this.log, "Error while trying to start system\n" + e.getMessage());
+			this.log.error("Error while trying to start system: {}", e.getMessage());
 		}
 	}
 
@@ -476,7 +476,7 @@ public class BatterySoltaroClusterVersionBImpl extends AbstractOpenemsModbusComp
 				rackUsageChannel.setNextWriteValue(RackUsage.UNUSED);
 			}
 		} catch (OpenemsNamedException e) {
-			this.logError(this.log, "Error while trying to stop system\n" + e.getMessage());
+			this.log.error("Error while trying to stop system: {}", e.getMessage());
 		}
 	}
 

@@ -28,7 +28,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
@@ -54,6 +53,7 @@ import io.openems.common.jsonrpc.notification.SystemLogNotification;
 import io.openems.common.jsonrpc.request.AuthenticatedRpcRequest;
 import io.openems.common.jsonrpc.request.EdgeRpcRequest;
 import io.openems.common.jsonrpc.request.SubscribeSystemLogRequest;
+import io.openems.common.logger.ContextLogger;
 import io.openems.common.session.Role;
 import io.openems.common.types.ChannelAddress;
 
@@ -73,7 +73,7 @@ public class EdgeManagerImpl extends AbstractOpenemsBackendComponent
 
 	protected final SystemLogHandler systemLogHandler;
 
-	private final Logger log = LoggerFactory.getLogger(EdgeManagerImpl.class);
+	private final Logger log;
 
 	@Reference
 	protected volatile Metadata metadata;
@@ -98,6 +98,7 @@ public class EdgeManagerImpl extends AbstractOpenemsBackendComponent
 
 	public EdgeManagerImpl() {
 		super("Edge.Manager");
+		this.log = new ContextLogger(EdgeManagerImpl.class, this.getName());
 		this.systemLogHandler = new SystemLogHandler(//
 				() -> this.uiWebsocket, //
 				this::send);
@@ -176,7 +177,7 @@ public class EdgeManagerImpl extends AbstractOpenemsBackendComponent
 							"result");
 					result.complete(new GenericJsonrpcResponseSuccess(request.id, authenticatedRpcResponse));
 				} catch (OpenemsNamedException e) {
-					this.logError(this.log, e.getMessage());
+					this.log.error(e.getMessage());
 					result.completeExceptionally(e);
 				}
 			} else {
@@ -229,48 +230,6 @@ public class EdgeManagerImpl extends AbstractOpenemsBackendComponent
 				.findFirst().orElse(null);
 	}
 
-	@Override
-	protected void logInfo(Logger log, String message) {
-		super.logInfo(log, message);
-	}
-
-	/**
-	 * Logs a info message with Edge-ID.
-	 * 
-	 * @param log     the {@link Logger}
-	 * @param edgeId  the Edge-ID
-	 * @param message the message
-	 */
-	protected void logInfo(Logger log, String edgeId, String message) {
-		if (edgeId == null) {
-			edgeId = "UNKNOWN";
-		}
-		super.logInfo(log, "[" + edgeId + "] " + message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		super.logWarn(log, message);
-	}
-
-	/**
-	 * Logs a warning message with Edge-ID.
-	 * 
-	 * @param log     the {@link Logger}
-	 * @param edgeId  the Edge-ID
-	 * @param message the message
-	 */
-	protected void logWarn(Logger log, String edgeId, String message) {
-		if (edgeId == null) {
-			edgeId = "UNKNOWN";
-		}
-		super.logWarn(log, "[" + edgeId + "] " + message);
-	}
-
-	@Override
-	protected void logError(Logger log, String message) {
-		super.logError(log, message);
-	}
 
 	@Override
 	public CompletableFuture<JsonrpcResponseSuccess> handleSubscribeSystemLogRequest(String edgeId, User user,

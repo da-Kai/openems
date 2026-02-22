@@ -66,21 +66,19 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 				T wsData = AbstractWebsocketServer.this.createWsData(ws);
 				ws.setAttachment(wsData);
 				AbstractWebsocketServer.this.execute(new OnOpenHandler(//
-						ws, handshake, //
+						name, ws, handshake, //
 						AbstractWebsocketServer.this.getOnOpen(), //
-						AbstractWebsocketServer.this::logWarn, //
 						AbstractWebsocketServer.this::handleInternalError));
 			}
 
 			@Override
 			public void onMessage(WebSocket ws, String message) {
 				AbstractWebsocketServer.this.execute(new OnMessageHandler(//
-						ws, message, //
+						name, ws, message, //
 						AbstractWebsocketServer.this.getOnRequest(), //
 						AbstractWebsocketServer.this.getOnNotification(), //
 						AbstractWebsocketServer.this::sendMessage, //
-						AbstractWebsocketServer.this::handleInternalError, //
-						AbstractWebsocketServer.this::logWarn));
+						AbstractWebsocketServer.this::handleInternalError));
 			}
 
 			@Override
@@ -172,12 +170,10 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 		return (t, wsDataString) -> {
 			switch (t) {
 			case BindException be //
-				-> this.logError(this.log, "Unable to Bind to port [" + this.port + "]");
+				-> this.log.error("Unable to Bind to port [{}]", this.port);
 			default //
-				-> this.logError(this.log, new StringBuilder() //
-						.append("OnInternalError for ").append(wsDataString).append(". ") //
-						.append(t.getClass()).append(": ") //
-						.append(t.getMessage()).toString());
+				-> this.log.error("OnInternalError for {}. {}: {}", //
+						wsDataString, t.getClass(), t.getMessage());
 			}
 			this.log.error(t.getMessage(), t);
 		};
@@ -234,7 +230,7 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 		}
 		this.isStarted = true;
 		super.start();
-		this.logInfo(this.log, "Starting websocket server [port=" + this.port + "]");
+		this.log.info("Starting websocket server [port={}]", this.port);
 		this.ws.start();
 	}
 
@@ -272,8 +268,7 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 				this.ws.stop();
 				return;
 			} catch (NullPointerException | InterruptedException e) {
-				this.logWarn(this.log,
-						"Unable to stop websocket server. " + e.getClass().getSimpleName() + ": " + e.getMessage());
+				this.log.warn("Unable to stop websocket server. {}: {}", e.getClass().getSimpleName(), e.getMessage());
 				try {
 					Thread.sleep(100);
 				} catch (InterruptedException e1) {
@@ -281,7 +276,7 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 				}
 			}
 		}
-		this.logError(this.log, "Stopping websocket server failed too often.");
+		this.log.error("Stopping websocket server failed too often.");
 		super.stop();
 	}
 }

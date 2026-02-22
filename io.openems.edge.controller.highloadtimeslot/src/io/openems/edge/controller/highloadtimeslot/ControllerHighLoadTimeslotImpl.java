@@ -18,7 +18,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
@@ -43,7 +42,7 @@ public class ControllerHighLoadTimeslotImpl extends AbstractOpenemsComponent
 	 */
 	private static final int FORCE_CHARGE_MINUTES = 30;
 
-	private final Logger log = LoggerFactory.getLogger(ControllerHighLoadTimeslotImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ComponentManager componentManager;
@@ -111,7 +110,7 @@ public class ControllerHighLoadTimeslotImpl extends AbstractOpenemsComponent
 			 */
 			// reset charge state
 			this.chargeState = ChargeState.NORMAL;
-			this.logInfo(this.log, "Within High-Load timeslot. Discharge with [" + this.dischargePower + "]");
+			this.log.info("Within High-Load timeslot. Discharge with [{}]", this.dischargePower );
 			return this.dischargePower;
 		}
 		if (this.isHighLoadTimeslot(now.plusMinutes(FORCE_CHARGE_MINUTES))) {
@@ -128,10 +127,10 @@ public class ControllerHighLoadTimeslotImpl extends AbstractOpenemsComponent
 			/*
 			 * charge with configured charge-power
 			 */
-			this.logInfo(this.log, "Outside High-Load timeslot. Charge with [" + this.chargePower + "]");
+			this.log.info("Outside High-Load timeslot. Charge with [{}]", this.chargePower);
 			var minPower = ess.getPower().getMinPower(ess, ALL, ACTIVE);
 			if (minPower >= 0) {
-				this.logInfo(this.log, "Min-Power [" + minPower + " >= 0]. Switch to Charge-Hystereses state.");
+				this.log.info("Min-Power [{} >= 0]. Switch to Charge-Hystereses state.", minPower);
 				// activate Charge-hysteresis if no charge power (i.e. >= 0) is allowed
 				this.chargeState = ChargeState.HYSTERESIS;
 			}
@@ -141,10 +140,10 @@ public class ControllerHighLoadTimeslotImpl extends AbstractOpenemsComponent
 			/*
 			 * block charging till configured hysteresisSoc
 			 */
-			this.logInfo(this.log, "Outside High-Load timeslot. Charge-Hysteresis-Mode: Block charging.");
+			this.log.info("Outside High-Load timeslot. Charge-Hysteresis-Mode: Block charging.");
 			if (ess.getSoc().orElse(0) <= this.hysteresisSoc) {
-				this.logInfo(this.log, "SoC [" + ess.getSoc().orElse(0) + " <= " + this.hysteresisSoc
-						+ "]. Switch to Charge-Normal state.");
+				this.log.info("SoC [{} <= {}]. Switch to Charge-Normal state.", //
+						ess.getSoc().orElse(0), this.hysteresisSoc);
 				this.chargeState = ChargeState.NORMAL;
 			}
 			yield 0;
@@ -153,7 +152,7 @@ public class ControllerHighLoadTimeslotImpl extends AbstractOpenemsComponent
 			/*
 			 * force full charging just before the high-load timeslot starts
 			 */
-			this.logInfo(this.log, "Just before High-Load timeslot. Charge with [" + this.chargePower + "]");
+			this.log.info("Just before High-Load timeslot. Charge with [{}]", this.chargePower);
 			yield this.chargePower;
 		}
 		};
@@ -234,7 +233,7 @@ public class ControllerHighLoadTimeslotImpl extends AbstractOpenemsComponent
 		// adjust value so that it fits into Min/MaxActivePower
 		var calculatedPower = ess.getPower().fitValueIntoMinMaxPower(this.id(), ess, ALL, ACTIVE, activePower);
 		if (calculatedPower != activePower) {
-			this.logInfo(this.log, "- Applying [" + calculatedPower + " W] instead of [" + activePower + "] W");
+			this.log.info("- Applying [{} W] instead of [{}] W ", calculatedPower, activePower);
 		}
 
 		// set result

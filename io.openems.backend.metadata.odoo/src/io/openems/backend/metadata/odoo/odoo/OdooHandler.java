@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
@@ -66,6 +65,7 @@ import io.openems.common.channel.Level;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.common.jsonrpc.request.GetEdgesRequest.PaginationOptions;
+import io.openems.common.logger.ContextLogger;
 import io.openems.common.session.Language;
 import io.openems.common.session.Role;
 import io.openems.common.utils.JsonUtils;
@@ -76,7 +76,7 @@ public class OdooHandler {
 	protected final MetadataOdoo parent;
 	private final EdgeCache edgeCache;
 
-	private final Logger log = LoggerFactory.getLogger(OdooHandler.class);
+	private final Logger log;
 	private final Credentials credentials;
 
 	private volatile CompletableFuture<String> adminLoginFuture = CompletableFuture
@@ -88,6 +88,7 @@ public class OdooHandler {
 	public OdooHandler(MetadataOdoo parent, EdgeCache edgeCache, Config config, DebugExecutor refreshToken,
 			DebugExecutor executor) {
 		this.parent = parent;
+		this.log = new ContextLogger(OdooHandler.class, parent.getName());
 		this.edgeCache = edgeCache;
 		this.credentials = Credentials.fromConfig(config);
 		this.refreshToken = refreshToken;
@@ -105,10 +106,10 @@ public class OdooHandler {
 			OdooUtils.write(this.credentials, Field.EdgeDevice.ODOO_MODEL, new Integer[] { edge.getOdooId() },
 					fieldValues);
 		} catch (OpenemsException e) {
-			this.parent.logError(this.log, "Unable to update Edge [" + edge.getId() + "] " //
-					+ "Odoo-ID [" + edge.getOdooId() + "] " //
-					+ "Fields [" + Stream.of(fieldValues).map(FieldValue::toString).collect(Collectors.joining(","))
-					+ "]: " + e.getMessage());
+			this.log.error("Unable to update Edge[{}] Odoo-ID[{}] Fields[{}]: {}", //
+					edge.getId(), edge.getOdooId(), //
+					Stream.of(fieldValues).map(FieldValue::toString).collect(Collectors.joining(",")), //
+					e.getMessage());
 		}
 	}
 
@@ -123,11 +124,10 @@ public class OdooHandler {
 			OdooUtils.write(this.credentials, Field.EdgeDeviceUserRole.ODOO_MODEL, new Integer[] { edgeUser.getId() },
 					fieldValues);
 		} catch (OpenemsException e) {
-			this.parent.logError(this.log, "Unable to update EdgeUser [" + edgeUser.getId() + "] " //
-					+ "Edge [" + edgeUser.getEdgeId() + "] " //
-					+ "User [" + edgeUser.getUserId() + "] " //
-					+ "Fields [" + Stream.of(fieldValues).map(FieldValue::toString).collect(Collectors.joining(","))
-					+ "]: " + e.getMessage());
+			this.log.error("Unable to update EdgeUser[{}] Edge[{}] User[{}] Fields[{}]: {}", //
+					edgeUser.getId(), edgeUser.getEdgeId(), edgeUser.getUserId(), //
+					Stream.of(fieldValues).map(FieldValue::toString).collect(Collectors.joining(",")), //
+					e.getMessage());
 		}
 	}
 
@@ -156,7 +156,7 @@ public class OdooHandler {
 
 			return Optional.of(name);
 		} catch (OpenemsException e) {
-			this.parent.logInfo(this.log, "Unable to find Edge by setup password [" + setupPassword + "]");
+			this.log.info("Unable to find Edge by setup password [{}]", setupPassword);
 		}
 
 		return Optional.empty();
@@ -262,7 +262,7 @@ public class OdooHandler {
 			OdooUtils.sendJsonrpcRequest(this.credentials.url() + "/web/session/destroy", "session_id=" + sessionId,
 					new JsonObject());
 		} catch (OpenemsNamedException e) {
-			this.log.warn("Unable to logout session [" + sessionId + "]: " + e.getMessage());
+			this.log.warn("Unable to logout session [{}]: {}", sessionId, e.getMessage());
 		}
 	}
 
@@ -360,7 +360,7 @@ public class OdooHandler {
 			if (countryFound.length == 1) {
 				addressFields.put(Field.Partner.COUNTRY.id(), countryFound[0]);
 			} else {
-				this.log.info("Country with code [" + countryCode + "] not found");
+				this.log.info("Country with code [{}] not found", countryCode);
 			}
 		}
 
@@ -1190,7 +1190,7 @@ public class OdooHandler {
 			}
 			return Optional.empty();
 		} catch (OpenemsException ex) {
-			this.parent.logInfo(this.log, "Unable to find serial number for Edge [" + edge.getId() + "]");
+			this.log.info("Unable to find serial number for Edge [{}]", edge.getId());
 		}
 
 		return Optional.empty();
@@ -1217,7 +1217,7 @@ public class OdooHandler {
 				return Optional.of(emsTypeString);
 			}
 		} catch (OpenemsException ex) {
-			this.parent.logInfo(this.log, "Unable to find serial number for Edge [" + edgeId + "]");
+			this.log.info("Unable to find serial number for Edge [{}]", edgeId);
 		}
 
 		return Optional.empty();

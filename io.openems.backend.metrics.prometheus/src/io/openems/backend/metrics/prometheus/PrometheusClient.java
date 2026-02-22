@@ -47,7 +47,7 @@ public class PrometheusClient extends AbstractOpenemsBackendComponent implements
 
 	@Activate
 	private void activate(ComponentContext context, Config config) {
-		this.logInfo(this.log, "Activate");
+		this.log.info("Activate");
 
 		JvmMetrics.builder().register(this.prometheusRegistry);
 		this.prometheusRegistry.register(PrometheusMetrics.OPENEMS_VERSION);
@@ -66,7 +66,7 @@ public class PrometheusClient extends AbstractOpenemsBackendComponent implements
 
 	@Deactivate
 	protected void deactivate() {
-		this.logInfo(this.log, "Deactivate");
+		this.log.info("Deactivate");
 
 		this.stopServer();
 		this.prometheusRegistry.clear();

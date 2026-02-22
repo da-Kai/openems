@@ -13,12 +13,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.common.jsonrpc.base.JsonrpcResponseSuccess;
 import io.openems.common.utils.ThreadPoolUtils;
+import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.core.host.jsonrpc.ExecuteSystemCommandRequest;
 import io.openems.edge.core.host.jsonrpc.ExecuteSystemCommandResponse;
 import io.openems.edge.core.host.jsonrpc.ExecuteSystemUpdateRequest;
@@ -38,7 +38,7 @@ public class SystemUpdateHandler {
 	private static final String MARKER_FINISHED_SUCCESSFULLY = MARKER_FINISHED + "SUCCESSFULLY";
 	private static final String MARKER_FINISHED_WITH_ERROR = MARKER_FINISHED + "WITH ERROR";
 
-	private final Logger log = LoggerFactory.getLogger(SystemUpdateHandler.class);
+	private final Logger log;
 	private final HostImpl parent;
 	private final UpdateState updateState = new UpdateState();
 
@@ -46,6 +46,7 @@ public class SystemUpdateHandler {
 
 	public SystemUpdateHandler(HostImpl parent) {
 		this.parent = parent;
+		this.log = OpenemsComponent.getComponentLogger(SystemUpdateHandler.class, parent);
 	}
 
 	/**
@@ -152,7 +153,7 @@ public class SystemUpdateHandler {
 
 			} catch (Exception e) {
 				this.updateState.addLog("# Finished with error");
-				this.parent.logError(this.log, "Error while executing System Update: " + e.getMessage());
+				this.log.error("Error while executing System Update: {}", e.getMessage());
 				e.printStackTrace();
 				result.completeExceptionally(new OpenemsException(e.getMessage() + "\n" + response.toString()));
 			}

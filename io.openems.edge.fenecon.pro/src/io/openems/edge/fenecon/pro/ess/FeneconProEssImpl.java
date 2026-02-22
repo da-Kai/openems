@@ -19,7 +19,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -72,7 +71,7 @@ public class FeneconProEssImpl extends AbstractOpenemsModbusComponent
 
 	private static final int UNIT_ID = 4;
 
-	private final Logger log = LoggerFactory.getLogger(FeneconProEssImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final MaxApparentPowerHandler maxApparentPowerHandler = new MaxApparentPowerHandler(this);
 
 	@Reference
@@ -533,24 +532,24 @@ public class FeneconProEssImpl extends AbstractOpenemsModbusComponent
 		try {
 			if (this.getPcsMode() != PcsMode.REMOTE) {
 				// If Mode is not "Remote"
-				this.logWarn(this.log, "PCS-Mode is not 'Remote'. It's [" + this.getPcsMode() + "]");
+				this.log.warn("PCS-Mode is not 'Remote'. It's [{}]", this.getPcsMode() );
 				if (this.getSetupMode() == SetupMode.OFF) {
 					// Activate SetupMode
-					this.logInfo(this.log, "Activating Setup-Mode");
+					this.log.info("Activating Setup-Mode");
 					this.getSetupModeChannel().setNextWriteValue(SetupMode.ON);
 				} else {
 					// Set Mode to "Remote"
-					this.logInfo(this.log, "Setting PCS-Mode to 'Remote'");
+					this.log.info("Setting PCS-Mode to 'Remote'");
 					this.getPcsModeChannel().setNextWriteValue(PcsMode.REMOTE);
 				}
 			} else // If Mode is "Remote" and SetupMode is active
 			if (this.getSetupMode() == SetupMode.ON) {
 				// Deactivate SetupMode
-				this.logInfo(this.log, "Deactivating Setup-Mode");
+				this.log.info("Deactivating Setup-Mode");
 				this.getSetupModeChannel().setNextWriteValue(SetupMode.OFF);
 			}
 		} catch (OpenemsNamedException e) {
-			this.logError(this.log, "Unable to activate Remote-Mode: " + e.getMessage());
+			this.log.error("Unable to activate Remote-Mode: {}", e.getMessage());
 		}
 	}
 
@@ -564,10 +563,5 @@ public class FeneconProEssImpl extends AbstractOpenemsModbusComponent
 				ManagedAsymmetricEss.getModbusSlaveNatureTable(accessMode), //
 				ModbusSlaveNatureTable.of(FeneconProEssImpl.class, accessMode, 300) //
 						.build());
-	}
-
-	@Override
-	protected void logInfo(Logger log, String message) {
-		super.logInfo(log, message);
 	}
 }

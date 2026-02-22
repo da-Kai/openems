@@ -6,7 +6,6 @@ import java.time.LocalTime;
 import java.util.List;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.utils.DoubleUtils;
@@ -14,6 +13,7 @@ import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.IntegerWriteChannel;
 import io.openems.edge.common.channel.StateChannel;
 import io.openems.edge.common.component.ComponentManager;
+import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.ess.dccharger.api.EssDcCharger;
 import io.openems.edge.ess.fenecon.commercial40.charger.EssFeneconCommercial40Pv;
 
@@ -26,7 +26,7 @@ public class SurplusFeedInHandler {
 	// If AllowedDischarge is < 1000, surplus is not activated
 	private static final int SURPLUS_ALLOWED_DISCHARGE_LIMIT = 35_000;
 
-	private final Logger log = LoggerFactory.getLogger(SurplusFeedInHandler.class);
+	private final Logger log;
 	private final EssFeneconCommercial40Impl parent;
 
 	private SurplusFeedInStateMachine state = SurplusFeedInStateMachine.DEACTIVATED;
@@ -34,6 +34,7 @@ public class SurplusFeedInHandler {
 
 	public SurplusFeedInHandler(EssFeneconCommercial40Impl parent) {
 		this.parent = parent;
+		this.log = OpenemsComponent.getComponentLogger(SurplusFeedInHandler.class, this.parent);
 	}
 
 	protected Integer run(List<EssFeneconCommercial40Pv> chargers, Config config, ComponentManager componentManager) {
@@ -191,7 +192,7 @@ public class SurplusFeedInHandler {
 
 	private void setState(SurplusFeedInStateMachine state) {
 		if (this.state != state) {
-			this.parent.logInfo(this.log, "Changing State-Machine from [" + this.state + "] to [" + state + "]");
+			this.log.info("Changing State-Machine from [{}] to [{}]", this.state, state);
 			this.state = state;
 			this.parent.channel(EssFeneconCommercial40.ChannelId.SURPLUS_FEED_IN_STATE_MACHINE).setNextValue(state);
 		}

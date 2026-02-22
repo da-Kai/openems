@@ -28,7 +28,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -79,7 +78,7 @@ import io.openems.edge.timedata.api.utils.CalculateEnergyFromPower;
 public class GoodWeGridMeterImpl extends AbstractOpenemsModbusComponent implements GoodWeGridMeter, ElectricityMeter,
 		ModbusComponent, OpenemsComponent, TimedataProvider, EventHandler, ModbusSlave {
 
-	private final Logger log = LoggerFactory.getLogger(GoodWeGridMeterImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final CalculateEnergyFromPower calculateProductionEnergy = new CalculateEnergyFromPower(this,
 			ElectricityMeter.ChannelId.ACTIVE_PRODUCTION_ENERGY);
 	private final CalculateEnergyFromPower calculateConsumptionEnergy = new CalculateEnergyFromPower(this,
@@ -271,7 +270,7 @@ public class GoodWeGridMeterImpl extends AbstractOpenemsModbusComponent implemen
 		try {
 			ChannelUtils.setWriteValueIfNotRead(this.getExternalMeterRatioChannel(), meterCtRatio);
 		} catch (OpenemsNamedException e) {
-			this.logError(this.log, "Unable to set the ratio for external meter.");
+			this.log.error("Unable to set the ratio for external meter.");
 		}
 	}
 

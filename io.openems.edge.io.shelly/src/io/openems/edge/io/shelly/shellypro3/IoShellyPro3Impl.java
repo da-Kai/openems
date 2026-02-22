@@ -16,7 +16,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 
@@ -43,7 +42,7 @@ import io.openems.edge.io.shelly.common.Utils;
 public class IoShellyPro3Impl extends AbstractOpenemsComponent
 		implements IoShellyPro3, DigitalOutput, OpenemsComponent, EventHandler {
 
-	private final Logger log = LoggerFactory.getLogger(IoShellyPro3Impl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final BooleanWriteChannel[] digitalOutputChannels;
 
 	private String baseUrl;
@@ -119,7 +118,7 @@ public class IoShellyPro3Impl extends AbstractOpenemsComponent
 		Boolean isOn = null;
 
 		if (error != null) {
-			this.logDebug(this.log, error.getMessage());
+			this.log.debug(error.getMessage());
 
 		} else {
 			try {
@@ -127,7 +126,7 @@ public class IoShellyPro3Impl extends AbstractOpenemsComponent
 				isOn = getAsBoolean(switchStatus, "output");
 
 			} catch (Exception e) {
-				this.logError(this.log, "Error processing HTTP response: " + e.getMessage());
+				this.log.error("Error processing HTTP response: {}", e.getMessage());
 				return;
 			}
 		}

@@ -9,6 +9,7 @@ import static java.lang.Math.round;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -26,7 +27,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.MeterType;
@@ -76,7 +76,7 @@ public class EvcsClusterPeakShavingImpl extends AbstractOpenemsComponent
 	 */
 	private static final int MINIMUM_CHARGE_POWER_GUARANTEE = 4500;
 
-	private final Logger log = LoggerFactory.getLogger(EvcsClusterPeakShavingImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	// Used EVCSs
 	private String[] evcsIds = {};
@@ -187,7 +187,7 @@ public class EvcsClusterPeakShavingImpl extends AbstractOpenemsComponent
 		for (String id : this.evcsIds) {
 			var evcs = this.evcss.get(id);
 			if (evcs == null) {
-				this.logWarn(this.log, "Required Evcs [" + id + "] is not available.");
+				this.log.warn("Required Evcs [{}] is not available.", id);
 			} else {
 				this.sortedEvcss.add(evcs);
 			}
@@ -300,7 +300,7 @@ public class EvcsClusterPeakShavingImpl extends AbstractOpenemsComponent
 			return;
 		}
 
-		var totalPowerLimit = this.getMaximumPowerToDistribute();
+		var calcTotalPowerLimit = this.getMaximumPowerToDistribute();
 
 		/*
 		 * Make sure that only the allowed power at the grid meter is used.
@@ -316,19 +316,23 @@ public class EvcsClusterPeakShavingImpl extends AbstractOpenemsComponent
 		 */
 		int unavailablePower = this.getAvailableGridPower() * -1;
 		if (unavailablePower > 0 && this.lastLimit != null) {
-			this.logInfoInDebugmode("Reducing last limit by " + unavailablePower + " W");
-			totalPowerLimit = this.lastLimit.intValue() - unavailablePower;
+			this.loggerInDebugmode().ifPresent(logger -> logger.info(//
+					"Reducing last limit by {} W", unavailablePower));
+			
+			calcTotalPowerLimit = this.lastLimit.intValue() - unavailablePower;
 		}
 
-		this.lastLimit = Integer.valueOf(totalPowerLimit);
+		this.lastLimit = Integer.valueOf(calcTotalPowerLimit);
 		this.channel(EvcsClusterPeakShaving.ChannelId.MAXIMUM_POWER_TO_DISTRIBUTE)
-				.setNextValue(Integer.valueOf(totalPowerLimit));
+				.setNextValue(Integer.valueOf(calcTotalPowerLimit));
 
 		// Minimum of the current limit and the maximum power if present, e.g. from
 		// another cluster
-		totalPowerLimit = Math.min(totalPowerLimit, this.getMaximumPower().orElse(Integer.MAX_VALUE));
+		final int totalPowerLimit = Math.min(calcTotalPowerLimit, this.getMaximumPower().orElse(Integer.MAX_VALUE));
 
-		this.logInfoInDebugmode("Maximum total power to distribute: " + totalPowerLimit);
+		this.loggerInDebugmode().ifPresent(logger -> logger.info(//
+				"Maximum total power to distribute: {}", //
+				totalPowerLimit));
 
 		// Total Power that can be distributed to EVCSs minus the guaranteed power.
 		var totalPowerLeftMinusGuarantee = totalPowerLimit;
@@ -363,7 +367,8 @@ public class EvcsClusterPeakShavingImpl extends AbstractOpenemsComponent
 						// Check if there is enough power for an initial charge
 						if (totalPowerLimit - initialChargePower - this.getActivePower().orElse(0) >= guaranteedPower) {
 
-							this.logInfoInDebugmode("Set initial power " + guaranteedPower + " to " + evcs.id());
+							this.loggerInDebugmode().ifPresent(logger -> logger.info(//
+									"Set initial power {} to {}", guaranteedPower, evcs.alias()));
 							managedEvcs.setChargePowerLimit(guaranteedPower);
 							initialChargePower += guaranteedPower;
 
@@ -412,24 +417,26 @@ public class EvcsClusterPeakShavingImpl extends AbstractOpenemsComponent
 
 				int maximumHardwareLimit = evcs.getMaximumHardwarePower().orElse(Evcs.DEFAULT_MAXIMUM_HARDWARE_POWER);
 
-				int nextChargePower;
+				int calcNextChargePower;
 				var requestedPower = evcs.getSetChargePowerRequestChannel().getNextWriteValue();
 
 				// Power requested by the controller
 				if (requestedPower.isPresent()) {
-					this.logInfoInDebugmode("Requested power ( for " + evcs.alias() + "): " + requestedPower.get());
-					nextChargePower = requestedPower.get();
+					this.loggerInDebugmode().ifPresent(logger -> logger.info(//
+									"Requested power ( for {}): {}", evcs.alias(), requestedPower.get()));
+					calcNextChargePower = requestedPower.get();
 				} else {
-					nextChargePower = maximumHardwareLimit;
+					calcNextChargePower = maximumHardwareLimit;
 				}
 
 				// Total power should be only reduced by the maximum power, that EV is charging.
-				int maximumChargePower = evcs.getMaximumPower().orElse(nextChargePower);
+				int maximumChargePower = evcs.getMaximumPower().orElse(calcNextChargePower);
 
-				nextChargePower = nextChargePower > maximumHardwareLimit ? maximumHardwareLimit : nextChargePower;
+				final int nextChargePower;
 
 				// Checks if there is enough power left and sets the charge power
 				if (maximumChargePower < powerLeft) {
+					nextChargePower = calcNextChargePower > maximumHardwareLimit ? maximumHardwareLimit : calcNextChargePower;
 					totalPowerLeftMinusGuarantee = totalPowerLeftMinusGuarantee
 							- (maximumChargePower - guaranteedPower);
 				} else {
@@ -441,8 +448,9 @@ public class EvcsClusterPeakShavingImpl extends AbstractOpenemsComponent
 				 * Set the next charge power of the EVCS
 				 */
 				evcs.setChargePowerLimitWithFilter(nextChargePower);
-				this.logInfoInDebugmode("Next charge power: " + nextChargePower + "; Max charge power: "
-						+ maximumChargePower + "; Power left: " + totalPowerLeftMinusGuarantee);
+				this.loggerInDebugmode().ifPresent(logger -> logger.info(//
+						"Next charge power: {}; Max charge power: {}; Power left: {}", //
+						nextChargePower, maximumChargePower, powerLeft));
 			}
 		} catch (OpenemsNamedException e) {
 			e.printStackTrace();
@@ -489,12 +497,12 @@ public class EvcsClusterPeakShavingImpl extends AbstractOpenemsComponent
 
 		var allowedChargePower = (int) (evcsCharge + maxAvailableStoragePower + maxAvailableGridPower);
 
-		this.logInfoInDebugmode(this.log,
-				"Calculation of the maximum charge Power: EVCS Charge [" + evcsCharge
-						+ "]  +  Max. available storage power [" + maxAvailableStoragePower
-						+ "]  +  ( Configured Hardware Limit * 3 ["
-						+ this.config.hardwarePowerLimitPerPhase() * THREE_PHASE.getValue()
-						+ "]  -  Maximum of all three phases * 3 [" + gridPower + "]");
+		this.loggerInDebugmode().ifPresent(logger -> logger.info(//
+				"Calculation of the maximum charge Power: EVCS Charge [{}]  +" + //
+						"  Max. available storage power [{}]  +  ( Configured Hardware Limit * 3 [{}]  -" + //
+						"  Maximum of all three phases * 3 [{}])  = Allowed Charge Power [{}])", //
+				evcsCharge, maxAvailableStoragePower, this.config.hardwarePowerLimitPerPhase() * THREE_PHASE.getValue(),
+				gridPower, allowedChargePower));
 
 		return allowedChargePower > 0 ? allowedChargePower : 0;
 	}
@@ -567,14 +575,11 @@ public class EvcsClusterPeakShavingImpl extends AbstractOpenemsComponent
 		return minHW > minGuarantee ? minHW : minGuarantee;
 	}
 
-	protected void logInfoInDebugmode(Logger log, String string) {
+	protected Optional<Logger> loggerInDebugmode() {
 		if (this.config.debugMode()) {
-			this.logInfo(log, string);
+			return Optional.of(this.log);
 		}
-	}
-
-	private void logInfoInDebugmode(String string) {
-		this.logInfoInDebugmode(this.log, string);
+		return Optional.empty();
 	}
 
 	@Override

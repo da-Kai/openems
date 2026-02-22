@@ -199,11 +199,11 @@ public class ControllerChpSocImpl extends AbstractOpenemsComponent
 			WriteChannel<Boolean> outputChannel = this.componentManager.getChannel(this.outputChannelAddress);
 			var currentValueOpt = outputChannel.value().asOptional();
 			if (!currentValueOpt.isPresent() || currentValueOpt.get() != value) {
-				this.logInfo(this.log, "Set output [" + outputChannel.address() + "] " + value + ".");
+				this.log.info("Set output [{}] {}.", outputChannel.address(), value);
 				outputChannel.setNextWriteValue(value);
 			}
 		} catch (OpenemsException e) {
-			this.logError(this.log, "Unable to set output: [" + this.outputChannelAddress + "] " + e.getMessage());
+			this.log.error("Unable to set output: [{}] {}", this.outputChannelAddress, e.getMessage());
 		}
 	}
 

@@ -22,7 +22,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -48,7 +47,7 @@ import io.openems.edge.system.fenecon.home.enums.StateLed;
 public class SystemFeneconHomeImpl extends AbstractOpenemsComponent
 		implements SystemFeneconHome, OpenemsComponent, EventHandler {
 
-	private final Logger log = LoggerFactory.getLogger(SystemFeneconHomeImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ConfigurationAdmin cm;
@@ -150,7 +149,7 @@ public class SystemFeneconHomeImpl extends AbstractOpenemsComponent
 			setWriteValueIfNotRead(outputChannel, setWriteValue);
 
 		} catch (OpenemsNamedException e) {
-			this.logWarn(this.log, "Unable to Turn-On-Channels: " + e.getMessage());
+			this.log.warn("Unable to Turn-On-Channels: {}", e.getMessage());
 		}
 	}
 
@@ -161,7 +160,7 @@ public class SystemFeneconHomeImpl extends AbstractOpenemsComponent
 				setWriteValueIfNotRead(outputChannel, false);
 
 			} catch (OpenemsNamedException e) {
-				this.logWarn(this.log, "Unable to Turn-On-Channels: " + e.getMessage());
+				this.log.warn("Unable to Turn-On-Channels: {}", e.getMessage());
 			}
 		}
 	}

@@ -10,7 +10,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
@@ -34,7 +33,7 @@ import io.openems.edge.ess.api.ManagedSymmetricEss;
 public class ControllerEssStandbyImpl extends AbstractOpenemsComponent
 		implements ControllerEssStandby, Controller, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(ControllerEssStandbyImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final StateMachine stateMachine = new StateMachine(State.UNDEFINED);
 
 	@Reference
@@ -81,7 +80,7 @@ public class ControllerEssStandbyImpl extends AbstractOpenemsComponent
 		 */
 		var gridMode = ess.getGridMode();
 		if (gridMode.isUndefined()) {
-			this.logWarn(this.log, "Grid-Mode is [UNDEFINED]");
+			this.log.warn("Grid-Mode is [UNDEFINED]");
 		}
 		switch (gridMode) {
 		case ON_GRID:

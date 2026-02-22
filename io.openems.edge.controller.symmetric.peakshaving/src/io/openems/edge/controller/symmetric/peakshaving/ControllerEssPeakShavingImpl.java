@@ -8,7 +8,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
@@ -29,7 +28,7 @@ public class ControllerEssPeakShavingImpl extends AbstractOpenemsComponent
 
 	public static final double DEFAULT_MAX_ADJUSTMENT_RATE = 0.2;
 
-	private final Logger log = LoggerFactory.getLogger(ControllerEssPeakShavingImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ComponentManager componentManager;
@@ -66,7 +65,7 @@ public class ControllerEssPeakShavingImpl extends AbstractOpenemsComponent
 		 */
 		var gridMode = ess.getGridMode();
 		if (gridMode.isUndefined()) {
-			this.logWarn(this.log, "Grid-Mode is [UNDEFINED]");
+			this.log.warn("Grid-Mode is [UNDEFINED]");
 		}
 		switch (gridMode) {
 		case ON_GRID:

@@ -3,7 +3,6 @@ package io.openems.edge.core.cycle;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Stopwatch;
 
@@ -11,6 +10,7 @@ import info.faljse.SDNotify.SDNotify;
 import io.openems.common.event.EventBuilder;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.worker.AbstractWorker;
+import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.sum.Sum;
 import io.openems.edge.controller.api.Controller;
@@ -18,11 +18,12 @@ import io.openems.edge.scheduler.api.Scheduler;
 
 public class CycleWorker extends AbstractWorker {
 
-	private final Logger log = LoggerFactory.getLogger(CycleWorker.class);
+	private final Logger log;
 	private final CycleImpl parent;
 
 	public CycleWorker(CycleImpl parent) {
 		this.parent = parent;
+		this.log = OpenemsComponent.getComponentLogger(CycleWorker.class, parent);
 	}
 
 	@Override
@@ -87,7 +88,7 @@ public class CycleWorker extends AbstractWorker {
 			 * Execute Schedulers and their Controllers
 			 */
 			if (this.parent.schedulers.isEmpty()) {
-				this.parent.logWarn(this.log, "There are no Schedulers configured!");
+				this.log.warn("There are no Schedulers configured!");
 			} else {
 				for (Scheduler scheduler : this.parent.schedulers) {
 					var schedulerControllerIsMissing = false;
@@ -98,8 +99,7 @@ public class CycleWorker extends AbstractWorker {
 							controller = this.parent.componentManager.getPossiblyDisabledComponent(controllerId);
 
 						} catch (OpenemsNamedException e) {
-							this.parent.logWarn(this.log, "Scheduler [" + scheduler.id() + "]: Controller ["
-									+ controllerId + "] is missing. " + e.getMessage());
+							this.log.warn("Scheduler [{}]: Controller [{}] is missing. {}", scheduler.id(), controllerId, e.getMessage());
 							schedulerControllerIsMissing = true;
 							continue;
 						}
@@ -117,19 +117,20 @@ public class CycleWorker extends AbstractWorker {
 							controller._setRunFailed(false);
 
 						} catch (OpenemsNamedException e) {
-							this.parent.logWarn(this.log,
-									"Error in Controller [" + controller.id() + "]: " + e.getMessage());
+							this.log.warn("Error in Controller [{}]: {}", controller.id(), e.getMessage());
 
+							// announce running failed
+							controller._setRunFailed(true);
+							
+						} catch (ClassCastException | NullPointerException | IllegalArgumentException e) {
+							this.log.warn("Error in Controller [{}]. {}: {}", // 
+									controller.id(), e.getClass().getSimpleName(), e.getMessage(), e);
 							// announce running failed
 							controller._setRunFailed(true);
 
 						} catch (Exception e) {
-							this.parent.logWarn(this.log, "Error in Controller [" + controller.id() + "]. "
-									+ e.getClass().getSimpleName() + ": " + e.getMessage());
-							if (e instanceof ClassCastException || e instanceof NullPointerException
-									|| e instanceof IllegalArgumentException) {
-								e.printStackTrace();
-							}
+							this.log.warn("Error in Controller [{}]. {}: {}", // 
+									controller.id(), e.getClass().getSimpleName(), e.getMessage());
 							// announce running failed
 							controller._setRunFailed(true);
 						}
@@ -163,12 +164,10 @@ public class CycleWorker extends AbstractWorker {
 			 */
 			EventBuilder.send(this.parent.eventAdmin, EdgeEventConstants.TOPIC_CYCLE_AFTER_WRITE);
 
+		} catch (ClassCastException | NullPointerException e) {
+			this.log.warn("Error in Scheduler. {}: {}", e.getClass().getSimpleName(), e.getMessage(), e);
 		} catch (Throwable t) {
-			this.parent.logWarn(this.log,
-					"Error in Scheduler. " + t.getClass().getSimpleName() + ": " + t.getMessage());
-			if (t instanceof ClassCastException || t instanceof NullPointerException) {
-				t.printStackTrace();
-			}
+			this.log.warn("Error in Scheduler. {}: {}", t.getClass().getSimpleName(), t.getMessage());
 		}
 
 		// Measure actual Cycle-Time

@@ -16,12 +16,12 @@ import org.java_websocket.extensions.permessage_deflate.PerMessageDeflateExtensi
 import org.java_websocket.framing.CloseFrame;
 import org.java_websocket.handshake.ServerHandshake;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.function.BooleanConsumer;
 import io.openems.common.jsonrpc.base.JsonrpcMessage;
 import io.openems.common.jsonrpc.base.JsonrpcRequest;
 import io.openems.common.jsonrpc.base.JsonrpcResponseSuccess;
+import io.openems.common.logger.ContextLogger;
 import io.openems.common.utils.FunctionUtils;
 
 /**
@@ -38,7 +38,6 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 
 	protected final WebSocketClient ws;
 
-	private final Logger log = LoggerFactory.getLogger(AbstractWebsocketClient.class);
 	private final URI serverUri;
 	private final BooleanConsumer onConnectedChange;
 	private final AtomicBoolean isConnected = new AtomicBoolean(false);
@@ -81,17 +80,15 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 		this.serverUri = serverUri;
 		this.onConnectedChange = onConnectedChange == null ? FunctionUtils::doNothing : onConnectedChange;
 		this.ws = new WebSocketClient(serverUri, draft, httpHeaders) {
-
-			private void logInfo(String message) {
-				AbstractWebsocketClient.this.logInfo(AbstractWebsocketClient.this.log, message);
-			}
+			
+			private final Logger log = new ContextLogger(AbstractWebsocketClient.class, AbstractWebsocketClient.this.getName());
 
 			@Override
 			public void onOpen(ServerHandshake handshake) {
 				AbstractWebsocketClient.this.execute(new OnOpenHandler(//
+						AbstractWebsocketClient.this.getName(), //
 						AbstractWebsocketClient.this.ws, handshake, //
 						AbstractWebsocketClient.this.getOnOpen(), //
-						AbstractWebsocketClient.this::logWarn, //
 						AbstractWebsocketClient.this::handleInternalError));
 				this.updateIsConnected();
 			}
@@ -99,12 +96,12 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 			@Override
 			public void onMessage(String message) {
 				AbstractWebsocketClient.this.execute(new OnMessageHandler(//
+						AbstractWebsocketClient.this.getName(), //
 						AbstractWebsocketClient.this.ws, message, //
 						AbstractWebsocketClient.this.getOnRequest(), //
 						AbstractWebsocketClient.this.getOnNotification(), //
 						AbstractWebsocketClient.this::sendMessage, //
-						AbstractWebsocketClient.this::handleInternalError, //
-						AbstractWebsocketClient.this::logWarn));
+						AbstractWebsocketClient.this::handleInternalError));
 			}
 
 			@Override
@@ -132,12 +129,8 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 					// Ignore "Code [-1] Reason [Connection refused: connect]"
 					return;
 				}
-
-				this.logInfo(new StringBuilder() //
-						.append("Websocket [").append(serverUri.toString()) //
-						.append("] closed. Code [").append(code) //
-						.append("] Reason [").append(reason).append("]") //
-						.toString());
+				
+				this.log.info("Websocket [{}] closed. Code [{}] Reason [{}]", serverUri.toString(), code, reason);
 				this.updateIsConnected();
 				AbstractWebsocketClient.this.reconnectorWorker.triggerNextRun();
 			}
@@ -158,7 +151,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 		this.ws.setAttachment(wsData);
 
 		// Initialize reconnector
-		this.reconnectorWorker = new ClientReconnectorWorker(this, reconnectorConfig);
+		this.reconnectorWorker = new ClientReconnectorWorker(name, this, reconnectorConfig);
 
 		if (proxy != null) {
 			this.ws.setProxy(proxy);
@@ -170,7 +163,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	 */
 	@Override
 	public void start() {
-		this.logInfo(this.log, "Opening connection to websocket server [" + this.serverUri + "]");
+		this.getLogger().info("Opening connection to websocket server [{}]", this.serverUri);
 		this.reconnectorWorker.activate(this.getName());
 		this.reconnectorWorker.triggerNextRun();
 	}
@@ -181,7 +174,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	 * @throws InterruptedException on waiting error
 	 */
 	public void startBlocking() throws InterruptedException {
-		this.logInfo(this.log, "Opening connection to websocket server [" + this.serverUri + "]");
+		this.getLogger().info("Opening connection to websocket server [{}]", this.serverUri);
 		this.ws.connectBlocking();
 		this.reconnectorWorker.activate(this.getName());
 	}
@@ -191,7 +184,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	 */
 	@Override
 	public void stop() {
-		this.logInfo(this.log, "Closing connection to websocket server [" + this.serverUri + "]");
+		this.getLogger().info("Closing connection to websocket server [{}]", this.serverUri);
 		// shutdown reconnector
 		this.reconnectorWorker.deactivate();
 		// close websocket
@@ -212,11 +205,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	@Override
 	protected OnInternalError getOnInternalError() {
 		return (t, wsDataString) -> {
-			this.logError(this.log, new StringBuilder() //
-					.append("OnInternalError for ").append(wsDataString).append(". ") //
-					.append(t.getClass()).append(": ").append(t.getMessage()) //
-					.toString());
-			this.log.error(t.getMessage(), t);
+			this.getLogger().error("OnInternalError for {}. {}", wsDataString, t.getClass(), t);
 		};
 	}
 
@@ -245,4 +234,6 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 		}
 		return b.toString();
 	}
+	
+	protected abstract Logger getLogger();
 }

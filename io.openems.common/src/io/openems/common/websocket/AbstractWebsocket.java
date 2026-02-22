@@ -127,17 +127,15 @@ public abstract class AbstractWebsocket<T extends WsData> {
 	}
 
 	private void sendMessageFailedLog(WebSocket ws, JsonrpcMessage message) {
-		final var b = new StringBuilder();
-
 		var wsDataString = generateWsDataString(ws);
 		if (!wsDataString.isEmpty()) {
-			b.append("[").append(generateWsDataString(ws)).append("] ");
+			this.log.warn("[{}] Unable to send message: Connection is closed. {}",
+					wsDataString,
+					toShortString(simplifyJsonrpcMessage(message), 200));
+		} else {
+			this.log.warn("Unable to send message: Connection is closed. {}",
+					toShortString(simplifyJsonrpcMessage(message), 200));
 		}
-
-		this.logWarn(this.log, //
-				b.append("Unable to send message: Connection is closed. ") //
-						.append(toShortString(simplifyJsonrpcMessage(message), 200)) //
-						.toString());
 	}
 
 	/**
@@ -150,29 +148,5 @@ public abstract class AbstractWebsocket<T extends WsData> {
 	protected void handleInternalError(Throwable t, String wsDataString) {
 		this.getOnInternalError().accept(t, wsDataString);
 	}
-
-	/**
-	 * Log a info message.
-	 *
-	 * @param log     a Logger instance
-	 * @param message the message
-	 */
-	protected abstract void logInfo(Logger log, String message);
-
-	/**
-	 * Log a warn message.
-	 *
-	 * @param log     a Logger instance
-	 * @param message the message
-	 */
-	protected abstract void logWarn(Logger log, String message);
-
-	/**
-	 * Log a error message.
-	 *
-	 * @param log     a Logger instance
-	 * @param message the message
-	 */
-	protected abstract void logError(Logger log, String message);
 
 }

@@ -22,7 +22,6 @@ import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
@@ -59,7 +58,7 @@ import io.openems.edge.core.host.jsonrpc.SetNetworkConfig;
 		})
 public class HostImpl extends AbstractOpenemsComponent implements Host, OpenemsComponent, ComponentJsonApi {
 
-	private final Logger log = LoggerFactory.getLogger(HostImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	protected final OperatingSystem operatingSystem;
 	private ServiceRegistration<Updateable> operatingSystemUpdateable;
@@ -298,21 +297,6 @@ public class HostImpl extends AbstractOpenemsComponent implements Host, OpenemsC
 			ExecuteSystemRestartRequest request) throws OpenemsNamedException {
 		user.assertRoleIsAtLeast("handleExecuteSystemRestartRequest", Role.OWNER);
 		return this.operatingSystem.handleExecuteSystemRestartRequest(request);
-	}
-
-	@Override
-	protected void logInfo(Logger log, String message) {
-		super.logInfo(log, message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		super.logWarn(log, message);
-	}
-
-	@Override
-	protected void logError(Logger log, String message) {
-		super.logError(log, message);
 	}
 
 	/**

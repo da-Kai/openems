@@ -26,7 +26,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.channel.Unit;
@@ -79,7 +78,7 @@ import io.openems.edge.common.taskmanager.Priority;
 public class BatterySoltaroSingleRackVersionBImpl extends AbstractOpenemsModbusComponent implements Battery,
 		ModbusComponent, OpenemsComponent, EventHandler, ModbusSlave, StartStoppable, BatterySoltaroSingleRackVersionB {
 
-	private final Logger log = LoggerFactory.getLogger(BatterySoltaroSingleRackVersionBImpl.class);
+	private final Logger log;
 	private final StateMachine stateMachine = new StateMachine(State.UNDEFINED);
 	private final AtomicReference<StartStop> startStopTarget = new AtomicReference<>(StartStop.UNDEFINED);
 
@@ -108,6 +107,7 @@ public class BatterySoltaroSingleRackVersionBImpl extends AbstractOpenemsModbusC
 				BatterySoltaroSingleRackVersionB.ChannelId.values(), //
 				BatteryProtection.ChannelId.values() //
 		);
+		this.log = OpenemsComponent.getComponentLogger(this);
 	}
 
 	@Activate
@@ -168,7 +168,7 @@ public class BatterySoltaroSingleRackVersionBImpl extends AbstractOpenemsModbusC
 
 		} catch (OpenemsNamedException e) {
 			this.channel(BatterySoltaroSingleRackVersionB.ChannelId.RUN_FAILED).setNextValue(true);
-			this.logError(this.log, "StateMachine failed: " + e.getMessage());
+			this.log.error("StateMachine failed: {}", e.getMessage());
 		}
 	}
 

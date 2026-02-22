@@ -29,7 +29,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
@@ -60,7 +59,7 @@ public class ControllerApiMqttImpl extends AbstractOpenemsComponent
 	private static final long MAX_RECONNECT_DELAY_SECONDS = 300; // 5 minutes maximum delay.
 	private static final double RECONNECT_DELAY_MULTIPLIER = 1.5;
 
-	private final Logger log = LoggerFactory.getLogger(ControllerApiMqttImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
 	private final AtomicInteger reconnectionAttempt = new AtomicInteger(0);
 	private final SendChannelValuesWorker sendChannelValuesWorker = new SendChannelValuesWorker(this);
@@ -168,8 +167,7 @@ public class ControllerApiMqttImpl extends AbstractOpenemsComponent
 				this.mqttClient.close();
 				this.mqttClient = null;
 			} catch (MqttException e) {
-				this.logWarn(this.log, "Unable to close connection to MQTT broker: " + e.getMessage());
-				this.log.warn(e.getMessage(), e);
+				this.log.warn("Unable to close connection to MQTT broker: {}", e.getMessage(), e);
 			}
 		}
 	}
@@ -177,16 +175,6 @@ public class ControllerApiMqttImpl extends AbstractOpenemsComponent
 	@Override
 	public void run() throws OpenemsNamedException {
 		// nothing to do here
-	}
-
-	@Override
-	protected void logInfo(Logger log, String message) {
-		super.logInfo(log, message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		super.logWarn(log, message);
 	}
 
 	@Override
@@ -238,7 +226,7 @@ public class ControllerApiMqttImpl extends AbstractOpenemsComponent
 			mqttClient.publish(this.topicPrefix + subTopic, message);
 			return MqttPublishStatus.OK;
 		} catch (MqttException e) {
-			this.logWarn(this.log, e.getMessage());
+			this.log.warn(e.getMessage());
 			return MqttPublishStatus.ERROR;
 		}
 	}
@@ -292,8 +280,7 @@ public class ControllerApiMqttImpl extends AbstractOpenemsComponent
 							this.config.certPem(), this.config.privateKeyPem(), this.config.trustStorePem())
 					.thenAccept(client -> {
 						this.mqttClient = client;
-						this.logInfo(this.log, "Connected to MQTT Broker [" + this.config.uri()
-								+ "]! Publish to topics '" + this.topicPrefix + "#'");
+						this.log.info("Connected to MQTT Broker [{}]! Publish to topics '{}#'", this.config.uri(), this.topicPrefix);
 						this.reconnectionAttempt.set(0); // Reset on successful connection.
 					}) //
 					.exceptionally(ex -> {

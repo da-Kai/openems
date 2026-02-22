@@ -14,7 +14,6 @@ import org.osgi.service.metatype.MetaTypeService;
 import org.osgi.service.metatype.ObjectClassDefinition;
 import org.osgi.util.tracker.ServiceTracker;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.CaseFormat;
 
@@ -40,7 +39,7 @@ public abstract class AbstractOpenemsComponent implements OpenemsComponent {
 
 	private static final String PROPERTY_CHANNEL_ID_PREFIX = "_PROPERTY_";
 
-	private final Logger log = LoggerFactory.getLogger(AbstractOpenemsComponent.class);
+	private final Logger log;
 
 	/**
 	 * Holds all Channels by their Channel-ID String representation (in
@@ -95,6 +94,7 @@ public abstract class AbstractOpenemsComponent implements OpenemsComponent {
 	 */
 	protected AbstractOpenemsComponent(io.openems.edge.common.channel.ChannelId[] firstInitialChannelIds,
 			io.openems.edge.common.channel.ChannelId[]... furtherInitialChannelIds) {
+		this.log = OpenemsComponent.getComponentLogger(this);
 		this.addChannels(firstInitialChannelIds);
 		this.addChannels(furtherInitialChannelIds);
 	}
@@ -194,8 +194,7 @@ public abstract class AbstractOpenemsComponent implements OpenemsComponent {
 	@Override
 	public ComponentContext getComponentContext() {
 		if (this.componentContext == null) {
-			this.logWarn(this.log,
-					"ComponentContext is null. Please make sure to call AbstractOpenemsComponent.activate()-method early!");
+			this.log.warn("ComponentContext is null. Please make sure to call AbstractOpenemsComponent.activate()-method early!");
 		}
 		return this.componentContext;
 	}
@@ -331,8 +330,8 @@ public abstract class AbstractOpenemsComponent implements OpenemsComponent {
 				try {
 					value = JsonUtils.getAsType(channelType, property.getDefaultValue());
 				} catch (OpenemsNamedException | IllegalArgumentException e) {
-					this.logError(this.log, "Unable to parse Property [" + property.getId() + "] value ["
-							+ property.getDefaultValue() + "] to [" + property.getType() + "]: " + e.getMessage());
+					this.log.error("Unable to parse Property [{}] value [{}] to [{}]: {}",
+							property.getId(), property.getDefaultValue(), property.getType(), e.getMessage());
 				}
 			}
 			channel.setNextValue(value);
@@ -421,21 +420,28 @@ public abstract class AbstractOpenemsComponent implements OpenemsComponent {
 	 * @param message the message
 	 */
 	private void logMessage(String message) {
-		// by default: use the class name
-		var name = this.getClass().getSimpleName();
-
-		// try to find the component name
-		var context = this.componentContext;
+		var name = findComponentName(this);
+		this.log.info("{} {}", message, name);
+	}
+	
+	/**
+	 * Finds the component name from the ComponentContext properties or falls back to the class simple name.
+	 * 
+	 * @param component the component
+	 * @return the component name
+	 */
+	private static String findComponentName(AbstractOpenemsComponent component) {
+		var context = component.componentContext;
 		if (context != null) {
 			var properties = context.getProperties();
 			if (properties != null) {
 				var obj = properties.get(ComponentConstants.COMPONENT_NAME);
 				if (obj != null) {
-					name = obj.toString();
+					return obj.toString();
 				}
 			}
 		}
-		this.logInfo(this.log, message + " " + name);
+		return component.getClass().getSimpleName();
 	}
 
 	@Override
@@ -474,46 +480,6 @@ public abstract class AbstractOpenemsComponent implements OpenemsComponent {
 	@Override
 	public Collection<Channel<?>> channels() {
 		return this.channels.values();
-	}
-
-	/**
-	 * Log a debug message including the Component ID.
-	 *
-	 * @param log     the Logger instance
-	 * @param message the message
-	 */
-	protected void logDebug(Logger log, String message) {
-		OpenemsComponent.logDebug(this, log, message);
-	}
-
-	/**
-	 * Log an info message including the Component ID.
-	 *
-	 * @param log     the Logger instance
-	 * @param message the message
-	 */
-	protected void logInfo(Logger log, String message) {
-		OpenemsComponent.logInfo(this, log, message);
-	}
-
-	/**
-	 * Log a warn message including the Component ID.
-	 *
-	 * @param log     the Logger instance
-	 * @param message the message
-	 */
-	protected void logWarn(Logger log, String message) {
-		OpenemsComponent.logWarn(this, log, message);
-	}
-
-	/**
-	 * Log an error message including the Component ID.
-	 *
-	 * @param log     the Logger instance
-	 * @param message the message
-	 */
-	protected void logError(Logger log, String message) {
-		OpenemsComponent.logError(this, log, message);
 	}
 
 }

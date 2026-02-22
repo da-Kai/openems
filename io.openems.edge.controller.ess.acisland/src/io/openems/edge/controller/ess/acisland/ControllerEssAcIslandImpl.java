@@ -8,7 +8,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.ChannelAddress;
@@ -29,7 +28,7 @@ import io.openems.edge.ess.api.SymmetricEss;
 public class ControllerEssAcIslandImpl extends AbstractOpenemsComponent
 		implements ControllerEssAcIsland, Controller, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(ControllerEssAcIslandImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ComponentManager componentManager;
@@ -205,10 +204,10 @@ public class ControllerEssAcIslandImpl extends AbstractOpenemsComponent
 	private void switchOutput(BooleanWriteChannel outputChannel, boolean on, boolean invertOutput)
 			throws OpenemsNamedException {
 		var currentValueOpt = outputChannel.value().asOptional();
-		if (!currentValueOpt.isPresent() || currentValueOpt.get() != (on ^ invertOutput)) {
-			this.logInfo(this.log,
-					"Set output [" + outputChannel.address() + "] " + (on ^ invertOutput ? "ON" : "OFF") + ".");
-			outputChannel.setNextWriteValue(on ^ invertOutput);
+		final boolean nextValue = on ^ invertOutput;
+		if (currentValueOpt.isEmpty() || currentValueOpt.get() != nextValue) {
+			this.log.info("Set output [{}] {}.", outputChannel.address(), (nextValue ? "ON" : "OFF"));
+			outputChannel.setNextWriteValue(nextValue);
 		}
 	}
 

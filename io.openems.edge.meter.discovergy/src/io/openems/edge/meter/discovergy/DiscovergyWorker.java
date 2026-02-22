@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 
@@ -14,6 +13,7 @@ import io.openems.common.utils.JsonUtils;
 import io.openems.common.worker.AbstractCycleWorker;
 import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.LongReadChannel;
+import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.type.TypeUtils;
 import io.openems.edge.meter.discovergy.MeterDiscovergy.ChannelId;
 import io.openems.edge.meter.discovergy.jsonrpc.DiscovergyMeter;
@@ -23,7 +23,7 @@ public class DiscovergyWorker extends AbstractCycleWorker {
 
 	private static final int LAST_READING_TOO_OLD_SECONDS = 30;
 
-	private final Logger log = LoggerFactory.getLogger(DiscovergyWorker.class);
+	private final Logger log;
 	private final MeterDiscovergyImpl parent;
 	private final DiscovergyApiClient apiClient;
 	private final Config config;
@@ -38,6 +38,7 @@ public class DiscovergyWorker extends AbstractCycleWorker {
 		if (!config.meterId().trim().isEmpty()) {
 			this.meterId = config.meterId();
 		}
+		this.log = OpenemsComponent.getComponentLogger(DiscovergyWorker.class, parent);
 	}
 
 	@Override
@@ -98,7 +99,7 @@ public class DiscovergyWorker extends AbstractCycleWorker {
 			restApiFailed = false;
 
 		} catch (OpenemsException e) {
-			this.parent.logError(this.log, "REST-Api failed: " + e.getMessage());
+			this.log.error("REST-Api failed: {}", e.getMessage());
 
 		} finally {
 			// Raw Channels
@@ -212,7 +213,7 @@ public class DiscovergyWorker extends AbstractCycleWorker {
 		// exactly one
 		var meter = meters.get(0);
 		this.meterId = meter.getMeterId();
-		this.parent.logInfo(this.log, "Updated Discovergy MeterId [" + this.meterId + "]");
+		this.log.info("Updated Discovergy MeterId [{}]", this.meterId);
 	}
 
 }

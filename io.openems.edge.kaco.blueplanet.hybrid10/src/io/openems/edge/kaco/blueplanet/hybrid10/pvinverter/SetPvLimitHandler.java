@@ -5,16 +5,16 @@ import java.util.Objects;
 import java.util.Optional;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.function.ThrowingRunnable;
+import io.openems.common.logger.ContextLogger;
 import io.openems.edge.common.channel.ChannelId;
 import io.openems.edge.common.channel.IntegerWriteChannel;
 
 public class SetPvLimitHandler implements ThrowingRunnable<OpenemsNamedException> {
 
-	private final Logger log = LoggerFactory.getLogger(SetPvLimitHandler.class);
+	private final Logger log;
 	private final KacoBlueplanetHybrid10PvInverterImpl parent;
 	private final ChannelId channelId;
 
@@ -24,6 +24,7 @@ public class SetPvLimitHandler implements ThrowingRunnable<OpenemsNamedException
 	public SetPvLimitHandler(KacoBlueplanetHybrid10PvInverterImpl parent, ChannelId channelId) {
 		this.parent = parent;
 		this.channelId = channelId;
+		this.log = new ContextLogger(SetPvLimitHandler.class, parent.id());
 	}
 
 	@Override
@@ -55,7 +56,7 @@ public class SetPvLimitHandler implements ThrowingRunnable<OpenemsNamedException
 			// Value needs to be set
 			var bpData = this.parent.core.getBpData();
 			if (bpData != null) {
-				this.parent.logInfo(this.log, "Apply new limit: " + power + " W (" + ePLimit + " %)");
+				this.log.info("Apply new limit: {} W ({} %)", power, ePLimit);
 				bpData.settings.setEPLimit(ePLimit);
 
 				this.lastEpLimit = ePLimit;

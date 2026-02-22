@@ -11,12 +11,14 @@ import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.channel.Level;
 import io.openems.common.channel.PersistencePriority;
+import io.openems.common.logger.LazyContextLogger;
 import io.openems.common.utils.ConfigUtils;
 import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.channel.Doc;
@@ -49,6 +51,8 @@ import io.openems.edge.common.modbusslave.ModbusType;
  * {@link AbstractOpenemsComponent}.
  */
 public interface OpenemsComponent {
+	
+	static final Logger INTERNAL_LOGGER = LoggerFactory.getLogger(OpenemsComponent.class);
 
 	/**
 	 * Returns a unique ID for this OpenEMS component.
@@ -387,8 +391,7 @@ public interface OpenemsComponent {
 				return true;
 			}
 		} catch (IOException | SecurityException e) {
-			System.err.println("updateReferenceFilter ERROR " + e.getClass().getSimpleName() + ": " + e.getMessage());
-			e.printStackTrace();
+			INTERNAL_LOGGER.error("updateReferenceFilter ERROR {}: {}", e.getClass().getSimpleName(), e.getMessage(), e);
 		}
 		return false;
 	}
@@ -471,9 +474,7 @@ public interface OpenemsComponent {
 				return true;
 			}
 		} catch (IOException | SecurityException e) {
-			System.err.println(
-					"validateSingletonComponentId ERROR " + e.getClass().getSimpleName() + ": " + e.getMessage());
-			e.printStackTrace();
+			INTERNAL_LOGGER.error("validateSingletonComponentId ERROR {}: {}", e.getClass().getSimpleName(), e.getMessage(), e);
 		}
 		return false;
 	}
@@ -510,84 +511,42 @@ public interface OpenemsComponent {
 			properties.put(property, value);
 			c.update(properties);
 		} catch (IOException | SecurityException e) {
-			System.out.println("ERROR: " + e.getMessage());
+			INTERNAL_LOGGER.error("ERROR: {}", e.getMessage());
 		}
 	}
 
 	/**
-	 * Log a debug message including the Component ID.
-	 *
-	 * @param component the {@link OpenemsComponent}
-	 * @param log       the {@link Logger} instance
-	 * @param message   the message
+	 * Gets a Logger for the given OpenemsComponent.
+	 * The Logger will prefix every log with the components name.
+	 * <p>
+	 * log.info("Test"); -> "[ComponentName] Test"
+	 * 
+	 * @param component the OpenemsComponent
+	 * @return the Logger for the given OpenemsComponent
 	 */
-	public static void logDebug(OpenemsComponent component, Logger log, String message) {
-		// TODO use log.debug(String, Object...) to improve speed
-		var id = getComponentIdentifier(component);
-		if (id != null) {
-			log.debug("[" + id + "] " + message);
-		} else {
-			log.debug(message);
-		}
+	public static Logger getComponentLogger(OpenemsComponent component) {
+		return getComponentLogger(component.getClass(), component);
 	}
-
+	
 	/**
-	 * Log a info message including the Component ID.
-	 *
-	 * @param component the {@link OpenemsComponent}
-	 * @param log       the {@link Logger} instance
-	 * @param message   the message
+	 * Gets a Logger for the given OpenemsComponent.
+	 * The Logger will prefix every log with the components name.
+	 * <p>
+	 * log.info("Test"); -> "[ComponentName] Test"
+	 * 
+	 * @param clazz the class requesting the logger
+	 * @param component the OpenemsComponent
+	 * @return the Logger for the given OpenemsComponent
 	 */
-	public static void logInfo(OpenemsComponent component, Logger log, String message) {
-		var id = getComponentIdentifier(component);
-		if (id != null) {
-			log.info("[" + id + "] " + message);
-		} else {
-			log.info(message);
-		}
-	}
-
-	/**
-	 * Log a warn message including the Component ID.
-	 *
-	 * @param component the {@link OpenemsComponent}
-	 * @param log       the {@link Logger} instance
-	 * @param message   the message
-	 */
-	public static void logWarn(OpenemsComponent component, Logger log, String message) {
-		var id = getComponentIdentifier(component);
-		if (id != null) {
-			log.warn("[" + id + "] " + message);
-		} else {
-			log.warn(message);
-		}
-	}
-
-	/**
-	 * Log a error message including the Component ID.
-	 *
-	 * @param component the {@link OpenemsComponent}
-	 * @param log       the {@link Logger} instance
-	 * @param message   the message
-	 */
-	public static void logError(OpenemsComponent component, Logger log, String message) {
-		var id = getComponentIdentifier(component);
-		if (id != null) {
-			log.error("[" + id + "] " + message);
-		} else {
-			log.error(message);
-		}
-	}
-
-	private static String getComponentIdentifier(OpenemsComponent component) {
-		if (component == null) {
-			return null;
-		}
-		var id = component.id();
-		if (id != null && !id.isBlank()) {
-			return id;
-		}
-		return component.getClass().getSimpleName();
+	public static Logger getComponentLogger(Class<?> clazz, OpenemsComponent component) {
+		java.util.Objects.requireNonNull(component, "component is null");
+		return new LazyContextLogger(clazz, () -> {
+			final var id = component.id();
+			if (id != null && !id.isBlank()) {
+				return id;
+			}
+			return component.getClass().getSimpleName();
+		});
 	}
 
 }

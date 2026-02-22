@@ -13,7 +13,6 @@ import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
-import org.slf4j.Logger;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -48,7 +47,7 @@ public class ControllerApiWebsocketImpl extends AbstractOpenemsComponent
 
 	private static final int POOL_SIZE = 10;
 
-	protected final ApiWorker apiWorker = new ApiWorker(this);
+	protected final ApiWorker apiWorker = new ApiWorker(this.id());
 
 	@Reference
 	protected ComponentManager componentManager;
@@ -128,21 +127,6 @@ public class ControllerApiWebsocketImpl extends AbstractOpenemsComponent
 	@Override
 	public void run() throws OpenemsNamedException {
 		this.apiWorker.run();
-	}
-
-	@Override
-	protected final void logInfo(Logger log, String message) {
-		super.logInfo(log, message);
-	}
-
-	@Override
-	protected final void logWarn(Logger log, String message) {
-		super.logWarn(log, message);
-	}
-
-	@Override
-	protected void logError(Logger log, String message) {
-		super.logError(log, message);
 	}
 
 	@Override

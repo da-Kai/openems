@@ -13,7 +13,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
@@ -44,7 +43,7 @@ import io.openems.edge.meter.api.PhaseRotation;
 public class EvcsGoeChargerHomeImpl extends AbstractManagedEvcsComponent
 		implements EvcsGoeChargerHome, ManagedEvcs, Evcs, OpenemsComponent, EventHandler {
 
-	private final Logger log = LoggerFactory.getLogger(EvcsGoeChargerHomeImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private EvcsPower evcsPower;
@@ -213,21 +212,7 @@ public class EvcsGoeChargerHomeImpl extends AbstractManagedEvcsComponent
 		default -> 0; // TODO illegal value!
 		};
 	}
-
-	/**
-	 * Debug Log.
-	 * 
-	 * <p>
-	 * Logging only if the debug mode is enabled
-	 * 
-	 * @param message text that should be logged
-	 */
-	public void debugLog(String message) {
-		if (this.config.debugMode()) {
-			this.logInfo(this.log, message);
-		}
-	}
-
+	
 	@Override
 	public boolean getConfiguredDebugMode() {
 		return this.config.debugMode();
@@ -252,7 +237,9 @@ public class EvcsGoeChargerHomeImpl extends AbstractManagedEvcsComponent
 		var result = this.goeapi.setCurrent(current);
 		if (result.isJsonObject()) {
 			this._setSetChargePowerLimit(power);
-			this.debugLog(result.toString());
+			if (this.getConfiguredDebugMode()) {
+				this.log.info(result.toString());
+			}
 			return true;
 		}
 		return false;

@@ -3,10 +3,6 @@ package io.openems.edge.evse.chargepoint.hardybarth;
 import static io.openems.common.types.OpenemsType.STRING;
 import static io.openems.edge.common.channel.ChannelUtils.setValue;
 
-import java.util.function.BiConsumer;
-
-import org.slf4j.Logger;
-
 import com.google.gson.JsonElement;
 
 import io.openems.common.bridge.http.api.BridgeHttpFactory;
@@ -25,9 +21,9 @@ public class EvseHandler extends AbstractHardyBarthHandler<EvseChargePointHardyB
 	private int errorCounter = 0;
 
 	public EvseHandler(EvseChargePointHardyBarthImpl parent, String ip, String apikey, PhaseRotation phaseRotation,
-			LogVerbosity logVerbosity, BiConsumer<Logger, String> logInfo, BridgeHttpFactory httpBridgeFactory,
+			LogVerbosity logVerbosity, BridgeHttpFactory httpBridgeFactory,
 			HttpBridgeCycleServiceDefinition httpBridgeCycleServiceDefinition, BooleanConsumer communicationFailed) {
-		super(parent, ip, apikey, phaseRotation, logVerbosity, logInfo, httpBridgeFactory,
+		super(parent, ip, apikey, phaseRotation, logVerbosity, httpBridgeFactory,
 				httpBridgeCycleServiceDefinition, communicationFailed);
 	}
 

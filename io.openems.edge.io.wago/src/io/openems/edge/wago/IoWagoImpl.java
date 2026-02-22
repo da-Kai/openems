@@ -34,7 +34,6 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -67,7 +66,7 @@ public class IoWagoImpl extends AbstractOpenemsModbusComponent
 
 	private static final int UNIT_ID = 1;
 
-	private final Logger log = LoggerFactory.getLogger(IoWagoImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final CopyOnWriteArrayList<FieldbusModule> modules = new CopyOnWriteArrayList<>();
 	private final ScheduledExecutorService configExecutor = Executors.newSingleThreadScheduledExecutor();
 
@@ -110,14 +109,14 @@ public class IoWagoImpl extends AbstractOpenemsModbusComponent
 				this.modules.addAll(this.parseXml(doc));
 				this.createProtocolFromModules(this.modules);
 
-				this.logInfo(this.log, "Initialized WAGO Fieldbus Coupler 750-352");
+				this.log.info("Initialized WAGO Fieldbus Coupler 750-352");
 				for (FieldbusModule module : this.modules) {
-					this.logInfo(this.log, "Found [" + module.getName() + "]"//
-							+ " with Channels [" //
-							+ Stream.of(module.getChannels()) //
+					this.log.info("Found [{}] with Channels [{}]", //
+							module.getName(), //
+							Stream.of(module.getChannels()) //
 									.map(c -> c.address().toString()) //
 									.collect(Collectors.joining(", ")) //
-							+ "]");
+					);
 				}
 
 			} catch (SAXException | IOException | ParserConfigurationException | OpenemsException e) {

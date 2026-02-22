@@ -21,7 +21,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.jscalendar.JSCalendar;
@@ -57,7 +56,7 @@ import io.openems.edge.evse.api.electricvehicle.EvseElectricVehicle;
 public class ControllerEvseSingleImpl extends AbstractOpenemsComponent
 		implements Controller, ControllerEvseSingle, OpenemsComponent, EventHandler, ComponentJsonApi {
 
-	private final Logger log = LoggerFactory.getLogger(ControllerEvseSingleImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final StateMachine stateMachine = new StateMachine(State.UNDEFINED);
 	private final SessionEnergyHandler sessionEnergyHandler = new SessionEnergyHandler();
 	private final History history = new History();
@@ -196,7 +195,7 @@ public class ControllerEvseSingleImpl extends AbstractOpenemsComponent
 
 		} catch (OpenemsNamedException e) {
 			this._setRunFailed(true);
-			this.logError(this.log, "StateMachine failed: " + e.getMessage());
+			this.log.error("StateMachine failed: {}", e.getMessage());
 		}
 	}
 

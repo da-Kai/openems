@@ -12,7 +12,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
@@ -39,7 +38,7 @@ import io.openems.edge.meter.api.ElectricityMeter;
 public class ControllerAsymmetricBalancingCosPhiImpl extends AbstractOpenemsComponent
 		implements ControllerAsymmetricBalancingCosPhi, Controller, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(ControllerAsymmetricBalancingCosPhiImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ComponentManager componentManager;
@@ -109,7 +108,7 @@ public class ControllerAsymmetricBalancingCosPhiImpl extends AbstractOpenemsComp
 			System.out.println("Add CosPhi: " + c);
 			power.addConstraintAndValidate(c);
 		} catch (PowerException e) {
-			this.logError(this.log, e.getMessage());
+			this.log.error(e.getMessage());
 		}
 	}
 }

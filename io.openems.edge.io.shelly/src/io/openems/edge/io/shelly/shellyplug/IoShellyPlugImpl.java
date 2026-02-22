@@ -23,7 +23,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 
@@ -52,7 +51,7 @@ import io.openems.edge.meter.api.SinglePhaseMeter;
 public class IoShellyPlugImpl extends AbstractOpenemsComponent
 		implements IoShellyPlug, DigitalOutput, SinglePhaseMeter, ElectricityMeter, OpenemsComponent, EventHandler {
 
-	private final Logger log = LoggerFactory.getLogger(IoShellyPlugImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final BooleanWriteChannel[] digitalOutputChannels;
 
 	private MeterType meterType = null;
@@ -137,7 +136,7 @@ public class IoShellyPlugImpl extends AbstractOpenemsComponent
 			this._setRelay(null);
 			this._setActivePower(null);
 			this._setActiveProductionEnergy(null);
-			this.logDebug(this.log, error.getMessage());
+			this.log.debug(error.getMessage());
 			return;
 		}
 		try {
@@ -163,7 +162,7 @@ public class IoShellyPlugImpl extends AbstractOpenemsComponent
 			this._setRelay(null);
 			this._setActivePower(null);
 			this._setActiveProductionEnergy(null);
-			this.logDebug(this.log, e.getMessage());
+			this.log.debug(e.getMessage());
 		}
 	}
 
