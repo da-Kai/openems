@@ -4,7 +4,7 @@ import io.openems.common.channel.Level;
 import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Doc;
-import io.openems.edge.common.channel.LongReadChannel;
+import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.StateChannel;
 import io.openems.edge.common.channel.value.Value;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -25,8 +25,33 @@ public interface Cycle extends OpenemsComponent {
 		 * <li>Type: Integer
 		 * </ul>
 		 */
-		MEASURED_CYCLE_TIME(Doc.of(OpenemsType.LONG) //
+		MEASURED_CYCLE_TIME(Doc.of(OpenemsType.INTEGER)//
 				.unit(Unit.MILLISECONDS)),
+
+		/**
+		 * The 95th percentile of the measured Cycle-Time in [ms]. This means that 95%
+		 * of all measured Cycle-Times are below this value.
+		 * 
+		 * <ul>
+		 * <li>Interface: Cycle
+		 * <li>Type: Integer
+		 * </ul>
+		 */
+		MEASURED_CYCLE_TIME_P95(Doc.of(OpenemsType.INTEGER)//
+				.unit(Unit.MILLISECONDS)),
+
+		/**
+		 * The 99th percentile of the measured Cycle-Time in [ms]. This means that 99%
+		 * of all measured Cycle-Times are below this value.
+		 * 
+		 * <ul>
+		 * <li>Interface: Cycle
+		 * <li>Type: Integer
+		 * </ul>
+		 */
+		MEASURED_CYCLE_TIME_P99(Doc.of(OpenemsType.INTEGER)//
+				.unit(Unit.MILLISECONDS)),
+
 		/**
 		 * A configured Controller is not executed because it is disabled.
 		 *
@@ -54,7 +79,7 @@ public interface Cycle extends OpenemsComponent {
 	 *
 	 * @return the Channel
 	 */
-	public default LongReadChannel getMeasuredCycleTimeChannel() {
+	public default IntegerReadChannel getMeasuredCycleTimeChannel() {
 		return this.channel(ChannelId.MEASURED_CYCLE_TIME);
 	}
 
@@ -64,7 +89,7 @@ public interface Cycle extends OpenemsComponent {
 	 *
 	 * @return the Channel {@link Value}
 	 */
-	public default Value<Long> getMeasuredCycleTime() {
+	public default Value<Integer> getMeasuredCycleTime() {
 		return this.getMeasuredCycleTimeChannel().value();
 	}
 
@@ -74,18 +99,66 @@ public interface Cycle extends OpenemsComponent {
 	 *
 	 * @param value the next value
 	 */
-	public default void _setMeasuredCycleTime(Long value) {
+	public default void _setMeasuredCycleTime(int value) {
 		this.getMeasuredCycleTimeChannel().setNextValue(value);
 	}
 
 	/**
+	 * Gets the Channel for {@link ChannelId#MEASURED_CYCLE_TIME_P95}.
+	 *
+	 * @return the Channel
+	 */
+	public default IntegerReadChannel getMeasuredCycleTimeP95Channel() {
+		return this.channel(ChannelId.MEASURED_CYCLE_TIME_P95);
+	}
+
+	/**
+	 * Gets the Measured Cycle Time p95 in [ms]. See
+	 * {@link ChannelId#MEASURED_CYCLE_TIME_P95}.
+	 *
+	 * @return the Channel {@link Value}
+	 */
+	public default Value<Integer> getMeasuredCycleTimeP95() {
+		return this.getMeasuredCycleTimeP95Channel().value();
+	}
+
+	/**
 	 * Internal method to set the 'nextValue' on
-	 * {@link ChannelId#MEASURED_CYCLE_TIME} Channel.
+	 * {@link ChannelId#MEASURED_CYCLE_TIME_P95} Channel.
 	 *
 	 * @param value the next value
 	 */
-	public default void _setMeasuredCycleTime(long value) {
-		this.getMeasuredCycleTimeChannel().setNextValue(value);
+	public default void _setMeasuredCycleTimeP95(int value) {
+		this.getMeasuredCycleTimeP95Channel().setNextValue(value);
+	}
+
+	/**
+	 * Gets the Channel for {@link ChannelId#MEASURED_CYCLE_TIME_P99}.
+	 *
+	 * @return the Channel
+	 */
+	public default IntegerReadChannel getMeasuredCycleTimeP99Channel() {
+		return this.channel(ChannelId.MEASURED_CYCLE_TIME_P99);
+	}
+
+	/**
+	 * Gets the Measured Cycle Time p99 in [ms]. See
+	 * {@link ChannelId#MEASURED_CYCLE_TIME_P99}.
+	 *
+	 * @return the Channel {@link Value}
+	 */
+	public default Value<Integer> getMeasuredCycleTimeP99() {
+		return this.getMeasuredCycleTimeP99Channel().value();
+	}
+
+	/**
+	 * Internal method to set the 'nextValue' on
+	 * {@link ChannelId#MEASURED_CYCLE_TIME_P99} Channel.
+	 *
+	 * @param value the next value
+	 */
+	public default void _setMeasuredCycleTimeP99(int value) {
+		this.getMeasuredCycleTimeP99Channel().setNextValue(value);
 	}
 
 	/**

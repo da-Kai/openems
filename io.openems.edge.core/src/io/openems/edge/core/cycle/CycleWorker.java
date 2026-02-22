@@ -2,6 +2,7 @@ package io.openems.edge.core.cycle;
 
 import java.util.concurrent.TimeUnit;
 
+import org.HdrHistogram.Histogram;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,13 +22,28 @@ public class CycleWorker extends AbstractWorker {
 	private final Logger log = LoggerFactory.getLogger(CycleWorker.class);
 	private final CycleImpl parent;
 
+	private final Histogram histogramCycleTime;
+
 	public CycleWorker(CycleImpl parent) {
 		this.parent = parent;
+		this.histogramCycleTime = new Histogram(TimeUnit.SECONDS.toMillis(parent.getCycleTime() * 3), 3);
 	}
 
 	@Override
 	protected int getCycleTime() {
 		return this.parent.getCycleTime();
+	}
+
+	private void recordCycleTime(int cycleTimeMs) {
+		this.histogramCycleTime.recordValue(cycleTimeMs);
+	}
+
+	protected int p99() {
+		return (int) this.histogramCycleTime.getValueAtPercentile(99.0);
+	}
+
+	protected int p95() {
+		return (int) this.histogramCycleTime.getValueAtPercentile(95.0);
 	}
 
 	@Override
@@ -163,7 +179,7 @@ public class CycleWorker extends AbstractWorker {
 			 */
 			EventBuilder.send(this.parent.eventAdmin, EdgeEventConstants.TOPIC_CYCLE_AFTER_WRITE);
 
-		} catch (Throwable t) {
+		} catch (Exception t) {
 			this.parent.logWarn(this.log,
 					"Error in Scheduler. " + t.getClass().getSimpleName() + ": " + t.getMessage());
 			if (t instanceof ClassCastException || t instanceof NullPointerException) {
@@ -172,7 +188,14 @@ public class CycleWorker extends AbstractWorker {
 		}
 
 		// Measure actual Cycle-Time
-		this.parent._setMeasuredCycleTime(stopwatch.elapsed(TimeUnit.MILLISECONDS));
+		stopwatch.stop();
+		final var cycleTimeMs = (int) stopwatch.elapsed(TimeUnit.MILLISECONDS);
+
+		this.recordCycleTime(cycleTimeMs);
+
+		this.parent._setMeasuredCycleTime(cycleTimeMs);
+		this.parent._setMeasuredCycleTimeP99(p99());
+		this.parent._setMeasuredCycleTimeP95(p95());
 	}
 
 }
