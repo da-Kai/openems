@@ -544,13 +544,18 @@ public interface OpenemsComponent {
 	 */
 	public static Logger getComponentLogger(Class<?> clazz, OpenemsComponent component) {
 		java.util.Objects.requireNonNull(component, "component is null");
-		return new LazyContextLogger(clazz, () -> {
-			final var id = component.id();
-			if (id != null && !id.isBlank()) {
-				return id;
-			}
-			return component.getClass().getSimpleName();
-		});
+		return new LazyContextLogger(clazz, () -> getComponentIdentifier(component));
+	}
+	
+	private static String getComponentIdentifier(OpenemsComponent component) {
+		if (component == null) {
+			return null;
+		}
+		final var id = component.id();
+		if (id != null && !id.isBlank()) {
+			return id;
+		}
+		return component.getClass().getSimpleName();
 	}
 
 }
