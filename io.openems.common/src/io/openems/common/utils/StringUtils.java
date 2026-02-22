@@ -1,5 +1,6 @@
 package io.openems.common.utils;
 
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.regex.Pattern;
 
@@ -8,7 +9,11 @@ import com.google.gson.JsonElement;
 /**
  * Provides static helper functions for string manipulation.
  */
-public class StringUtils {
+public final class StringUtils {
+
+	private StringUtils() {
+		/* prevent instantiation */
+	}
 
 	/**
 	 * Checks if a string is null or empty.
@@ -28,6 +33,17 @@ public class StringUtils {
 	 */
 	public static boolean isNullOrBlank(String s) {
 		return s == null || s.isBlank();
+	}
+
+	/**
+	 * Checks if a string is not null and not blank (not empty and not only
+	 * white-space).
+	 * 
+	 * @param s the string
+	 * @return true if the string is not null and not blank
+	 */
+	public static boolean isPresent(String s) {
+		return !isNullOrBlank(s);
 	}
 
 	/**

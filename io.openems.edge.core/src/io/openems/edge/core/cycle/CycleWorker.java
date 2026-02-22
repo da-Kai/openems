@@ -28,7 +28,8 @@ public class CycleWorker extends AbstractWorker {
 
 	public CycleWorker(CycleImpl parent) {
 		this.parent = parent;
-		this.histogramCycleTime = new Histogram(TimeUnit.SECONDS.toMillis(parent.getCycleTime() * 3), 3);
+		final int maxTrackedValue = (int) (TimeUnit.SECONDS.toMillis(parent.getCycleTime()) * 10);
+		this.histogramCycleTime = new Histogram(Math.max(1000, maxTrackedValue), 3);
 	}
 
 	@Override
@@ -54,11 +55,9 @@ public class CycleWorker extends AbstractWorker {
 		var stopwatch = Stopwatch.createStarted();
 
 		// Kick Operating System Watchdog
-		var socketName = System.getenv().get("NOTIFY_SOCKET");
-		if (!StringUtils.isNullOrEmpty(socketName)) {
-			if (SDNotify.isAvailable()) {
-				SDNotify.sendWatchdog();
-			}
+		final boolean hasSocket = StringUtils.isPresent(System.getenv().get("NOTIFY_SOCKET"));
+		if (hasSocket && SDNotify.isAvailable()) {
+			SDNotify.sendWatchdog();
 		}
 
 		try {
