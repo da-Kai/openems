@@ -11,7 +11,9 @@ import com.google.common.base.Stopwatch;
 import info.faljse.SDNotify.SDNotify;
 import io.openems.common.event.EventBuilder;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
+import io.openems.common.utils.StringUtils;
 import io.openems.common.worker.AbstractWorker;
+import io.openems.edge.common.channel.Channel;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.sum.Sum;
 import io.openems.edge.controller.api.Controller;
@@ -53,7 +55,7 @@ public class CycleWorker extends AbstractWorker {
 
 		// Kick Operating System Watchdog
 		var socketName = System.getenv().get("NOTIFY_SOCKET");
-		if (socketName != null && socketName.length() != 0) {
+		if (!StringUtils.isNullOrEmpty(socketName)) {
 			if (SDNotify.isAvailable()) {
 				SDNotify.sendWatchdog();
 			}
@@ -69,23 +71,17 @@ public class CycleWorker extends AbstractWorker {
 			 * Before Controllers start: switch to next process image for each channel
 			 */
 			this.parent.componentManager.getEnabledComponents().stream() //
-					.filter(c -> c.isEnabled() && !(c instanceof Sum)) //
-					.forEach(component -> {
-						component.channels().forEach(channel -> {
-							channel.nextProcessImage();
-						});
-					});
-			this.parent.channels().forEach(channel -> {
-				channel.nextProcessImage();
-			});
+					.filter(c -> !(c instanceof Sum)) //
+					.forEach(c -> c.channels() //
+							.forEach(Channel::nextProcessImage) //
+					);
+			this.parent.channels().forEach(Channel::nextProcessImage);
 
 			/*
 			 * Update the Channels in the Sum-Component.
 			 */
 			this.parent.sumComponent.updateChannelsBeforeProcessImage();
-			this.parent.sumComponent.channels().forEach(channel -> {
-				channel.nextProcessImage();
-			});
+			this.parent.sumComponent.channels().forEach(Channel::nextProcessImage);
 
 			/*
 			 * Trigger AFTER_PROCESS_IMAGE event
@@ -139,13 +135,17 @@ public class CycleWorker extends AbstractWorker {
 							// announce running failed
 							controller._setRunFailed(true);
 
+						} catch (ClassCastException | NullPointerException | IllegalArgumentException e) {
+							this.parent.logWarn(this.log,
+									"Error in Controller [" + controller.id() + "]. " + e.toString());
+							this.log.warn(e.toString(), e);
+
+							// announce running failed
+							controller._setRunFailed(true);
+
 						} catch (Exception e) {
-							this.parent.logWarn(this.log, "Error in Controller [" + controller.id() + "]. "
-									+ e.getClass().getSimpleName() + ": " + e.getMessage());
-							if (e instanceof ClassCastException || e instanceof NullPointerException
-									|| e instanceof IllegalArgumentException) {
-								e.printStackTrace();
-							}
+							this.parent.logWarn(this.log,
+									"Error in Controller [" + controller.id() + "]. " + e.toString());
 							// announce running failed
 							controller._setRunFailed(true);
 						}
@@ -179,12 +179,12 @@ public class CycleWorker extends AbstractWorker {
 			 */
 			EventBuilder.send(this.parent.eventAdmin, EdgeEventConstants.TOPIC_CYCLE_AFTER_WRITE);
 
-		} catch (Exception t) {
-			this.parent.logWarn(this.log,
-					"Error in Scheduler. " + t.getClass().getSimpleName() + ": " + t.getMessage());
-			if (t instanceof ClassCastException || t instanceof NullPointerException) {
-				t.printStackTrace();
-			}
+		} catch (ClassCastException | NullPointerException e) {
+			this.parent.logWarn(this.log, "Error in Scheduler. " + e.toString());
+			this.log.warn(e.toString(), e);
+
+		} catch (Exception e) {
+			this.parent.logWarn(this.log, "Error in Scheduler. " + e.toString());
 		}
 
 		// Measure actual Cycle-Time
@@ -194,8 +194,8 @@ public class CycleWorker extends AbstractWorker {
 		this.recordCycleTime(cycleTimeMs);
 
 		this.parent._setMeasuredCycleTime(cycleTimeMs);
-		this.parent._setMeasuredCycleTimeP99(p99());
-		this.parent._setMeasuredCycleTimeP95(p95());
+		this.parent._setMeasuredCycleTimeP99(this.p99());
+		this.parent._setMeasuredCycleTimeP95(this.p95());
 	}
 
 }
