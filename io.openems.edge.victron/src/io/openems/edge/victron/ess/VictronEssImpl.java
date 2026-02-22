@@ -252,6 +252,8 @@ public class VictronEssImpl extends AbstractOpenemsModbusComponent
 
 	/**
 	 * Uses Info Log for further debug features.
+	 * 
+	 * @return Optional Logger for debug logging, empty if debug mode is disabled
 	 */
 	protected Optional<Logger> logDebug() {
 		if (this.config.debugMode()) {
@@ -682,7 +684,7 @@ public class VictronEssImpl extends AbstractOpenemsModbusComponent
 		}
 
 		if (this.config.debugMode()) {
-			log.info("""
+			this.log.info("""
 					ActivePower Sum-Calculation.
 
 					 Input ActivePower {}W/{}W/{}W Sum: {}W

@@ -119,7 +119,7 @@ public class GoRunningHandler extends StateHandler<State, Context> {
 				1, //
 				endpoint, //
 				success -> this.handleResponse(success, endpoint, consumer), //
-				error -> log.warn("Failed to retrieve component value from URI [{}]: {}", endpoint.url(), error.getMessage()));
+				error -> this.log.warn("Failed to retrieve component value from URI [{}]: {}", endpoint.url(), error.getMessage()));
 
 		this.activeEndpoints.put(uri, cycle);
 	}

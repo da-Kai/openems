@@ -110,7 +110,7 @@ public class ControllerHighLoadTimeslotImpl extends AbstractOpenemsComponent
 			 */
 			// reset charge state
 			this.chargeState = ChargeState.NORMAL;
-			this.log.info("Within High-Load timeslot. Discharge with [{}]", this.dischargePower );
+			this.log.info("Within High-Load timeslot. Discharge with [{}]", this.dischargePower);
 			return this.dischargePower;
 		}
 		if (this.isHighLoadTimeslot(now.plusMinutes(FORCE_CHARGE_MINUTES))) {

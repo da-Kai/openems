@@ -1145,7 +1145,8 @@ public class BatteryFeneconCommercialImpl extends AbstractOpenemsModbusComponent
 			try {
 				channel.setNextWriteValue(newValue);
 			} catch (OpenemsNamedException e) {
-				this.log.warn("Unable to update Channel [{}] from [{}] to [{}]", channel.address() ,currentValue, newValue, e);
+				this.log.warn("Unable to update Channel [{}] from [{}] to [{}]", channel.address(), //
+						currentValue, newValue, e);
 			}
 		}
 	}
@@ -1268,7 +1269,7 @@ public class BatteryFeneconCommercialImpl extends AbstractOpenemsModbusComponent
 					.getChannel(ChannelAddress.fromString(this.config.batteryStartStopRelay()));
 		} catch (IllegalArgumentException | OpenemsNamedException e1) {
 			this.log.error("Setting BatteryStartStopRelay [{}] failed: {}", //
-							this.config.batteryStartStopRelay(), e1.getMessage());
+					this.config.batteryStartStopRelay(), e1.getMessage());
 			e1.printStackTrace();
 		}
 		// Prepare Context

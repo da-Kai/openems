@@ -1056,8 +1056,7 @@ public class BatteryFeneconHomeImpl extends AbstractOpenemsModbusComponent imple
 	 *                                   {@link BooleanWriteChannel}; or null
 	 * @param value                      true to switch the relay on; <br/>
 	 *                                   false to switch the relay off
-	 * @param logInfo                    Consumer for log messages
-	 * @param logWarn                    Consumer for warn messages
+	 * @param log                        the logger to log the switching process
 	 */
 	private static void setBatteryStartUpRelay(BooleanWriteChannel batteryStartUpRelayChannel, boolean value, Logger log) {
 		var valueString = value ? "ON" : "OFF";

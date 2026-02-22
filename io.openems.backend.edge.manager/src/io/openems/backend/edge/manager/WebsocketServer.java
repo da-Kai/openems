@@ -16,10 +16,10 @@ public class WebsocketServer extends AbstractWebsocketServer<WsData> {
 
 	public WebsocketServer(EdgeManagerImpl parent, String name, int port, int poolSize) {
 		super(name, port, poolSize);
-		this.onOpen = new OnOpen( //
+		this.onOpen = new OnOpen(//
 				name, //
 				parent.metadata::generateUpdateMetadataCacheNotification);
-		this.onRequest = new OnRequest( //
+		this.onRequest = new OnRequest(//
 				name, //
 				() -> parent.appCenterMetadata, //
 				() -> parent.oAuthRegistry, //
@@ -33,9 +33,9 @@ public class WebsocketServer extends AbstractWebsocketServer<WsData> {
 				() -> parent.timedataManager, //
 				parent.metadata::getEdge, //
 				parent.systemLogHandler::handleSystemLogNotification);
-		this.onError = new OnError( //
+		this.onError = new OnError(//
 				name);
-		this.onClose = new OnClose( //
+		this.onClose = new OnClose(//
 				name, //
 				parent.metadata::getEdge);
 	}

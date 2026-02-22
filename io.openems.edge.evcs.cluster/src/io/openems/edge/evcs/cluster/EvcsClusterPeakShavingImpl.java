@@ -318,7 +318,7 @@ public class EvcsClusterPeakShavingImpl extends AbstractOpenemsComponent
 		if (unavailablePower > 0 && this.lastLimit != null) {
 			this.loggerInDebugmode().ifPresent(logger -> logger.info(//
 					"Reducing last limit by {} W", unavailablePower));
-			
+
 			calcTotalPowerLimit = this.lastLimit.intValue() - unavailablePower;
 		}
 
@@ -423,7 +423,7 @@ public class EvcsClusterPeakShavingImpl extends AbstractOpenemsComponent
 				// Power requested by the controller
 				if (requestedPower.isPresent()) {
 					this.loggerInDebugmode().ifPresent(logger -> logger.info(//
-									"Requested power ( for {}): {}", evcs.alias(), requestedPower.get()));
+							"Requested power ( for {}): {}", evcs.alias(), requestedPower.get()));
 					calcNextChargePower = requestedPower.get();
 				} else {
 					calcNextChargePower = maximumHardwareLimit;
@@ -436,7 +436,8 @@ public class EvcsClusterPeakShavingImpl extends AbstractOpenemsComponent
 
 				// Checks if there is enough power left and sets the charge power
 				if (maximumChargePower < powerLeft) {
-					nextChargePower = calcNextChargePower > maximumHardwareLimit ? maximumHardwareLimit : calcNextChargePower;
+					nextChargePower = calcNextChargePower > maximumHardwareLimit ? maximumHardwareLimit
+							: calcNextChargePower;
 					totalPowerLeftMinusGuarantee = totalPowerLeftMinusGuarantee
 							- (maximumChargePower - guaranteedPower);
 				} else {
@@ -498,9 +499,9 @@ public class EvcsClusterPeakShavingImpl extends AbstractOpenemsComponent
 		var allowedChargePower = (int) (evcsCharge + maxAvailableStoragePower + maxAvailableGridPower);
 
 		this.loggerInDebugmode().ifPresent(logger -> logger.info(//
-				"Calculation of the maximum charge Power: EVCS Charge [{}]  +" + //
-						"  Max. available storage power [{}]  +  ( Configured Hardware Limit * 3 [{}]  -" + //
-						"  Maximum of all three phases * 3 [{}])  = Allowed Charge Power [{}])", //
+				"Calculation of the maximum charge Power: EVCS Charge [{}]  +" //
+						+ "  Max. available storage power [{}]  +  ( Configured Hardware Limit * 3 [{}]  -" //
+						+ "  Maximum of all three phases * 3 [{}])  = Allowed Charge Power [{}])", //
 				evcsCharge, maxAvailableStoragePower, this.config.hardwarePowerLimitPerPhase() * THREE_PHASE.getValue(),
 				gridPower, allowedChargePower));
 

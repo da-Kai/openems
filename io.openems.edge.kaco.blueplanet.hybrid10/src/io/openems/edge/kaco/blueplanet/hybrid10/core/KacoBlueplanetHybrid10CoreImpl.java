@@ -346,7 +346,7 @@ public class KacoBlueplanetHybrid10CoreImpl extends AbstractOpenemsComponent
 			break;
 		case 1: // no password required
 			this._setUserAccessDenied(false);
-			this.log.info( "User Status: No password required");
+			this.log.info("User Status: No password required");
 			break;
 		case 2: // password accepted
 			this._setUserAccessDenied(false);

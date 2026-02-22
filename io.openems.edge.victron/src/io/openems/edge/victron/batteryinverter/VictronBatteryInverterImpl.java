@@ -321,6 +321,8 @@ public class VictronBatteryInverterImpl extends AbstractOpenemsModbusComponent i
 
 	/**
 	 * Uses Info Log for further debug features.
+	 * 
+	 * @return Optional Logger if debug mode is enabled, otherwise empty
 	 */
 	protected Optional<Logger> logDebug() {
 		if (this.config.debugMode()) {

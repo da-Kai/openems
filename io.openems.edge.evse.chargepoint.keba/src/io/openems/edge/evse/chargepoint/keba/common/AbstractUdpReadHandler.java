@@ -55,7 +55,7 @@ public abstract class AbstractUdpReadHandler<T extends KebaUdp> implements BiCon
 		if (message.startsWith("TCH-OK")) {
 			switch (logVerbosity) {
 			case DEBUG_LOG, WRITES -> doNothing();
-			case UDP_REPORTS -> log.info("KEBA confirmed reception of command: TCH-OK");
+			case UDP_REPORTS -> this.log.info("KEBA confirmed reception of command: TCH-OK");
 			}
 			keba.triggerQuery();
 			return;

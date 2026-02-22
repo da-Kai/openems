@@ -51,7 +51,7 @@ import io.openems.edge.common.modbusslave.ModbusType;
  * {@link AbstractOpenemsComponent}.
  */
 public interface OpenemsComponent {
-	
+
 	static final Logger INTERNAL_LOGGER = LoggerFactory.getLogger(OpenemsComponent.class);
 
 	/**
@@ -189,11 +189,11 @@ public interface OpenemsComponent {
 
 	public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 		// Running State of the component. Keep values in sync with 'Level' enum!
-		STATE(new StateCollectorChannelDoc() //
-				// Set Text to "0:Ok, 1:Info, 2:Warning, 3:Fault"
-				.text(Stream.of(Level.values()) //
-						.map(option -> (option.getValue() + ":" + option.getName())) //
-						.collect(Collectors.joining(", "))) //
+		// Set Text to "0:Ok, 1:Info, 2:Warning, 3:Fault"
+		STATE(new StateCollectorChannelDoc()//
+				.text(Stream.of(Level.values())//
+						.map(option -> (option.getValue() + ":" + option.getName()))//
+						.collect(Collectors.joining(", ")))//
 				.persistencePriority(PersistencePriority.VERY_HIGH));
 
 		private final Doc doc;
@@ -391,7 +391,8 @@ public interface OpenemsComponent {
 				return true;
 			}
 		} catch (IOException | SecurityException e) {
-			INTERNAL_LOGGER.error("updateReferenceFilter ERROR {}: {}", e.getClass().getSimpleName(), e.getMessage(), e);
+			INTERNAL_LOGGER.error("updateReferenceFilter ERROR {}: {}", e.getClass().getSimpleName(), e.getMessage(),
+					e);
 		}
 		return false;
 	}
@@ -474,7 +475,8 @@ public interface OpenemsComponent {
 				return true;
 			}
 		} catch (IOException | SecurityException e) {
-			INTERNAL_LOGGER.error("validateSingletonComponentId ERROR {}: {}", e.getClass().getSimpleName(), e.getMessage(), e);
+			INTERNAL_LOGGER.error("validateSingletonComponentId ERROR {}: {}", e.getClass().getSimpleName(),
+					e.getMessage(), e);
 		}
 		return false;
 	}
@@ -516,8 +518,9 @@ public interface OpenemsComponent {
 	}
 
 	/**
-	 * Gets a Logger for the given OpenemsComponent.
-	 * The Logger will prefix every log with the components name.
+	 * Gets a Logger for the given OpenemsComponent. The Logger will prefix every
+	 * log with the components name.
+	 * 
 	 * <p>
 	 * log.info("Test"); -> "[ComponentName] Test"
 	 * 
@@ -527,14 +530,15 @@ public interface OpenemsComponent {
 	public static Logger getComponentLogger(OpenemsComponent component) {
 		return getComponentLogger(component.getClass(), component);
 	}
-	
+
 	/**
-	 * Gets a Logger for the given OpenemsComponent.
-	 * The Logger will prefix every log with the components name.
+	 * Gets a Logger for the given OpenemsComponent. The Logger will prefix every
+	 * log with the components name.
+	 * 
 	 * <p>
 	 * log.info("Test"); -> "[ComponentName] Test"
 	 * 
-	 * @param clazz the class requesting the logger
+	 * @param clazz     the class requesting the logger
 	 * @param component the OpenemsComponent
 	 * @return the Logger for the given OpenemsComponent
 	 */

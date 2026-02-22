@@ -532,7 +532,7 @@ public class FeneconProEssImpl extends AbstractOpenemsModbusComponent
 		try {
 			if (this.getPcsMode() != PcsMode.REMOTE) {
 				// If Mode is not "Remote"
-				this.log.warn("PCS-Mode is not 'Remote'. It's [{}]", this.getPcsMode() );
+				this.log.warn("PCS-Mode is not 'Remote'. It's [{}]", this.getPcsMode());
 				if (this.getSetupMode() == SetupMode.OFF) {
 					// Activate SetupMode
 					this.log.info("Activating Setup-Mode");

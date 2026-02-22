@@ -276,6 +276,11 @@ public class EvcsKebaModbusImpl extends KebaModbus implements EvcsKeba, ManagedE
 		return this.chargeStateHandler;
 	}
 
+	/**
+	 * Returns a logger for debug messages. If debug mode is enabled, the messages are
+	 * 
+	 * @return a logger for debug messages
+	 */
 	public LoggingEventBuilder debug() {
 		if (this.config.debugMode()) {
 			return this.log.atInfo();

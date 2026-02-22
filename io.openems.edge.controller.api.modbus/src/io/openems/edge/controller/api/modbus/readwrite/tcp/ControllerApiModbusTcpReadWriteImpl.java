@@ -173,7 +173,7 @@ public class ControllerApiModbusTcpReadWriteImpl extends AbstractModbusApi imple
 				c.update(properties);
 			}
 		} catch (IOException | SecurityException e) {
-			this.log.error( "ERROR: {}", e.getMessage());
+			this.log.error("ERROR: {}", e.getMessage());
 		}
 	}
 
