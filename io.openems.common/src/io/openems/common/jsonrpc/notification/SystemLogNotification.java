@@ -1,7 +1,11 @@
 package io.openems.common.jsonrpc.notification;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.ops4j.pax.logging.spi.PaxLoggingEvent;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -17,7 +21,7 @@ import io.openems.common.utils.JsonUtils;
  *   "jsonrpc": "2.0",
  *   "method": "systemLog",
  *   "params": {
- *     "line": {@link SystemLog#toJson()}
+ *     "lines": [{@link SystemLog#toJson()}]
  *   }
  * }
  * </pre>
@@ -26,7 +30,7 @@ public class SystemLogNotification extends JsonrpcNotification {
 
 	public static final String METHOD = "systemLog";
 
-	private final SystemLog line;
+	private final List<SystemLog> lines;
 
 	/**
 	 * Parses a {@link JsonrpcNotification} to a {@link SystemLogNotification}.
@@ -37,8 +41,12 @@ public class SystemLogNotification extends JsonrpcNotification {
 	 */
 	public static SystemLogNotification from(JsonrpcNotification n) throws OpenemsNamedException {
 		var j = n.getParams();
-		var line = SystemLog.fromJsonObject(JsonUtils.getAsJsonObject(j, "line"));
-		return new SystemLogNotification(line);
+		var linesJson = JsonUtils.getAsJsonArray(j, "lines");
+		var lines = new ArrayList<SystemLog>(linesJson.size());
+		for (var elem : linesJson) {
+			lines.add(SystemLog.fromJsonObject(elem.getAsJsonObject()));
+		}
+		return new SystemLogNotification(lines);
 	}
 
 	/**
@@ -48,18 +56,22 @@ public class SystemLogNotification extends JsonrpcNotification {
 	 * @return the {@link SystemLogNotification}
 	 */
 	public static SystemLogNotification fromPaxLoggingEvent(PaxLoggingEvent event) {
-		return new SystemLogNotification(SystemLog.fromPaxLoggingEvent(event));
+		return new SystemLogNotification(List.of(SystemLog.fromPaxLoggingEvent(event)));
 	}
 
-	public SystemLogNotification(SystemLog line) {
+	public SystemLogNotification(List<SystemLog> lines) {
 		super(SystemLogNotification.METHOD);
-		this.line = line;
+		this.lines = lines;
 	}
 
 	@Override
 	public JsonObject getParams() {
+		var linesJson = new JsonArray(this.lines.size());
+		for (var line : this.lines) {
+			linesJson.add(line.toJson());
+		}
 		return JsonUtils.buildJsonObject() //
-				.add("line", this.line.toJson()) //
+				.add("lines", linesJson) //
 				.build();
 	}
 
