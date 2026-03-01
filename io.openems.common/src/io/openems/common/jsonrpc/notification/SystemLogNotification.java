@@ -1,5 +1,7 @@
 package io.openems.common.jsonrpc.notification;
 
+import java.util.List;
+
 import org.ops4j.pax.logging.spi.PaxLoggingEvent;
 
 import com.google.gson.JsonObject;
@@ -26,7 +28,7 @@ public class SystemLogNotification extends JsonrpcNotification {
 
 	public static final String METHOD = "systemLog";
 
-	private final SystemLog line;
+	private final List<SystemLog> lines;
 
 	/**
 	 * Parses a {@link JsonrpcNotification} to a {@link SystemLogNotification}.
@@ -36,9 +38,10 @@ public class SystemLogNotification extends JsonrpcNotification {
 	 * @throws OpenemsNamedException on error
 	 */
 	public static SystemLogNotification from(JsonrpcNotification n) throws OpenemsNamedException {
-		var j = n.getParams();
-		var line = SystemLog.fromJsonObject(JsonUtils.getAsJsonObject(j, "line"));
-		return new SystemLogNotification(line);
+		var json = n.getParams();
+		var linesArr = JsonUtils.getAsJsonArray(json, "lines");
+		var lines = JsonUtils.toList(linesArr, je -> SystemLog.fromJsonObject(JsonUtils.getAsJsonObject(je)));
+		return new SystemLogNotification(lines);
 	}
 
 	/**
@@ -48,18 +51,28 @@ public class SystemLogNotification extends JsonrpcNotification {
 	 * @return the {@link SystemLogNotification}
 	 */
 	public static SystemLogNotification fromPaxLoggingEvent(PaxLoggingEvent event) {
-		return new SystemLogNotification(SystemLog.fromPaxLoggingEvent(event));
+		return new SystemLogNotification(List.of(SystemLog.fromPaxLoggingEvent(event)));
 	}
 
-	public SystemLogNotification(SystemLog line) {
+	/**
+	 * Creates a {@link SystemLogNotification} from a list of {@link SystemLog}.
+	 * 
+	 * @param lines the list of {@link SystemLog}
+	 * @return the {@link SystemLogNotification}
+	 */
+	public static SystemLogNotification fromSystemLogs(List<SystemLog> lines) {
+		return new SystemLogNotification(lines);
+	}
+
+	public SystemLogNotification(List<SystemLog> lines) {
 		super(SystemLogNotification.METHOD);
-		this.line = line;
+		this.lines = lines;
 	}
 
 	@Override
 	public JsonObject getParams() {
 		return JsonUtils.buildJsonObject() //
-				.add("line", this.line.toJson()) //
+				.add("lines", JsonUtils.generateJsonArray(this.lines, SystemLog::toJson)) //
 				.build();
 	}
 

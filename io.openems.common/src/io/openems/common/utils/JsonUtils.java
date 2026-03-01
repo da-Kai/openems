@@ -10,7 +10,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -40,6 +42,7 @@ import com.google.gson.JsonPrimitive;
 import io.openems.common.exceptions.NotImplementedException;
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
+import io.openems.common.function.ThrowingFunction;
 import io.openems.common.jsonrpc.serialization.JsonSerializer;
 import io.openems.common.types.OpenemsType;
 
@@ -76,6 +79,26 @@ public final class JsonUtils {
 	 */
 	public static <T extends JsonElement> JsonArray generateJsonArray(Collection<T> list) {
 		return generateJsonArray(list, json -> json);
+	}
+	
+	/**
+	 * Provide a easy way to convert a JsonArray to a list of objects using the given
+	 * 
+	 * @param <T> type of an element from list
+	 * @param jsonArray to convert
+	 * @param convert function to convert elements
+	 * @return list of converted elements
+	 * @throws OpenemsNamedException on error
+	 */
+	public static <T> List<T> toList(JsonArray jsonArray, ThrowingFunction<JsonElement, T, OpenemsNamedException> convert) throws OpenemsNamedException {
+		if (jsonArray == null) {
+			return null;
+		}
+		final var list = new ArrayList<T>(jsonArray.size());
+		for (int i = 0; i < jsonArray.size(); i++) {
+			list.add(convert.apply(jsonArray.get(i)));
+		}
+		return list;
 	}
 
 	/**
