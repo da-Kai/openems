@@ -22,8 +22,6 @@ import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import eu.chargetime.ocpp.NotConnectedException;
 import eu.chargetime.ocpp.OccurenceConstraintException;
@@ -51,8 +49,6 @@ public class EvcsOcppServer extends AbstractOpenemsComponent implements OpenemsC
 
 	public static final String DEFAULT_IP = "0.0.0.0";
 	public static final int DEFAULT_PORT = 8887;
-
-	private final Logger log = LoggerFactory.getLogger(EvcsOcppServer.class);
 
 	/** The JSON server - responsible for the OCPP communication. */
 	private final MyJsonServer myJsonServer = new MyJsonServer(this);
@@ -157,22 +153,5 @@ public class EvcsOcppServer extends AbstractOpenemsComponent implements OpenemsC
 	public CompletionStage<Confirmation> send(UUID session, Request request)
 			throws OccurenceConstraintException, UnsupportedFeatureException, NotConnectedException {
 		return this.myJsonServer.send(session, request);
-	}
-
-	@Override
-	public void logInfo(Logger log, String message) {
-		super.logInfo(log, message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		super.logWarn(log, message);
-	}
-
-	@Override
-	protected void logDebug(Logger log, String message) {
-		if (this.config.debugMode()) {
-			this.logInfo(this.log, message);
-		}
 	}
 }

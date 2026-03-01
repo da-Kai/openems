@@ -2,24 +2,25 @@ package io.openems.backend.uiwebsocket.impl;
 
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsException;
+import io.openems.common.logger.ContextLogger;
 
 public class OnError implements io.openems.common.websocket.OnError {
 
-	private final Logger log = LoggerFactory.getLogger(OnError.class);
-	private final UiWebsocketImpl parent;
+	private final Logger log;
 
-	public OnError(UiWebsocketImpl parent) {
-		this.parent = parent;
+	public OnError(String name) {
+		this.log = new ContextLogger(OnError.class, name);
 	}
 
 	@Override
 	public void accept(WebSocket ws, Exception ex) throws OpenemsException {
 		WsData wsData = ws.getAttachment();
-		this.parent.logWarn(this.log, "User [" + wsData.getUserId().orElse("UNKNOWN") + "] websocket error. "
-				+ ex.getClass().getSimpleName() + ": " + ex.getMessage());
+		this.log.warn("User [{}] websocket error. {}: {}", //
+				wsData.getUserId().orElse("UNKNOWN"), //
+				ex.getClass().getSimpleName(), //
+				ex.getMessage());
 	}
 
 }

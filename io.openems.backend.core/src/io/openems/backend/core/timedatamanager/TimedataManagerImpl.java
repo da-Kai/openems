@@ -129,8 +129,8 @@ public class TimedataManagerImpl extends AbstractOpenemsBackendComponent impleme
 				(t, c) -> t.queryHistoricData(edgeId, fromDate, toDate, c, resolution));
 
 		if (resultData.isEmpty()) {
-			this.logWarn(this.log, "No timedata result for 'queryHistoricData' on Edge=" + edgeId + "; FromDate="
-					+ fromDate + "; ToDate=" + toDate + "; Channels=" + channels + "; Resolution=" + resolution);
+			this.log.warn("No timedata result for 'queryHistoricData' on Edge={}; FromDate={}; ToDate={}; Channels={}; Resolution={}",
+					edgeId, fromDate, toDate, channels, resolution);
 			throw new OpenemsException("Unable to query historic data. Result is null");
 		}
 
@@ -155,9 +155,8 @@ public class TimedataManagerImpl extends AbstractOpenemsBackendComponent impleme
 				(t, c) -> t.queryHistoricEnergy(edgeId, fromDate, toDate, c));
 
 		if (resultData.isEmpty()) {
-			// no result
-			this.logWarn(this.log, "No timedata result for 'queryHistoricEnergy' on Edge=" + edgeId + "; FromDate="
-					+ fromDate + "; ToDate=" + toDate + "; Channels=" + channels);
+			this.log.warn("No timedata result for 'queryHistoricEnergy' on Edge={}; FromDate={}; ToDate={}; Channels={}",
+					edgeId, fromDate, toDate, channels);
 			throw new OpenemsException("Unable to query historic data. Result is null");
 		}
 
@@ -183,9 +182,8 @@ public class TimedataManagerImpl extends AbstractOpenemsBackendComponent impleme
 				(t, c) -> t.queryHistoricEnergyPerPeriod(edgeId, fromDate, toDate, c, resolution));
 
 		if (resultData.isEmpty()) {
-			this.logWarn(this.log,
-					"No timedata result for 'queryHistoricEnergyPerPeriod' on Edge=" + edgeId + "; FromDate=" + fromDate
-							+ "; ToDate=" + toDate + "; Channels=" + channels + "; Resolution=" + resolution);
+			this.log.warn("No timedate resulr for 'querryHistoricEnergyPerPeriod' on Edge={}; FromDate={}; ToDate={}; Channels={}; Resolution={}",
+					edgeId, fromDate, toDate, channels, resolution);
 			throw new OpenemsException("Unable to query historic energy per period. Result is null");
 		}
 
@@ -202,8 +200,8 @@ public class TimedataManagerImpl extends AbstractOpenemsBackendComponent impleme
 		final var resultData = this.querySingleValues(channels, (t, c) -> t.queryFirstValueBefore(edgeId, date, c));
 
 		if (resultData.isEmpty()) {
-			this.logWarn(this.log, "No timedata result for 'queryFirstValueBefore' on Edge=" + edgeId + "; Date=" + date
-					+ "; Channels=" + channels);
+			this.log.warn("No timedate result for 'queryFirstValueBefore' on Edge={}; Date={}; Channels={}",
+					edgeId, date, channels);
 			throw new OpenemsException("Unable to query first value before. Result is null");
 		}
 
@@ -328,7 +326,7 @@ public class TimedataManagerImpl extends AbstractOpenemsBackendComponent impleme
 			try {
 				method.accept(timedata, edgeId, data);
 			} catch (OpenemsException e) {
-				this.logWarn(this.log, "Timedata write failed for Edge=" + edgeId);
+				this.log.warn("Timedata write failed for Edge={}", edgeId);
 			}
 		}
 	}

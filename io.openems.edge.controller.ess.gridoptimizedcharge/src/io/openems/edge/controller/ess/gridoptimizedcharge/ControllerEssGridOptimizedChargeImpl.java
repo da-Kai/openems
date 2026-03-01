@@ -22,7 +22,7 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.slf4j.spi.LoggingEventBuilder;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
@@ -66,7 +66,7 @@ public class ControllerEssGridOptimizedChargeImpl extends AbstractOpenemsCompone
 	protected final RampFilter rampFilter = new RampFilter();
 	protected int maximumSellToGridPower = 0;
 
-	private final Logger log = LoggerFactory.getLogger(ControllerEssGridOptimizedChargeImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	/*
 	 * Time counter for the important states
@@ -195,7 +195,7 @@ public class ControllerEssGridOptimizedChargeImpl extends AbstractOpenemsCompone
 		 */
 		var gridMode = this.ess.getGridMode();
 		if (gridMode.isUndefined()) {
-			this.logWarn(this.log, "Grid-Mode is [UNDEFINED]");
+			this.log.warn("Grid-Mode is [UNDEFINED]");
 		}
 		switch (gridMode) {
 		case ON_GRID:
@@ -299,8 +299,10 @@ public class ControllerEssGridOptimizedChargeImpl extends AbstractOpenemsCompone
 				this.ess.setActivePowerEquals(sellToGridLimitMinChargePower);
 				this.sellToGridLimit.setSellToGridLimitChannelsAndLastLimit(SellToGridLimitState.ACTIVE_LIMIT_FIXED,
 						sellToGridLimitMinChargePower);
-				this.logDebug("Applying both constraints not possible - Set active power according to SellToGridLimit: "
-						+ sellToGridLimitMinChargePower);
+				this.debug() //
+					.setMessage("Applying both constraints not possible - Set active power according to SellToGridLimit: {}") //
+					.addArgument(sellToGridLimitMinChargePower) //
+					.log();
 
 				this.delayCharge.setDelayChargeStateAndLimit(DelayChargeState.NO_CHARGE_LIMIT, null);
 
@@ -455,9 +457,11 @@ public class ControllerEssGridOptimizedChargeImpl extends AbstractOpenemsCompone
 		this._setPredictedChargeStartEpochSeconds(currentVal.get());
 	}
 
-	protected void logDebug(String message) {
+	protected LoggingEventBuilder debug() {
 		if (this.config.debugMode()) {
-			this.logInfo(this.log, message);
+			return this.log.atInfo();
+		} else {
+			return this.log.atDebug();
 		}
 	}
 

@@ -4,28 +4,26 @@ import static io.openems.common.websocket.WebsocketUtils.getAsString;
 import static io.openems.common.websocket.WebsocketUtils.parseRemoteIdentifier;
 import static org.java_websocket.framing.CloseFrame.REFUSE;
 
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.Handshakedata;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.backend.common.edge.jsonrpc.UpdateMetadataCache;
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.common.logger.ContextLogger;
 
 public class OnOpen implements io.openems.common.websocket.OnOpen {
 
-	private final Logger log = LoggerFactory.getLogger(OnOpen.class);
+	private final Logger log;
 	private final Supplier<UpdateMetadataCache.Notification> generateUpdateMetadataCacheNotification;
-	private final BiConsumer<Logger, String> logInfo;
 
 	public OnOpen(//
-			Supplier<UpdateMetadataCache.Notification> generateUpdateMetadataCacheNotification, //
-			BiConsumer<Logger, String> logInfo) {
+			String name, //
+			Supplier<UpdateMetadataCache.Notification> generateUpdateMetadataCacheNotification) {
 		this.generateUpdateMetadataCacheNotification = generateUpdateMetadataCacheNotification;
-		this.logInfo = logInfo;
+		this.log = new ContextLogger(OnOpen.class, name);
 	}
 
 	@Override
@@ -51,7 +49,7 @@ public class OnOpen implements io.openems.common.websocket.OnOpen {
 			return OpenemsError.COMMON_AUTHENTICATION_FAILED;
 		}
 
-		this.logInfo.accept(this.log, "Backend.Edge.Client [" + id + "] connected");
+		this.log.info("Backend.Edge.Client [{}] connected", id);
 
 		wsData.setId(id);
 

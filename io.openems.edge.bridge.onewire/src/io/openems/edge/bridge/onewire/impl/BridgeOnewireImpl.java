@@ -9,7 +9,6 @@ import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
-import org.slf4j.Logger;
 
 import com.dalsemi.onewire.adapter.DSPortAdapter;
 
@@ -73,11 +72,6 @@ public class BridgeOnewireImpl extends AbstractOpenemsComponent
 		if (this.taskWorker != null) {
 			this.taskWorker.removeTask(task);
 		}
-	}
-
-	@Override
-	protected void logError(Logger log, String message) {
-		super.logError(log, message);
 	}
 
 	@Override

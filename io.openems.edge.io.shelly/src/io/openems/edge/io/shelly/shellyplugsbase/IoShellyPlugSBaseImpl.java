@@ -17,7 +17,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 
@@ -59,7 +58,7 @@ public abstract class IoShellyPlugSBaseImpl extends AbstractOpenemsComponent imp
 	private final CalculateEnergyFromPower calculateConsumptionEnergy = new CalculateEnergyFromPower(this,
 			ElectricityMeter.ChannelId.ACTIVE_CONSUMPTION_ENERGY);
 
-	private final Logger log = LoggerFactory.getLogger(IoShellyPlugSBaseImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final BooleanWriteChannel[] digitalOutputChannels;
 
 	private MeterType meterType = null;
@@ -140,7 +139,7 @@ public abstract class IoShellyPlugSBaseImpl extends AbstractOpenemsComponent imp
 			return;
 		}
 
-		this.logWarn(this.log, "No valid IP or MDNS Name configured.");
+		this.log.warn("No valid IP or MDNS Name configured.");
 		this._setSlaveCommunicationFailed(true);
 	}
 
@@ -155,7 +154,7 @@ public abstract class IoShellyPlugSBaseImpl extends AbstractOpenemsComponent imp
 			try {
 				this.mdnsUnsubscribe.close();
 			} catch (Exception e) {
-				this.logWarn(this.log, "Error during MDNS unsubscribe: " + e.getMessage());
+				this.log.warn("Error during MDNS unsubscribe: {}", e.getMessage());
 			}
 			this.mdnsUnsubscribe = null;
 		}
@@ -222,7 +221,7 @@ public abstract class IoShellyPlugSBaseImpl extends AbstractOpenemsComponent imp
 		}
 
 		if (error != null) {
-			this.logWarn(this.log, error.getMessage());
+			this.log.warn(error.getMessage());
 			this.resetValues();
 			return;
 		}
@@ -248,7 +247,7 @@ public abstract class IoShellyPlugSBaseImpl extends AbstractOpenemsComponent imp
 			relayStatus = getAsBoolean(relays, "output");
 
 		} catch (Exception e) {
-			this.logWarn(this.log, e.getMessage());
+			this.log.warn(e.getMessage());
 		}
 
 		this.updateValues(relayStatus, activePower, current, voltage, updatesAvailable);

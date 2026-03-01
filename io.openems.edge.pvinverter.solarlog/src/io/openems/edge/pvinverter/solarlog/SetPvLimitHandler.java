@@ -4,18 +4,18 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.function.ThrowingRunnable;
 import io.openems.edge.common.channel.EnumWriteChannel;
 import io.openems.edge.common.channel.IntegerWriteChannel;
+import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.pvinverter.api.ManagedSymmetricPvInverter;
 import io.openems.edge.pvinverter.solarlog.PvInverterSolarlog.ChannelId;
 
 public class SetPvLimitHandler implements ThrowingRunnable<OpenemsNamedException> {
 
-	private final Logger log = LoggerFactory.getLogger(SetPvLimitHandler.class);
+	private final Logger log;
 	private final PvInverterSolarlogImpl parent;
 	private final ManagedSymmetricPvInverter.ChannelId channelId;
 
@@ -25,6 +25,7 @@ public class SetPvLimitHandler implements ThrowingRunnable<OpenemsNamedException
 	public SetPvLimitHandler(PvInverterSolarlogImpl parent, ManagedSymmetricPvInverter.ChannelId activePowerLimit) {
 		this.parent = parent;
 		this.channelId = activePowerLimit;
+		this.log = OpenemsComponent.getComponentLogger(SetPvLimitHandler.class, parent);
 	}
 
 	@Override
@@ -54,7 +55,7 @@ public class SetPvLimitHandler implements ThrowingRunnable<OpenemsNamedException
 		if (!Objects.equals(this.lastPLimitPerc, pLimitPerc) || this.lastPLimitPercTime
 				.isBefore(LocalDateTime.now().minusSeconds(150 /* watchdog timeout is 300 */))) {
 			// Value needs to be set
-			this.parent.logInfo(this.log, "Apply new limit: " + power + " W (" + pLimitPerc + " %)");
+			this.log.info("Apply new limit: {} W ({} %)", power, pLimitPerc);
 			IntegerWriteChannel pLimitPercCh = this.parent.channel(ChannelId.P_LIMIT_PERC);
 			pLimitPercCh.setNextWriteValue(pLimitPerc);
 

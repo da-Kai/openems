@@ -26,7 +26,7 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.slf4j.spi.LoggingEventBuilder;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
@@ -74,7 +74,7 @@ public class EvseChargePointHeidelbergConnectImpl extends AbstractOpenemsModbusC
 		implements EvseChargePointHeidelbergConnect, ModbusComponent, OpenemsComponent, TimedataProvider,
 		EvseChargePoint, EventHandler, ElectricityMeter {
 
-	private final Logger log = LoggerFactory.getLogger(EvseChargePointHeidelbergConnectImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final CalculateEnergyFromPower calculateEnergyL1 = new CalculateEnergyFromPower(this,
 			ElectricityMeter.ChannelId.ACTIVE_CONSUMPTION_ENERGY_L1);
 	private final CalculateEnergyFromPower calculateEnergyL2 = new CalculateEnergyFromPower(this,
@@ -263,9 +263,11 @@ public class EvseChargePointHeidelbergConnectImpl extends AbstractOpenemsModbusC
 		return b.toString();
 	}
 
-	private void logIfDebug(String message) {
+	private LoggingEventBuilder debug() {
 		if (this.config.debugMode()) {
-			this.logInfo(this.log, message);
+			return this.log.atInfo();
+		} else {
+			return this.log.atDebug();
 		}
 	}
 
@@ -289,7 +291,7 @@ public class EvseChargePointHeidelbergConnectImpl extends AbstractOpenemsModbusC
 			return SINGLE_PHASE;
 		}
 
-		this.logIfDebug("Fallback ");
+		this.debug().setMessage("Fallback ").log();
 		// TODO: Check if the read value changing directly or after 90sec.
 		return switch (this.getPhaseSwitchControl()) {
 		case SINGLE -> SINGLE_PHASE;
@@ -361,7 +363,7 @@ public class EvseChargePointHeidelbergConnectImpl extends AbstractOpenemsModbusC
 			this.setChargingCurrent(current);
 
 		} catch (OpenemsNamedException e) {
-			e.printStackTrace();
+			this.log.error(e.getMessage(), e);
 		}
 	}
 

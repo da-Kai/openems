@@ -9,8 +9,8 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.statemachine.AbstractContext;
 import io.openems.edge.controller.ess.cycle.Config;
 import io.openems.edge.controller.ess.cycle.ControllerEssCycleImpl;
@@ -28,7 +28,7 @@ public class Context extends AbstractContext<ControllerEssCycleImpl> {
 	protected final Clock clock;
 	protected final LocalDateTime startTime;
 
-	private final Logger log = LoggerFactory.getLogger(Context.class);
+	private final Logger log;
 
 	public Context(ControllerEssCycleImpl parent, Config config, Clock clock, ManagedSymmetricEss ess,
 			LocalDateTime startTime) {
@@ -41,6 +41,7 @@ public class Context extends AbstractContext<ControllerEssCycleImpl> {
 		// get max charge/discharge power
 		this.allowedDischargePower = this.ess.getPower().getMaxPower(this.ess, ALL, ACTIVE);
 		this.allowedChargePower = this.ess.getPower().getMinPower(this.ess, ALL, ACTIVE);
+		this.log = OpenemsComponent.getComponentLogger(Context.class, parent);
 	}
 
 	/**
@@ -103,7 +104,7 @@ public class Context extends AbstractContext<ControllerEssCycleImpl> {
 			controller.getProcessFinished().set(false);
 			return nextState;
 		}
-		this.logInfo(this.log, "Awaiting hysteresis for changing from [" + currentState + "] to [" + nextState + "]");
+		this.log.info("Awaiting hysteresis for changing from [{}] to [{}]", currentState, nextState);
 		return currentState;
 	}
 
@@ -112,5 +113,14 @@ public class Context extends AbstractContext<ControllerEssCycleImpl> {
 	 */
 	public void updateLastStateChangeTime() {
 		this.getParent().setLastStateChangeTime(LocalDateTime.now(this.clock));
+	}
+	
+	/**
+	 * Provide logger for Handler classes.
+	 * 
+	 * @return Logger
+	 */
+	Logger log() {
+		return this.log;
 	}
 }

@@ -22,7 +22,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.bridge.http.api.BridgeHttp;
 import io.openems.common.bridge.http.api.BridgeHttpFactory;
@@ -80,7 +79,7 @@ public class BatteryBmwImpl extends AbstractOpenemsModbusComponent
 	private static final double MAX_ALLOWED_SOC = 96d;
 	private static final String URI_LOGIN = "login";
 
-	private final Logger log = LoggerFactory.getLogger(BatteryBmwImpl.class);
+	private final Logger log;
 	private final StateMachine stateMachine = new StateMachine(State.UNDEFINED);
 
 	private Config config;
@@ -120,6 +119,7 @@ public class BatteryBmwImpl extends AbstractOpenemsModbusComponent
 				BatteryProtection.ChannelId.values(), //
 				BatteryBmw.ChannelId.values() //
 		);
+		this.log = OpenemsComponent.getComponentLogger(this);
 	}
 
 	@Activate
@@ -322,7 +322,7 @@ public class BatteryBmwImpl extends AbstractOpenemsModbusComponent
 			this._setRunFailed(false);
 		} catch (OpenemsNamedException e) {
 			this._setRunFailed(true);
-			this.logError(this.log, "StateMachine failed: " + e.getMessage());
+			this.log.error("StateMachine failed: {}", e.getMessage());
 		}
 	}
 
@@ -406,7 +406,7 @@ public class BatteryBmwImpl extends AbstractOpenemsModbusComponent
 		try {
 			this.setBatteryStateCommand(BatteryStateCommand.CLOSE_CONTACTOR);
 		} catch (OpenemsNamedException e) {
-			this.logError(this.log, "Battery can not start : " + e.getMessage());
+			this.log.error("Battery can not start : {}", e.getMessage());
 		}
 	}
 
@@ -417,7 +417,7 @@ public class BatteryBmwImpl extends AbstractOpenemsModbusComponent
 		try {
 			this.setBatteryStateCommand(BatteryStateCommand.OPEN_CONTACTOR);
 		} catch (OpenemsNamedException e) {
-			this.logError(this.log, "Battery can not stop : " + e.getMessage());
+			this.log.error("Battery can not stop : {}", e.getMessage());
 		}
 	}
 

@@ -326,20 +326,20 @@ public class AppManagerImpl extends AbstractOpenemsComponent implements AppManag
 							|| instApps.stream().anyMatch(t -> this.lastUpdate.deletedApps.stream() //
 									.anyMatch(o -> o.equals(t))))) {
 				// the last update was not applied
-				this.logWarn(this.log, "Modified AppManager config properties directly. " //
-						+ "If there was an installation/modification/deinstallation of an App " //
-						+ "running there might be lost configuration changes. Expected: " //
-						+ "Installed/Modified: " //
-						+ JsonUtils.prettyToString(this.lastUpdate.modifiedOrCreatedApps.stream() //
+				this.log.atWarn() //
+						.setMessage("Modified AppManager config properties directly. " //
+								+ "If there was an installation/modification/deinstallation of an App " //
+								+ "running there might be lost configuration changes. Expected: " //
+								+ "Installed/Modified: {}{}") //
+						.addArgument(() -> JsonUtils.prettyToString(this.lastUpdate.modifiedOrCreatedApps.stream() //
 								.map(OpenemsAppInstance::toJsonObject) //
-								.collect(JsonUtils.toJsonArray()))
-						+ Optional.ofNullable(this.lastUpdate.deletedApps) //
-								.map(deletedApps -> {
-									return System.lineSeparator() + "Removed: " //
-											+ JsonUtils.prettyToString(this.lastUpdate.deletedApps.stream() //
-													.map(OpenemsAppInstance::toJsonObject) //
-													.collect(JsonUtils.toJsonArray()));
-								}).orElse(""));
+								.collect(JsonUtils.toJsonArray())))
+						.addArgument(() -> Optional.ofNullable(this.lastUpdate.deletedApps) //
+								.map(deletedApps -> System.lineSeparator() + "Removed: " //
+										+ JsonUtils.prettyToString(this.lastUpdate.deletedApps.stream() //
+												.map(OpenemsAppInstance::toJsonObject) //
+												.collect(JsonUtils.toJsonArray())))
+								.orElse("")); //
 			}
 
 			this.instantiatedApps.clear();

@@ -19,7 +19,6 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonArray;
 
@@ -55,7 +54,7 @@ import io.openems.edge.meter.api.ElectricityMeter;
 public class ControllerFastFrequencyReserveImpl extends AbstractOpenemsComponent
 		implements ControllerFastFrequencyReserve, Controller, OpenemsComponent, ComponentJsonApi {
 
-	private final Logger log = LoggerFactory.getLogger(ControllerFastFrequencyReserveImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final StateMachine stateMachine = new StateMachine(State.UNDEFINED);
 
 	private Config config = null;
@@ -136,7 +135,7 @@ public class ControllerFastFrequencyReserveImpl extends AbstractOpenemsComponent
 			}
 		} catch (IllegalStateException | OpenemsNamedException e) {
 			this._setScheduleParseFailed(true);
-			this.logError(this.log, "Unable to parse Schedule: " + e.getMessage());
+			this.log.error("Unable to parse Schedule: {}", e.getMessage());
 		}
 	}
 
@@ -261,7 +260,7 @@ public class ControllerFastFrequencyReserveImpl extends AbstractOpenemsComponent
 		try {
 			this.stateMachine.run(context);
 		} catch (OpenemsNamedException e) {
-			this.logError(this.log, "StateMachine failed: " + e.getMessage());
+			this.log.error("StateMachine failed: {}", e.getMessage());
 		}
 	}
 
@@ -277,7 +276,7 @@ public class ControllerFastFrequencyReserveImpl extends AbstractOpenemsComponent
 		return switch (this.ess.getGridMode()) {
 		case ON_GRID -> false;
 		case UNDEFINED -> {
-			this.logWarn(this.log, "Grid-Mode is [UNDEFINED]");
+			this.log.warn("Grid-Mode is [UNDEFINED]");
 			yield false;
 		}
 		case OFF_GRID -> true;

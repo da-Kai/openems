@@ -20,7 +20,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 
@@ -67,7 +66,7 @@ public abstract class AbstractSunSpecPvInverter extends AbstractOpenemsSunSpecCo
 		}
 	}
 
-	private final Logger log = LoggerFactory.getLogger(AbstractSunSpecPvInverter.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final SetPvLimitHandler setPvLimitHandler = new SetPvLimitHandler(this);
 
 	private boolean readOnly;
@@ -204,7 +203,7 @@ public abstract class AbstractSunSpecPvInverter extends AbstractOpenemsSunSpecCo
 
 	@Override
 	protected void onSunSpecInitializationCompleted() {
-		this.logInfo(this.log, "SunSpec initialization finished. " + this.channels().size() + " Channels available.");
+		this.log.info("SunSpec initialization finished. {} Channels available.", this.channels().size());
 
 		this.channel(SunSpecPvInverter.ChannelId.WRONG_PHASE_CONFIGURED)
 				.setNextValue(this.inverterType == InverterType.SINGLE_PHASE //

@@ -26,7 +26,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 
@@ -65,7 +64,7 @@ public class IoShellyPlus1PmImpl extends AbstractOpenemsComponent implements IoS
 	private final CalculateEnergyFromPower calculateConsumptionEnergy = new CalculateEnergyFromPower(this,
 			ElectricityMeter.ChannelId.ACTIVE_CONSUMPTION_ENERGY);
 
-	private final Logger log = LoggerFactory.getLogger(IoShellyPlus1PmImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final BooleanWriteChannel[] digitalOutputChannels;
 
 	private MeterType meterType = null;
@@ -159,7 +158,7 @@ public class IoShellyPlus1PmImpl extends AbstractOpenemsComponent implements IoS
 		boolean restartRequired = false;
 
 		if (error != null) {
-			this.logDebug(this.log, error.getMessage());
+			this.log.debug(error.getMessage());
 
 		} else {
 			try {
@@ -174,7 +173,7 @@ public class IoShellyPlus1PmImpl extends AbstractOpenemsComponent implements IoS
 				restartRequired = getAsBoolean(sys, "restart_required");
 
 			} catch (OpenemsNamedException e) {
-				this.logDebug(this.log, e.getMessage());
+				this.log.debug(e.getMessage());
 			}
 		}
 
@@ -205,7 +204,7 @@ public class IoShellyPlus1PmImpl extends AbstractOpenemsComponent implements IoS
 		final String url = this.baseUrl + "/relay/" + index + "?turn=" + (writeValue.get() ? "on" : "off");
 		this.httpBridge.get(url).whenComplete((response, error) -> {
 			if (error != null) {
-				this.logError(this.log, "HTTP request failed: " + error.getMessage());
+				this.log.error("HTTP request failed: {}", error.getMessage());
 				this._setSlaveCommunicationFailed(true);
 			} else {
 				// Optionally log success or handle response

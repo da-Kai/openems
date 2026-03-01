@@ -25,7 +25,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.channel.Level;
@@ -93,7 +92,7 @@ public class BatteryFeneconCommercialImpl extends AbstractOpenemsModbusComponent
 	private static final int NUMBER_OF_TEMPERATURE_CELLS_PER_MODULE = 8;
 	private static final int DEFAULT_UNIT_NUMBER = 24320;
 
-	private final Logger log = LoggerFactory.getLogger(BatteryFeneconCommercialImpl.class);
+	private final Logger log;
 	private final StateMachine stateMachine = new StateMachine(State.UNDEFINED);
 
 	@Reference
@@ -120,6 +119,7 @@ public class BatteryFeneconCommercialImpl extends AbstractOpenemsModbusComponent
 				BatteryProtection.ChannelId.values(), //
 				BatteryFeneconCommercial.ChannelId.values() //
 		);
+		this.log = OpenemsComponent.getComponentLogger(this);
 	}
 
 	@Activate
@@ -1110,8 +1110,7 @@ public class BatteryFeneconCommercialImpl extends AbstractOpenemsModbusComponent
 			this.initializeTowerModulesChannels(numberOfTowers, numberOfModulesPerTower, numberOfCellsPerModule);
 			this.calculateCapacity(numberOfTowers, numberOfModulesPerTower);
 		} catch (OpenemsException e) {
-			this.logError(this.log, "Unable to initialize tower modules channels: " + e.getMessage());
-			e.printStackTrace();
+			this.log.error("Unable to initialize tower modules channels: {}", e.getMessage(), e);
 		}
 	}
 
@@ -1146,9 +1145,8 @@ public class BatteryFeneconCommercialImpl extends AbstractOpenemsModbusComponent
 			try {
 				channel.setNextWriteValue(newValue);
 			} catch (OpenemsNamedException e) {
-				this.logWarn(this.log, "Unable to update Channel [" + channel.address() + "] from [" + currentValue
-						+ "] to [" + newValue + "]");
-				e.printStackTrace();
+				this.log.warn("Unable to update Channel [{}] from [{}] to [{}]", channel.address(), //
+						currentValue, newValue, e);
 			}
 		}
 	}
@@ -1260,8 +1258,7 @@ public class BatteryFeneconCommercialImpl extends AbstractOpenemsModbusComponent
 				LongWriteChannel heartbeatChannel = this.channel(BatteryFeneconCommercial.ChannelId.HEART_BEAT);
 				heartbeatChannel.setNextWriteValue(DEFAULT_HEART_BEAT);
 			} catch (IllegalArgumentException | OpenemsNamedException e1) {
-				this.logError(this.log, "Setting HeartBeat failed: " + e1.getMessage());
-				e1.printStackTrace();
+				this.log.error("Setting HeartBeat failed: {}" + e1.getMessage(), e1);
 			}
 		}
 
@@ -1271,9 +1268,8 @@ public class BatteryFeneconCommercialImpl extends AbstractOpenemsModbusComponent
 			batteryStartStopRelayChannel = this.componentManager
 					.getChannel(ChannelAddress.fromString(this.config.batteryStartStopRelay()));
 		} catch (IllegalArgumentException | OpenemsNamedException e1) {
-			this.logError(this.log, //
-					"Setting BatteryStartStopRelay [" + this.config.batteryStartStopRelay() + "] failed: "
-							+ e1.getMessage());
+			this.log.error("Setting BatteryStartStopRelay [{}] failed: {}", //
+					this.config.batteryStartStopRelay(), e1.getMessage());
 			e1.printStackTrace();
 		}
 		// Prepare Context
@@ -1287,7 +1283,7 @@ public class BatteryFeneconCommercialImpl extends AbstractOpenemsModbusComponent
 
 		} catch (OpenemsNamedException e) {
 			this.channel(BatteryFeneconCommercial.ChannelId.RUN_FAILED).setNextValue(true);
-			this.logError(this.log, "StateMachine failed: " + e.getMessage());
+			this.log.error("StateMachine failed: {}", e.getMessage());
 		}
 	}
 

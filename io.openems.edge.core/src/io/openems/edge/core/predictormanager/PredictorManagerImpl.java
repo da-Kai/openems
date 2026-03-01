@@ -21,7 +21,6 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableSortedSet;
 
@@ -47,7 +46,7 @@ import io.openems.edge.predictor.api.prediction.Predictor;
 		})
 public class PredictorManagerImpl extends AbstractOpenemsComponent implements PredictorManager, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(PredictorManagerImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ConfigurationAdmin configurationAdmin;
@@ -155,7 +154,7 @@ public class PredictorManagerImpl extends AbstractOpenemsComponent implements Pr
 				return this
 						.getPredictionSum(Sum.ChannelId.valueOf(channelIdCamelToUpper(channelAddress.getChannelId())));
 			} catch (IllegalArgumentException e) {
-				this.logWarn(this.log, "Unable to find ChannelId for " + channelAddress);
+				this.log.warn("Unable to find ChannelId for {}", channelAddress);
 				return EMPTY_PREDICTION;
 			}
 		}

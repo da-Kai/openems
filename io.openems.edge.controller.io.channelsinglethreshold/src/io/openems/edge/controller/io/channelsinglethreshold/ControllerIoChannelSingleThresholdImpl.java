@@ -21,7 +21,6 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
@@ -46,7 +45,7 @@ import io.openems.edge.timedata.api.utils.CalculateActiveTime;
 public class ControllerIoChannelSingleThresholdImpl extends AbstractOpenemsComponent
 		implements ControllerIoChannelSingleThreshold, Controller, OpenemsComponent, TimedataProvider {
 
-	private final Logger log = LoggerFactory.getLogger(ControllerIoChannelSingleThresholdImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final Set<ChannelAddress> outputChannelAdresses = new HashSet<>();
 	private final CalculateActiveTime calculateCumulatedActiveTime = new CalculateActiveTime(this,
 			ControllerIoChannelSingleThreshold.ChannelId.CUMULATED_ACTIVE_TIME);
@@ -172,7 +171,7 @@ public class ControllerIoChannelSingleThresholdImpl extends AbstractOpenemsCompo
 					try {
 						return (Double) TypeUtils.getAsType(OpenemsType.DOUBLE, v);
 					} catch (IllegalArgumentException e) {
-						this.logWarn(this.log, "Unable to convert value [" + v + "] to Double: " + e.getMessage());
+						this.log.warn("Unable to convert value [{}] to Double: {}", v, e.getMessage());
 						return null;
 					}
 				}) //
@@ -296,7 +295,7 @@ public class ControllerIoChannelSingleThresholdImpl extends AbstractOpenemsCompo
 		for (WriteChannel<Boolean> outputChannel : outputChannels) {
 			var currentValue = outputChannel.value();
 			if (!currentValue.isDefined() || currentValue.get() != value) {
-				this.logInfo(this.log, "Set output [" + outputChannel.address() + "] " + (value ? "ON" : "OFF") + ".");
+				this.log.info("Set output [{}] {}.", outputChannel.address(), (value ? "ON" : "OFF"));
 				outputChannel.setNextWriteValue(value);
 			}
 		}

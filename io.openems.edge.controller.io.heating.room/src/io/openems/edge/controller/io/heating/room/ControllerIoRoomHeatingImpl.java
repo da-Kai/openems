@@ -258,8 +258,7 @@ public class ControllerIoRoomHeatingImpl extends AbstractOpenemsComponent implem
 					channel.setNextWriteValue(value);
 				}
 			} catch (OpenemsNamedException e) {
-				this.logError(this.log,
-						"Unable to switch Relay [" + channel.address() + "] " + target.name() + ": " + e.getMessage());
+				this.log.error("Unable to switch Relay [{}] {}: {}", channel.address(), target.name(), e.getMessage());
 			}
 		}
 		return new RelayState(now, target);

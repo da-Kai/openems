@@ -6,11 +6,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.Hashtable;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.OpenemsConstants;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.worker.AbstractWorker;
+import io.openems.edge.common.component.OpenemsComponent;
 
 /**
  * This worker reads the actual USB configuration and stores it in the Host
@@ -18,12 +18,13 @@ import io.openems.common.worker.AbstractWorker;
  */
 public class UsbConfigurationWorker extends AbstractWorker {
 
-	private final Logger log = LoggerFactory.getLogger(UsbConfigurationWorker.class);
+	private final Logger log;
 
 	private final HostImpl parent;
 
 	public UsbConfigurationWorker(HostImpl parent) {
 		this.parent = parent;
+		this.log = OpenemsComponent.getComponentLogger(UsbConfigurationWorker.class, parent);
 	}
 
 	@Override
@@ -37,7 +38,7 @@ public class UsbConfigurationWorker extends AbstractWorker {
 			}
 
 		} catch (OpenemsNamedException | IOException e) {
-			this.parent.logError(this.log, "Unable to persist actual USB configuration: " + e.getMessage());
+			this.log.error("Unable to persist actual USB configuration: {}", e.getMessage());
 			e.printStackTrace();
 		}
 	}

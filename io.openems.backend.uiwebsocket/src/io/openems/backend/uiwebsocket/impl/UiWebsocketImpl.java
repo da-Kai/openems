@@ -21,7 +21,6 @@ import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
-import org.slf4j.Logger;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
@@ -125,21 +124,6 @@ public class UiWebsocketImpl extends AbstractOpenemsBackendComponent
 			return;
 		}
 		this.server.stop();
-	}
-
-	@Override
-	protected void logInfo(Logger log, String message) {
-		super.logInfo(log, message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		super.logWarn(log, message);
-	}
-
-	@Override
-	protected void logError(Logger log, String message) {
-		super.logError(log, message);
 	}
 
 	@Override

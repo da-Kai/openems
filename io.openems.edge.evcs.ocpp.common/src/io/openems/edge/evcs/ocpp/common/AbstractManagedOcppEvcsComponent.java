@@ -13,7 +13,6 @@ import org.osgi.service.component.ComponentContext;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import eu.chargetime.ocpp.NotConnectedException;
 import eu.chargetime.ocpp.OccurenceConstraintException;
@@ -23,6 +22,7 @@ import io.openems.common.exceptions.OpenemsException;
 import io.openems.common.types.ChannelAddress;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Channel;
+import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.evcs.api.AbstractManagedEvcsComponent;
 import io.openems.edge.evcs.api.Evcs;
@@ -63,7 +63,7 @@ import io.openems.edge.timedata.api.TimedataProvider;
 public abstract class AbstractManagedOcppEvcsComponent extends AbstractManagedEvcsComponent
 		implements Evcs, ManagedEvcs, MeasuringEvcs, ElectricityMeter, EventHandler, TimedataProvider {
 
-	private final Logger log = LoggerFactory.getLogger(AbstractManagedOcppEvcsComponent.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	private ChargingProperty lastChargingProperty = null;
 
@@ -304,16 +304,6 @@ public abstract class AbstractManagedOcppEvcsComponent extends AbstractManagedEv
 	}
 
 	@Override
-	protected void logInfo(Logger log, String message) {
-		super.logInfo(log, message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		super.logWarn(log, message);
-	}
-
-	@Override
 	public String debugLog() {
 		return "P:" + this.getActivePower().orElse(null) //
 				+ "|Limit:" + this.getSetChargePowerLimit().orElse(null) //
@@ -337,17 +327,17 @@ public abstract class AbstractManagedOcppEvcsComponent extends AbstractManagedEv
 					return;
 				}
 
-				this.logInfo(this.log, confirmation.toString());
+				this.log.info(confirmation.toString());
 			});
 
 			return true;
 
 		} catch (OccurenceConstraintException e) {
-			this.logWarn(this.log, "The request is not a valid OCPP request.");
+			this.log.warn("The request is not a valid OCPP request.");
 		} catch (UnsupportedFeatureException e) {
-			this.logWarn(this.log, "This feature is not implemented by the charging station.");
+			this.log.warn("This feature is not implemented by the charging station.");
 		} catch (NotConnectedException e) {
-			this.logWarn(this.log, "The server is not connected.");
+			this.log.warn("The server is not connected.");
 		}
 		return false;
 	}
@@ -384,17 +374,17 @@ public abstract class AbstractManagedOcppEvcsComponent extends AbstractManagedEv
 					return;
 				}
 
-				this.logInfo(this.log, confirmation.toString());
+				this.log.info(confirmation.toString());
 			});
 
 			return true;
 
 		} catch (OccurenceConstraintException e) {
-			this.logWarn(this.log, "The request is not a valid OCPP request.");
+			this.log.warn("The request is not a valid OCPP request.");
 		} catch (UnsupportedFeatureException e) {
-			this.logWarn(this.log, "This feature is not implemented by the charging station.");
+			this.log.warn("This feature is not implemented by the charging station.");
 		} catch (NotConnectedException e) {
-			this.logWarn(this.log, "The server is not connected.");
+			this.log.warn("The server is not connected.");
 		}
 		return false;
 	}

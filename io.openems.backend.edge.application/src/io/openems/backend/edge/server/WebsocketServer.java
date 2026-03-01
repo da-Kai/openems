@@ -7,7 +7,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.java_websocket.WebSocket;
-import org.slf4j.Logger;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.jsonrpc.base.JsonrpcNotification;
@@ -38,8 +37,7 @@ public class WebsocketServer extends AbstractWebsocketServer<WsData> {
 		this.onNotification = new OnNotification(//
 				name, //
 				sendNotificationToEdgeManager);
-		this.onError = new OnError(//
-				this::logError);
+		this.onError = new OnError(name);
 		this.onClose = new OnClose(//
 				connectedEdgesChanged);
 	}
@@ -114,20 +112,5 @@ public class WebsocketServer extends AbstractWebsocketServer<WsData> {
 	@Override
 	protected OnClose getOnClose() {
 		return this.onClose;
-	}
-
-	@Override
-	protected void logInfo(Logger log, String message) {
-		log.info("[" + this.getName() + "] " + message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		log.warn("[" + this.getName() + "] " + message);
-	}
-
-	@Override
-	protected void logError(Logger log, String message) {
-		log.error("[" + this.getName() + "] " + message);
 	}
 }

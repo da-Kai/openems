@@ -14,6 +14,7 @@ import static org.osgi.service.component.annotations.ReferenceCardinality.OPTION
 import static org.osgi.service.component.annotations.ReferencePolicy.STATIC;
 import static org.osgi.service.component.annotations.ReferencePolicyOption.GREEDY;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -26,7 +27,6 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -94,7 +94,7 @@ import io.openems.edge.victron.ess.VictronEss;
 public class VictronBatteryInverterImpl extends AbstractOpenemsModbusComponent implements VictronBatteryInverter,
 		ManagedSymmetricBatteryInverter, SymmetricBatteryInverter, OpenemsComponent, StartStoppable, ModbusSlave {
 
-	private final Logger log = LoggerFactory.getLogger(VictronBatteryInverterImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	private final StateMachine stateMachine = new StateMachine(State.UNDEFINED);
 
@@ -261,7 +261,7 @@ public class VictronBatteryInverterImpl extends AbstractOpenemsModbusComponent i
 
 		var maxApparentPower = this.getMaxApparentPower().get();
 		if (maxApparentPower == null || maxApparentPower == 0) {
-			this.logError(this.log, "Device Type of battery inverter not configured!");
+			this.log.error("Device Type of battery inverter not configured!");
 			return false;
 		}
 		this._setMaxApparentPower(maxApparentPower);
@@ -288,10 +288,11 @@ public class VictronBatteryInverterImpl extends AbstractOpenemsModbusComponent i
 		}
 
 		if (this.config.DeviceType() == DeviceType.UNDEFINED) {
-			this.logError(this.log, "Device Type of inverter not configured!");
+			this.log.error("Device Type of inverter not configured!");
 		}
 
-		this.logDebug(this.log, "setActivePower " + setActivePower + " / setReactivePower " + setReactivePower);
+		this.logDebug().ifPresent(l -> l.info("setActivePower {} / setReactivePower {}", //
+				setActivePower, setReactivePower));
 
 		// Update state machine channel
 		this.channel(VictronBatteryInverter.ChannelId.STATE_MACHINE).setNextValue(this.stateMachine.getCurrentState());
@@ -304,7 +305,7 @@ public class VictronBatteryInverterImpl extends AbstractOpenemsModbusComponent i
 
 		} catch (OpenemsNamedException e) {
 			setValue(this, VictronBatteryInverter.ChannelId.RUN_FAILED, true);
-			this.logError(this.log, "StateMachine failed: " + e.getMessage());
+			this.log.error("StateMachine failed: {}", e.getMessage());
 			this.stateMachine.forceNextState(State.ERROR);
 		}
 	}
@@ -320,11 +321,14 @@ public class VictronBatteryInverterImpl extends AbstractOpenemsModbusComponent i
 
 	/**
 	 * Uses Info Log for further debug features.
+	 * 
+	 * @return Optional Logger if debug mode is enabled, otherwise empty
 	 */
-	@Override
-	protected void logDebug(Logger log, String message) {
+	protected Optional<Logger> logDebug() {
 		if (this.config.debugMode()) {
-			this.logInfo(this.log, message);
+			return Optional.of(this.log);
+		} else {
+			return Optional.empty();
 		}
 	}
 

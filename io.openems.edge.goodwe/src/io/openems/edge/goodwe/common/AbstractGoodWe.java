@@ -86,7 +86,7 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 			0x40000000, GoodWe.ChannelId.DIAG_STATUS_BATTERY_OFFGRID_DOD, //
 			0x80000000, GoodWe.ChannelId.DIAG_STATUS_BATTERY_SOC_ADJUST_ENABLE);
 
-	private final Logger log = LoggerFactory.getLogger(AbstractGoodWe.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	private final io.openems.edge.common.channel.ChannelId activePowerChannelId;
 	private final io.openems.edge.common.channel.ChannelId reactivePowerChannelId;
@@ -1300,7 +1300,7 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 						/*
 						 * ET-Plus
 						 */
-						this.logInfo(this.log, "Identified " + resultFromString.getName());
+						this.log.info("Identified {}", resultFromString.getName());
 						this._setGoodweType(resultFromString);
 
 						// Handles different ET-Plus DSP versions
@@ -1319,7 +1319,7 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 											this.handleDspVersion7(protocol);
 										}
 									} catch (OpenemsException e) {
-										this.logError(this.log, "Unable to add task for modbus protocol");
+										this.log.error("Unable to add task for modbus protocol");
 									}
 								});
 						return;
@@ -1353,7 +1353,7 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 										this.handleMultipleStringChargers(protocol);
 									}
 								} catch (OpenemsException e) {
-									this.logError(this.log, "Unable to add charger tasks for modbus protocol");
+									this.log.error("Unable to add charger tasks for modbus protocol");
 								}
 							});
 				});
@@ -1415,9 +1415,7 @@ public abstract class AbstractGoodWe extends AbstractOpenemsModbusComponent
 					try {
 						return t.serialNrFilter.apply(serialNr);
 					} catch (Exception e) {
-						LOG.warn("Unable to parse GoodWe Serial Number [" + serialNr + "] with [" + t.name() + "]: "
-								+ e.getMessage());
-						e.printStackTrace();
+						LOG.warn("Unable to parse GoodWe Serial Number [{}] with [{}]: {}", serialNr, t.name(), e.getMessage(), e);
 						return false;
 					}
 				}) //

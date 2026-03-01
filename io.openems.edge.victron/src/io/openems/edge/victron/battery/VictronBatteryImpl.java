@@ -13,6 +13,7 @@ import static org.osgi.service.component.annotations.ReferencePolicy.STATIC;
 import static org.osgi.service.component.annotations.ReferencePolicyOption.GREEDY;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -23,7 +24,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -46,7 +46,6 @@ import io.openems.edge.common.startstop.StartStoppable;
 import io.openems.edge.common.taskmanager.Priority;
 import io.openems.edge.controller.ess.emergencycapacityreserve.ControllerEssEmergencyCapacityReserve;
 import io.openems.edge.controller.ess.limittotaldischarge.ControllerEssLimitTotalDischarge;
-import io.openems.edge.victron.batteryinverter.VictronBatteryInverterImpl;
 import io.openems.edge.victron.ess.VictronEss;
 
 @Designate(ocd = Config.class, factory = true)
@@ -66,7 +65,7 @@ public class VictronBatteryImpl extends AbstractOpenemsModbusComponent
 	@Reference
 	protected ConfigurationAdmin cm;
 
-	private final Logger log = LoggerFactory.getLogger(VictronBatteryInverterImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	protected Config config;
 
@@ -127,12 +126,14 @@ public class VictronBatteryImpl extends AbstractOpenemsModbusComponent
 
 	/**
 	 * Uses Info Log for further debug features.
+	 * 
+	 * @return Optional Logger if debug mode is enabled, otherwise empty Optional.
 	 */
-	@Override
-	protected void logDebug(Logger log, String message) {
+	protected Optional<Logger> logDebug() {
 		if (this.config.debugMode()) {
-			this.logInfo(this.log, message);
+			return Optional.of(this.log);
 		}
+		return Optional.empty();
 	}
 
 	@Override
@@ -143,7 +144,7 @@ public class VictronBatteryImpl extends AbstractOpenemsModbusComponent
 
 	private void checkSocControllers() {
 		if (this.ess == null) {
-			this.logDebug(this.log, "No Controller active on ESS, exiting.");
+			this.logDebug().ifPresent(log -> log.info("No Controller active on ESS, exiting."));
 			this.minSocPercentage = 0;
 			this.maxSocPercentage = 100;
 			return;
@@ -153,48 +154,49 @@ public class VictronBatteryImpl extends AbstractOpenemsModbusComponent
 				this.ctrlEmergencyCapacityReserves);
 		this.maxSocPercentage = 100; // Default max SoC
 
-		this.logDebug(this.log, "checkSocControllers: MinSoC set to " + this.minSocPercentage + ", MaxSoC set to "
-				+ this.maxSocPercentage);
+		this.logDebug().ifPresent(l -> l.info(//
+				"Controllers active on ESS, checking SoC limits. MinSoC: {}, MaxSoC: {}", //
+				this.minSocPercentage, this.maxSocPercentage));
 	}
 
 	private void installListener() {
 		this.getCapacityInAmphoursChannel().onUpdate(value -> {
 
 			if (this.ess == null) {
-				this.logError(this.log, "No ESS reference available.");
+				this.log.error("No ESS reference available.");
 				return;
 			}
 
 			// Check if value is null or invalid
 			if (value == null) {
-				this.logError(this.log, "Invalid capacity value received.");
+				this.log.error("Invalid capacity value received.");
 				return;
 			}
 
-			this.logDebug(this.log, "Listener triggered with incoming capacity: " + value);
+			this.logDebug().ifPresent(l -> l.info("Listener triggered with incoming capacity: {}", value));
 
 			// Safely get SoC, checking for null
 			Integer soc = this.getSoc().orElse(null);
 			if (soc == null || soc <= 0) {
-				this.logDebug(this.log, "installListener: Invalid SoC (" + soc + "), exiting.");
+				this.logDebug().ifPresent(l -> l.info("installListener: Invalid SoC ({}), exiting.", soc));
 				return;
 			}
 
-			this.logDebug(this.log, "Current State of Charge (SoC): " + soc);
+			this.logDebug().ifPresent(l -> l.info("Current State of Charge (SoC): {}", soc));
 
 			// Update SoC limits
 			this.checkSocControllers();
-			this.logDebug(this.log,
-					"SoC limits updated - MinSoC: " + this.minSocPercentage + ", MaxSoC: " + this.maxSocPercentage);
+			this.logDebug().ifPresent(l -> l.info("Updated SoC limits - MinSoC: {}, MaxSoC: {}", //
+					this.minSocPercentage, this.maxSocPercentage));
 
 			// Calculate total capacity Ah, handling division by zero
 			double socPercentage = soc / 100.0;
 			if (socPercentage == 0) {
-				this.logError(this.log, "Cannot calculate total capacity because SoC is 0.");
+				this.log.error("Cannot calculate total capacity because SoC is 0.");
 				return;
 			}
 			int totalCapacityAh = (int) (value.get() / socPercentage);
-			this.logDebug(this.log, "Calculated total capacity (Ah): " + totalCapacityAh);
+			this.logDebug().ifPresent(l -> l.info("Calculated total capacity (Ah): {}", totalCapacityAh));
 
 			// Calculate total capacity in watt-hours
 			int totalCapacityWh = totalCapacityAh * BATTERY_VOLTAGE;
@@ -204,7 +206,8 @@ public class VictronBatteryImpl extends AbstractOpenemsModbusComponent
 					: soc < this.minSocPercentage ? 0
 							: (int) (((double) (soc - this.minSocPercentage)
 									/ (this.maxSocPercentage - this.minSocPercentage)) * 100);
-			this.logDebug(this.log, "Normalized usable SoC: " + useableSoc + "% based on current SoC: " + soc);
+			this.logDebug()
+					.ifPresent(l -> l.info("Normalized usable SoC: {}% based on current SoC: ", useableSoc, soc));
 
 			// Calculate the usable capacity based on MinSoC and MaxSoC limits
 			// First, calculate the percentage of capacity that can be used between MinSoC
@@ -214,18 +217,19 @@ public class VictronBatteryImpl extends AbstractOpenemsModbusComponent
 			int totalUsableCapacityWh = (int) (totalCapacityWh * usableCapacityRange);
 
 			// Now calculate the current usable capacity based on the usable SoC
-			int useableCapacityWh = (int) (totalUsableCapacityWh * (useableSoc / 100.0));
+			int calcUseableCapacityWh = (int) (totalUsableCapacityWh * (useableSoc / 100.0));
 
 			// Ensure useableCapacityWh is within valid bounds (0 to totalUsableCapacityWh)
-			useableCapacityWh = Math.max(Math.min(useableCapacityWh, totalUsableCapacityWh), 0);
+			final int useableCapacityWh = Math.clamp(calcUseableCapacityWh, 0, totalUsableCapacityWh);
 
 			// Set the capacities in ESS
 			this._setCapacity(totalCapacityWh);
 			this.ess._setUseableSoc(useableSoc);
 			this.ess._setUseableCapacity(useableCapacityWh);
 
-			this.logDebug(this.log, "installListener: SoC: real|usable " + soc + "|" + useableSoc
-					+ "[%] Capacity real|usable " + totalCapacityWh + "|" + useableCapacityWh + " [Wh]");
+			this.logDebug()
+					.ifPresent(l -> l.info("installListener: SoC: real|usable {}|{}[%] Capacity real|usable {}|{} [Wh]", //
+							soc, useableSoc, totalCapacityWh, useableCapacityWh));
 		});
 	}
 

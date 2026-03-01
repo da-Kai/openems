@@ -9,7 +9,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -32,7 +31,7 @@ import io.openems.edge.meter.api.ElectricityMeter;
 public class ControllerEssBalancingImpl extends AbstractOpenemsComponent
 		implements Controller, OpenemsComponent, ModbusSlave, ControllerEssBalancing {
 
-	private final Logger log = LoggerFactory.getLogger(ControllerEssBalancingImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ConfigurationAdmin cm;
@@ -78,7 +77,7 @@ public class ControllerEssBalancingImpl extends AbstractOpenemsComponent
 		 */
 		var gridMode = this.ess.getGridMode();
 		if (gridMode.isUndefined()) {
-			this.logWarn(this.log, "Grid-Mode is [UNDEFINED]");
+			this.log.warn("Grid-Mode is [UNDEFINED]");
 		}
 		switch (gridMode) {
 		case ON_GRID:

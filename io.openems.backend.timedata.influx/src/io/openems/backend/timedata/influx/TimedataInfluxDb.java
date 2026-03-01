@@ -1,6 +1,7 @@
 package io.openems.backend.timedata.influx;
 
 import java.net.URI;
+import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.Optional;
@@ -18,7 +19,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -41,6 +41,7 @@ import io.openems.common.jsonrpc.notification.AbstractDataNotification;
 import io.openems.common.jsonrpc.notification.AggregatedDataNotification;
 import io.openems.common.jsonrpc.notification.ResendDataNotification;
 import io.openems.common.jsonrpc.notification.TimestampedDataNotification;
+import io.openems.common.logger.ContextLogger;
 import io.openems.common.oem.OpenemsBackendOem;
 import io.openems.common.timedata.Resolution;
 import io.openems.common.types.ChannelAddress;
@@ -57,7 +58,7 @@ import io.openems.shared.influxdb.InfluxConnector;
 })
 public class TimedataInfluxDb extends AbstractOpenemsBackendComponent implements Timedata, EventHandler, DebugLoggable {
 
-	private final Logger log = LoggerFactory.getLogger(TimedataInfluxDb.class);
+	private final Logger log;
 	private final FieldTypeConflictHandler fieldTypeConflictHandler;
 
 	@Reference
@@ -76,7 +77,8 @@ public class TimedataInfluxDb extends AbstractOpenemsBackendComponent implements
 
 	public TimedataInfluxDb() {
 		super("Timedata.InfluxDB");
-		this.fieldTypeConflictHandler = new FieldTypeConflictHandler(this);
+		this.log = new ContextLogger(TimedataInfluxDb.class, this.getName());
+		this.fieldTypeConflictHandler = new FieldTypeConflictHandler(this.getName());
 	}
 
 	@Activate
@@ -84,14 +86,13 @@ public class TimedataInfluxDb extends AbstractOpenemsBackendComponent implements
 		this.config = config;
 		this.timeFilter = TimeFilter.from(config.startDate(), config.endDate());
 		this.channelFilter = ChannelFilter.from(config.blacklistedChannels(), config.blacklistedChannelIds());
-
-		this.logInfo(this.log, "Activate [" //
-				+ "url=" + config.url() + ";"//
-				+ "bucket=" + config.bucket() + ";"//
-				+ "apiKey=" + (config.apiKey() != null ? "ok" : "NOT_SET") + ";"//
-				+ "measurement=" + config.measurement() //
-				+ (config.isReadOnly() ? ";READ_ONLY_MODE" : "") //
-				+ "]");
+		
+		this.log.info("Activate [url={}; bucket={}; apiKey={}; measurement={}{}]", //
+				config.url(), //
+				config.bucket(), //
+				(config.apiKey() != null ? "ok" : "NOT_SET"), //
+				config.measurement(), //
+				(config.isReadOnly() ? ";READ_ONLY_MODE" : ""));
 
 		this.influxConnector = new InfluxConnector(config.id(), config.queryLanguage(), URI.create(config.url()),
 				config.org(), config.apiKey(), config.bucket(), this.oem.getInfluxdbTag(), config.isReadOnly(),
@@ -103,7 +104,7 @@ public class TimedataInfluxDb extends AbstractOpenemsBackendComponent implements
 
 	@Deactivate
 	private void deactivate() {
-		this.logInfo(this.log, "Deactivate");
+		this.log.info("Deactivate");
 		if (this.influxConnector != null) {
 			this.influxConnector.deactivate();
 		}
@@ -190,7 +191,7 @@ public class TimedataInfluxDb extends AbstractOpenemsBackendComponent implements
 		try {
 			influxEdgeId = InfluxConnector.parseNumberFromName(edgeId);
 		} catch (OpenemsException e) {
-			this.logWarn(this.log, "Unable to parse numeric Influx Edge-ID [" + edgeId + "] :" + e.getMessage());
+			this.log.info("Unable to parse numeric Influx Edge-ID [{}] :{}", edgeId, e.getMessage());
 			return;
 		}
 
@@ -293,7 +294,7 @@ public class TimedataInfluxDb extends AbstractOpenemsBackendComponent implements
 
 		if (!element.isJsonPrimitive()) {
 			// Non-Primitives are ignored
-			this.logWarn(this.log, "Ignoring non-primitive Field [" + field + "] Value [" + element + "]");
+			this.log.warn("Ignoring non-primitive Field [{}] Value [{}]", field, element);
 			return;
 		}
 
@@ -380,20 +381,10 @@ public class TimedataInfluxDb extends AbstractOpenemsBackendComponent implements
 			// call special handler
 			handler.accept(builder, value);
 		} catch (RuntimeException e) {
-			this.logError(this.log,
-					"Unexpected error in special case field handler for Field [" + field + "] Value [" + value + "]");
+			this.log.error("Unexpected error in special case field handler for Field [{}] Value [{}]", 
+					field, value);
 		}
 		return true;
-	}
-
-	@Override
-	protected void logInfo(Logger log, String message) {
-		super.logInfo(log, message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		super.logWarn(log, message);
 	}
 
 	@Override

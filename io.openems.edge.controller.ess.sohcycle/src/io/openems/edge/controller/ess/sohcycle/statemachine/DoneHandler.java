@@ -11,8 +11,8 @@ public class DoneHandler extends StateHandler<StateMachine.State, Context> {
     @Override
     protected StateMachine.State runAndGetNextState(Context context) {
         final int soc = context.ess.getSoc().orElse(0);
-        context.logInfo(log, String.format("%s: SoC=%d%%, SoH cycle finished successfully",
-                StateMachine.State.DONE.getName(), soc));
+        log.info("{}: SoC={}%, SoH cycle finished successfully", //
+                StateMachine.State.DONE.getName(), soc);
         var controller = context.getParent();
         controller.updateConfigToNotRunning();
         return StateMachine.State.IDLE;

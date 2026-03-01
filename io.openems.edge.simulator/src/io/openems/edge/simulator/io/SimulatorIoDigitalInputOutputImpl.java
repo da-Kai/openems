@@ -65,11 +65,10 @@ public class SimulatorIoDigitalInputOutputImpl extends AbstractOpenemsComponent
 
 			// default to OFF
 			channel.setNextValue(false);
-			this.logInfo(this.log, "Creating simulated DigitalOutput [" + channel.address() + "]");
+			this.log.info("Creating simulated DigitalOutput [{}]", channel.address());
 			// register listener for write-events on the channel to set its new value
 			channel.onSetNextWrite(value -> {
-				this.logInfo(this.log,
-						"DigitalOutput [" + channel.address() + "] was turned " + (value ? "ON" : "OFF"));
+				this.log.info("DigitalOutput [{}] was turned {}", channel.address(), value ? "ON" : "OFF");
 				channel.setNextValue(value);
 			});
 			this.readChannels[i] = channel;

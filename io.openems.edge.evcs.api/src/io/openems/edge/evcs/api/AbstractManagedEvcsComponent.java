@@ -4,8 +4,6 @@ import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
@@ -41,8 +39,6 @@ import io.openems.edge.meter.api.ElectricityMeter;
  */
 public abstract class AbstractManagedEvcsComponent extends AbstractOpenemsComponent
 		implements Evcs, ManagedEvcs, ElectricityMeter, EventHandler {
-
-	private final Logger log = LoggerFactory.getLogger(AbstractManagedEvcsComponent.class);
 
 	protected final WriteHandler writeHandler;
 	private final ChargeStateHandler chargeStateHandler = new ChargeStateHandler(this);
@@ -84,30 +80,8 @@ public abstract class AbstractManagedEvcsComponent extends AbstractOpenemsCompon
 		return this.chargeStateHandler;
 	}
 
-	@Override
-	protected void logInfo(Logger log, String message) {
-		super.logInfo(log, message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		super.logWarn(log, message);
-	}
-
 	protected WriteHandler createWriteHandler() {
 		return new WriteHandler(this);
-	}
-
-	@Override
-	protected void logDebug(Logger log, String message) {
-		if (this.getConfiguredDebugMode()) {
-			this.logInfo(this.log, message);
-		}
-	}
-
-	@Override
-	public void logDebug(String message) {
-		this.logDebug(this.log, message);
 	}
 
 	@Override

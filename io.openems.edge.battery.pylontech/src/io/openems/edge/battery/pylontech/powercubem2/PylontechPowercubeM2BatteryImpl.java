@@ -26,7 +26,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.channel.Level;
@@ -84,7 +83,7 @@ public class PylontechPowercubeM2BatteryImpl extends AbstractOpenemsModbusCompon
 		);
 	}
 
-	private final Logger log = LoggerFactory.getLogger(PylontechPowercubeM2BatteryImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	protected ConfigurationAdmin cm;
@@ -417,7 +416,7 @@ public class PylontechPowercubeM2BatteryImpl extends AbstractOpenemsModbusCompon
 		try {
 			this.initializePileChannels(numberOfPiles);
 		} catch (OpenemsException e) {
-			this.logError(this.log, "Unable to initialize channels for individual piles: " + e.getMessage());
+			this.log.error("Unable to initialize channels for individual piles: {}", e.getMessage());
 			e.printStackTrace();
 		}
 	}
@@ -745,8 +744,7 @@ public class PylontechPowercubeM2BatteryImpl extends AbstractOpenemsModbusCompon
 		try {
 			batteryWakeSleepChannel = this.channel(PylontechPowercubeM2Battery.ChannelId.SLEEP_WAKE_CHANNEL);
 		} catch (IllegalArgumentException e1) {
-			this.logError(this.log, //
-					"Setting BatteryWakeSleepChannel failed: " + e1.getMessage());
+			this.log.error("Setting BatteryWakeSleepChannel failed: {}", e1.getMessage());
 			e1.printStackTrace();
 		}
 
@@ -757,7 +755,7 @@ public class PylontechPowercubeM2BatteryImpl extends AbstractOpenemsModbusCompon
 			this.channel(PylontechPowercubeM2Battery.ChannelId.RUN_FAILED).setNextValue(false);
 		} catch (OpenemsNamedException e) {
 			this.channel(PylontechPowercubeM2Battery.ChannelId.RUN_FAILED).setNextValue(true);
-			this.logError(this.log, "StateMachine failed: " + e.getMessage());
+			this.log.error("StateMachine failed: {}", e.getMessage());
 		}
 	}
 }

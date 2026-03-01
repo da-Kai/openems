@@ -20,7 +20,6 @@ import io.openems.common.utils.FunctionUtils;
 import io.openems.edge.common.channel.Doc;
 import io.openems.edge.common.channel.StateChannel;
 import io.openems.edge.common.channel.StringDoc;
-import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.modbusslave.ModbusSlaveNatureTable;
 import io.openems.edge.common.modbusslave.ModbusType;
 import io.openems.edge.evcs.keba.udp.EvcsKebaUdpImpl;
@@ -32,7 +31,7 @@ import io.openems.edge.evse.chargepoint.keba.udp.EvseKebaUdpImpl;
  * {@link EvcsKebaUdpImpl}.
  */
 public interface KebaUdp extends Keba {
-
+	
 	public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 		COMMUNICATION_FAILED(Doc.of(Level.FAULT)//
 				.persistencePriority(PersistencePriority.HIGH)//
@@ -155,19 +154,17 @@ public interface KebaUdp extends Keba {
 			datagrammSocket.send(packet);
 			switch (logVerbosity) {
 			case DEBUG_LOG -> FunctionUtils.doNothing();
-			case WRITES, UDP_REPORTS -> OpenemsComponent.logInfo(parent, log, "Sent [" + command + "] successfully");
+			case WRITES, UDP_REPORTS -> log.info("Sent [{}] successfully", command);
 			}
 			return true;
 
 		} catch (SocketException e) {
-			OpenemsComponent.logError(parent, log,
-					"Unable to open UDP socket for sending [" + command + "] to [" + ip.getHostAddress() + "]: " //
-							+ e.getMessage());
+			log.error("Unable to open UDP socket for sending [{}] to [{}]: {}", //
+							command, ip.getHostAddress(), e.getMessage());
 
 		} catch (IOException e) {
-			OpenemsComponent.logError(parent, log,
-					"Unable to send [" + command + "] UDP message to [" + ip.getHostAddress() + "]: " //
-							+ e.getMessage());
+			log.error("Unable to send [{}] UDP message to [{}]: {}", //
+							command, ip.getHostAddress(), e.getMessage());
 		}
 		return false;
 	}

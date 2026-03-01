@@ -17,7 +17,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.common.worker.AbstractCycleWorker;
@@ -38,7 +37,7 @@ import io.openems.edge.common.event.EdgeEventConstants;
 })
 public class BridgeMbusImpl extends AbstractOpenemsComponent implements BridgeMbus, EventHandler, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(BridgeMbusImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	private final Map<String, MbusTask> tasks = new HashMap<>();
 	private final MbusWorker worker = new MbusWorker();
@@ -93,11 +92,13 @@ public class BridgeMbusImpl extends AbstractOpenemsComponent implements BridgeMb
 
 		@Override
 		protected void forever() throws OpenemsException, DecodingException {
+			final var self = BridgeMbusImpl.this;
+
 			// Check if time passed by, if not, do nothing
 			try {
-				BridgeMbusImpl.this.mBusConnection = BridgeMbusImpl.this.builder.build();
+				self.mBusConnection = self.builder.build();
 
-				for (MbusTask task : BridgeMbusImpl.this.tasks.values()) {
+				for (MbusTask task : self.tasks.values()) {
 					try {
 						var data = task.getRequest();
 						data.decode();
@@ -109,10 +110,9 @@ public class BridgeMbusImpl extends AbstractOpenemsComponent implements BridgeMb
 					}
 				}
 
-				BridgeMbusImpl.this.mBusConnection.close();
+				self.mBusConnection.close();
 			} catch (IOException e) {
-				BridgeMbusImpl.this.logError(BridgeMbusImpl.this.log,
-						"Connection via [" + BridgeMbusImpl.this.portName + "] failed: " + e.getMessage());
+				self.log.error("Connection via [{}} failed: {}", self.portName, e.getMessage());
 			}
 		}
 	}

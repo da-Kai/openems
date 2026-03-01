@@ -18,7 +18,6 @@ import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
-import org.slf4j.Logger;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsException;
@@ -148,11 +147,6 @@ public class KostalPvInverterImpl extends AbstractOpenemsModbusComponent
 	@Override
 	public String debugLog() {
 		return "L:" + this.getActivePower().asString();
-	}
-
-	@Override
-	protected void logInfo(Logger log, String message) {
-		super.logInfo(log, message);
 	}
 
 	@Override

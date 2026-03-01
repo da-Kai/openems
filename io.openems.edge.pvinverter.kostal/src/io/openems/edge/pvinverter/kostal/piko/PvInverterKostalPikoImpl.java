@@ -17,7 +17,6 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.bridge.http.api.BridgeHttp;
 import io.openems.common.bridge.http.api.BridgeHttpFactory;
@@ -49,7 +48,7 @@ import io.openems.edge.pvinverter.api.ManagedSymmetricPvInverter;
 public class PvInverterKostalPikoImpl extends AbstractOpenemsComponent
 		implements PvInverterKostalPiko, ManagedSymmetricPvInverter, ElectricityMeter, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(PvInverterKostalPikoImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private BridgeHttpFactory httpBridgeFactory;
@@ -87,7 +86,7 @@ public class PvInverterKostalPikoImpl extends AbstractOpenemsComponent
 		this._setActivePowerLimit(null); // Not limited
 
 		if (this.isEnabled()) {
-			this.logInfo(this.log, "Subscribing to KOSTAL PIKO at " + this.baseUrl);
+			this.log.info("Subscribing to KOSTAL PIKO at {}", this.baseUrl);
 
 			this.httpBridge = this.httpBridgeFactory.get();
 			this.cycleService = this.httpBridge.createService(this.httpBridgeCycleServiceDefinition);
@@ -110,7 +109,7 @@ public class PvInverterKostalPikoImpl extends AbstractOpenemsComponent
 
 	private void handleSuccessfulResult(HttpResponse<String> result) {
 		if (result == null || result.data() == null) {
-			this.logError(this.log, "Received null response");
+			this.log.error("Received null response");
 			return;
 		}
 
@@ -119,14 +118,14 @@ public class PvInverterKostalPikoImpl extends AbstractOpenemsComponent
 			// Clear fault on successful communication
 			this._setSlaveCommunicationFailed(false);
 		} catch (Exception e) {
-			this.logError(this.log, "Failed to parse HTML response: " + e.getMessage());
+			this.log.error("Failed to parse HTML response: {}", e.getMessage());
 			this.channel(PvInverterKostalPiko.ChannelId.DEBUG_HTML)
 					.setNextValue(result.data().substring(0, Math.min(result.data().length(), 1000)));
 		}
 	}
 
 	private void handleError(HttpError error) {
-		this.logError(this.log, "HTTP request failed: " + error.getMessage());
+		this.log.error("HTTP request failed: ", error.getMessage());
 		this._setSlaveCommunicationFailed(true);
 		this._setActivePower(null);
 		this._setActivePowerL1(null);
@@ -433,7 +432,7 @@ public class PvInverterKostalPikoImpl extends AbstractOpenemsComponent
 
 			return Integer.parseInt(cleaned);
 		} catch (NumberFormatException e) {
-			this.logDebug(this.log, "Failed to parse integer value: " + text);
+			this.log.debug("Failed to parse integer value: {}", text);
 			return null;
 		}
 	}
@@ -455,7 +454,7 @@ public class PvInverterKostalPikoImpl extends AbstractOpenemsComponent
 			float kwh = Float.parseFloat(cleaned);
 			return (long) (kwh * 1000);
 		} catch (NumberFormatException e) {
-			this.logDebug(this.log, "Failed to parse float value: " + text);
+			this.log.debug("Failed to parse float value: {}", text);
 			return null;
 		}
 	}
@@ -471,7 +470,7 @@ public class PvInverterKostalPikoImpl extends AbstractOpenemsComponent
 			float amps = Float.parseFloat(cleaned);
 			return (int) (amps * 1000);
 		} catch (NumberFormatException e) {
-			this.logDebug(this.log, "Failed to parse float value: " + text);
+			this.log.debug("Failed to parse float value: {}", text);
 			return null;
 		}
 	}

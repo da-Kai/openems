@@ -42,7 +42,6 @@ import io.openems.edge.common.jsonapi.EdgeGuards;
 import io.openems.edge.common.jsonapi.JsonApiBuilder;
 import io.openems.edge.common.sum.Sum;
 import io.openems.edge.common.type.TypeUtils;
-import io.openems.edge.predictor.api.common.LogSeverity;
 import io.openems.edge.predictor.api.common.PredictionException;
 import io.openems.edge.predictor.api.common.PredictionState;
 import io.openems.edge.predictor.api.common.TrainingError;
@@ -176,8 +175,7 @@ public class PredictorProductionLinearModelImpl extends AbstractPredictor
 	protected Prediction createNewPrediction(ChannelAddress channelAddress) {
 		if (this.snowStateMachine == null) {
 			this._setPredictionState(PredictionState.FAILED_UNKNOWN);
-			this.logPredictionError(PredictionState.FAILED_UNKNOWN, LogSeverity.ERROR,
-					"SnowStateMachine is not initialized");
+			this.log.error("Prediction failed [{}]: SnowStateMachine is not initialized", PredictionState.FAILED_UNKNOWN);
 			return Prediction.EMPTY_PREDICTION;
 		}
 
@@ -185,7 +183,7 @@ public class PredictorProductionLinearModelImpl extends AbstractPredictor
 			this.snowStateMachine.run();
 		} catch (PredictionException e) {
 			this._setPredictionState(e.getError().getFailedState());
-			this.logPredictionError(e.getError().getFailedState(), e.getError().getSeverity(), e.getMessage());
+			this.log.error("Prediction failed [{}]: {}", e.getError().getFailedState(), e.getMessage());
 			return Prediction.EMPTY_PREDICTION;
 		}
 
@@ -224,35 +222,33 @@ public class PredictorProductionLinearModelImpl extends AbstractPredictor
 
 	@Override
 	public void onTrainingStart() {
-		this.logInfo(this.log, "Training started");
+		this.log.info("Training started");
 	}
 
 	@Override
 	public void onTrainingSuccess(ModelBundle bundle) {
 		this.currentModel = bundle;
 		this._setTrainingState(TrainingState.SUCCESSFUL);
-		this.logInfo(this.log, String.format(//
-				"Training succeeded [%s]", //
-				TrainingState.SUCCESSFUL.getName()));
+		this.log.info("Training succeeded [{}]", TrainingState.SUCCESSFUL.getName());
 	}
 
 	@Override
 	public void onTrainingError(TrainingError error, String message) {
 		this._setTrainingState(error.getFailedState());
-		this.logTrainingError(error.getFailedState(), error.getSeverity(), message);
+		this.log.error("Training failed [{}]: {}", error.getFailedState(), message);
 	}
 
 	@VisibleForTesting
 	Prediction createLongTermPrediction(ChannelAddress channelAddress) {
 		if (this.currentModel == null) {
 			this._setPredictionState(PredictionState.FAILED_NO_MODEL);
-			this.logPredictionError(PredictionState.FAILED_NO_MODEL, LogSeverity.INFO, "No trained model available");
+			this.log.info("Prediction failed [{}]: No trained model available", PredictionState.FAILED_NO_MODEL);
 			return Prediction.EMPTY_PREDICTION;
 		}
 
 		if (this.isModelTooOld(this.currentModel)) {
 			this._setPredictionState(PredictionState.FAILED_MODEL_OUTDATED);
-			this.logPredictionError(PredictionState.FAILED_MODEL_OUTDATED, LogSeverity.INFO, "Trained model outdated");
+			this.log.info("Prediction failed [{}]: Trained model outdated", PredictionState.FAILED_MODEL_OUTDATED);
 			return Prediction.EMPTY_PREDICTION;
 		}
 
@@ -265,11 +261,11 @@ public class PredictorProductionLinearModelImpl extends AbstractPredictor
 			return this.mapSeriesToPrediction(predictedValues, channelAddress);
 		} catch (PredictionException e) {
 			this._setPredictionState(e.getError().getFailedState());
-			this.logPredictionError(e.getError().getFailedState(), e.getError().getSeverity(), e.getMessage());
+			this.log.error("Prediction failed [{}]: {}", e.getError().getFailedState(), e.getMessage());
 			return Prediction.EMPTY_PREDICTION;
 		} catch (Exception e) {
 			this._setPredictionState(PredictionState.FAILED_UNKNOWN);
-			this.logPredictionError(PredictionState.FAILED_UNKNOWN, LogSeverity.ERROR, e.getMessage());
+			this.log.error("Prediction failed [{}]: {}", PredictionState.FAILED_UNKNOWN, e.getMessage());
 			return Prediction.EMPTY_PREDICTION;
 		}
 	}
@@ -322,16 +318,6 @@ public class PredictorProductionLinearModelImpl extends AbstractPredictor
 		}
 		return modelBundle.createdAt().isBefore(//
 				this.componentManager.getClock().instant().minus(this.predictorConfig.maxModelAge()));
-	}
-
-	private void logTrainingError(TrainingState state, LogSeverity severity, String message) {
-		var logMessage = String.format("Training failed [%s]: %s", state.getName(), message);
-		this.logWithSeverity(this.log, severity, logMessage);
-	}
-
-	private void logPredictionError(PredictionState state, LogSeverity severity, String message) {
-		var logMessage = String.format("Prediction failed [%s]: %s", state.getName(), message);
-		this.logWithSeverity(this.log, severity, logMessage);
 	}
 
 	@VisibleForTesting

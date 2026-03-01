@@ -28,7 +28,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableSortedMap;
 
@@ -69,7 +68,7 @@ public class TimeOfUseTariffSwisspowerImpl extends AbstractOpenemsComponent
 	protected static final int SERVER_ERROR_CODE = 500;
 	protected static final int BAD_REQUEST_ERROR_CODE = 400;
 
-	private final Logger log = LoggerFactory.getLogger(TimeOfUseTariffSwisspowerImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final AtomicReference<TimeOfUsePrices> prices = new AtomicReference<>(TimeOfUsePrices.EMPTY_PRICES);
 	private String accessToken = null;
 	private String meteringCode = null;
@@ -111,13 +110,13 @@ public class TimeOfUseTariffSwisspowerImpl extends AbstractOpenemsComponent
 
 		this.accessToken = config.accessToken();
 		if (this.accessToken == null) {
-			this.logError(this.log, "Please configure personal Access token to access Swisspower API");
+			this.log.error("Please configure personal Access token to access Swisspower API");
 			return;
 		}
 
 		this.meteringCode = config.meteringCode();
 		if (this.meteringCode == null) {
-			this.logError(this.log, "Please configure meteringCode to access Swisspower API");
+			this.log.error("Please configure meteringCode to access Swisspower API");
 			return;
 		}
 

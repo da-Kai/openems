@@ -46,8 +46,8 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 		this.onError = new OnError();
 		this.onClose = (ws, code, reason, remote) -> {
 			onStateChange.accept(ConnectionState.NOT_CONNECTED);
-			this.log.error("Disconnected from slave [" + serverUri.toString() //
-					+ (proxy != AbstractWebsocketClient.NO_PROXY ? " via Proxy" : "") + "]");
+			final var proxyStr = proxy == AbstractWebsocketClient.NO_PROXY ? "" : " via Proxy";
+			this.log.error("Disconnected from slave [{}{}]", serverUri, proxyStr);
 		};
 	}
 
@@ -87,21 +87,6 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 		return new WsData(ws);
 	}
 
-	@Override
-	protected void logInfo(Logger log, String message) {
-		log.info(message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		log.warn(message);
-	}
-
-	@Override
-	protected void logError(Logger log, String message) {
-		log.error(message);
-	}
-
 	public boolean isConnected() {
 		return this.ws.isOpen();
 	}
@@ -109,6 +94,11 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	@Override
 	protected void execute(Runnable command) {
 		this.executor.execute(command);
+	}
+
+	@Override
+	protected Logger getLogger() {
+		return this.log;
 	}
 
 }

@@ -13,7 +13,6 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
 
@@ -37,7 +36,7 @@ import io.openems.edge.ess.api.ManagedSymmetricEss;
 )
 public class ControllerEssSohCycleImpl extends AbstractOpenemsComponent implements ControllerEssSohCycle, Controller, OpenemsComponent {
 
-	private static final Logger log = LoggerFactory.getLogger(ControllerEssSohCycleImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	protected static final int ZERO_WATT_POWER = 0; // [0 W]
 
 	private final StateMachine stateMachine;
@@ -158,7 +157,7 @@ public class ControllerEssSohCycleImpl extends AbstractOpenemsComponent implemen
 		this.config = config;
 		// Validate ess_id
 		if (config.ess_id() == null || config.ess_id().isBlank()) {
-			logError(log, "Ess-ID is not configured!");
+			this.log.error("Ess-ID is not configured!");
 			return;
 		}
 
@@ -172,7 +171,7 @@ public class ControllerEssSohCycleImpl extends AbstractOpenemsComponent implemen
 	 */
 	private void logIfEnabled(String message) {
 		if (this.config.logVerbosity() == LogVerbosity.DEBUG_LOG) {
-			log.info(message);
+			this.log.info(message);
 		}
 	}
 
@@ -221,7 +220,7 @@ public class ControllerEssSohCycleImpl extends AbstractOpenemsComponent implemen
 			properties.put("isRunning", false);
 			configuration.update(properties);
 		} catch (IOException e) {
-			log.error("Failed to update isRunning configuration to false", e);
+			this.log.error("Failed to update isRunning configuration to false", e);
 		}
 	}
 

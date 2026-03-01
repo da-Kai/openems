@@ -21,7 +21,6 @@ import java.util.stream.Stream;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.ghgande.j2mod.modbus.ModbusSlaveException;
 import com.google.common.collect.Lists;
@@ -48,6 +47,7 @@ import io.openems.edge.bridge.modbus.sunspec.Point.ModbusElementPoint;
 import io.openems.edge.bridge.modbus.sunspec.Point.ScaleFactorPoint;
 import io.openems.edge.bridge.modbus.sunspec.Point.ScaledValuePoint;
 import io.openems.edge.common.channel.Channel;
+import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.taskmanager.Priority;
 
 /**
@@ -60,7 +60,7 @@ public abstract class AbstractOpenemsSunSpecComponent extends AbstractOpenemsMod
 	 */
 	private static final int MAXIMUM_TASK_LENGTH = 126;
 
-	private final Logger log = LoggerFactory.getLogger(AbstractOpenemsSunSpecComponent.class);
+	private final Logger log;
 
 	public record SunSpecModelEntry(SunSpecModel sunSpecModel, Priority priority, boolean required) {
 
@@ -148,6 +148,7 @@ public abstract class AbstractOpenemsSunSpecComponent extends AbstractOpenemsMod
 			io.openems.edge.common.channel.ChannelId[] firstInitialChannelIds,
 			io.openems.edge.common.channel.ChannelId[]... furtherInitialChannelIds) {
 		super(firstInitialChannelIds, furtherInitialChannelIds);
+		this.log = OpenemsComponent.getComponentLogger(this);
 		this.activeModels = activeModels;
 		this.modbusProtocol = new ModbusProtocol(this);
 	}
@@ -208,7 +209,7 @@ public abstract class AbstractOpenemsSunSpecComponent extends AbstractOpenemsMod
 			runningInitialization.cancel(false);
 		}
 
-		this.logInfo(this.log, "Reinitialize SunSpec channels [force=" + force + "]");
+		this.log.info("Reinitialize SunSpec channels [force={}]", force);
 
 		this.removeAllSunSpecChannels();
 		this.readModels.clear();
@@ -285,7 +286,7 @@ public abstract class AbstractOpenemsSunSpecComponent extends AbstractOpenemsMod
 	 */
 	private CompletableFuture<Void> readNextBlock(final int startAddress,
 			final Map<Integer, SunSpecModelEntry> remainingBlocks, final int commonBlockCounter) {
-		this.log.debug("Read next SunSpec value at " + startAddress + ", remainingBlocks=" + remainingBlocks);
+		this.log.debug("Read next SunSpec value at {}, remainingBlocks={}", startAddress, remainingBlocks);
 
 		// Finish if all expected Blocks have been read
 		if (remainingBlocks.isEmpty()) {
@@ -329,7 +330,7 @@ public abstract class AbstractOpenemsSunSpecComponent extends AbstractOpenemsMod
 					var values = rer.values();
 					var blockId = values.get(0);
 
-					this.log.debug("Read next SunSpec value at " + startAddress + ", blockId=" + blockId);
+					this.log.debug("Read next SunSpec value at {}, blockId={}", startAddress, blockId);
 					// END_OF_MAP
 					if (blockId == null || blockId == 0xFFFF) {
 						if (!this.areRequiredModelsRead()) {
@@ -361,8 +362,7 @@ public abstract class AbstractOpenemsSunSpecComponent extends AbstractOpenemsMod
 							}
 						} else {
 							// This block is not considered, because the Model is not active
-							this.logInfo(this.log,
-									"Ignoring SunSpec-Model [" + blockId + "] starting at [" + startAddress + "]");
+							this.log.info("Ignoring SunSpec-Model [{}] starting at [{}]", blockId, startAddress);
 						}
 
 					}
@@ -443,8 +443,8 @@ public abstract class AbstractOpenemsSunSpecComponent extends AbstractOpenemsMod
 	 * @param priority     the reading priority
 	 */
 	protected void addBlock(int startAddress, SunSpecModel model, Priority priority) {
-		this.logInfo(this.log, "Adding SunSpec-Model [" + model.getBlockId() + ":" + model.label() + "] starting at ["
-				+ startAddress + "]");
+		this.log.info("Adding SunSpec-Model [{}:{}] starting at [{}]", model.getBlockId(), model.label(),
+				startAddress);
 		this.readModels.add(model);
 
 		var readElements = new ArrayList<ModbusElement>();
@@ -517,7 +517,7 @@ public abstract class AbstractOpenemsSunSpecComponent extends AbstractOpenemsMod
 						final var channel = this.getSunSpecChannelOrError(point);
 						channel.setNextValue(t.test(point));
 					} catch (Exception e) {
-						this.logWarn(this.log, "Missing SunSpec Channel for point [" + point + "]: " + e.getMessage());
+						this.log.warn("Missing SunSpec Channel for point [{}]: {}", point, e.getMessage());
 					}
 				}
 			});
@@ -618,8 +618,7 @@ public abstract class AbstractOpenemsSunSpecComponent extends AbstractOpenemsMod
 							return new ElementToChannelScaleFactorConverter(Integer.parseInt(svp.scaleFactor));
 						} catch (NumberFormatException e) {
 							// Unable to parse Scale-Factor to static value
-							this.logError(this.log, "Unable to parse Scale-Factor [" + svp.scaleFactor + "] for Point ["
-									+ point.name + "]");
+							this.log.error("Unable to parse Scale-Factor [{}] for Point [{}]", svp.scaleFactor, point.name);
 							return null;
 						}
 					}); //

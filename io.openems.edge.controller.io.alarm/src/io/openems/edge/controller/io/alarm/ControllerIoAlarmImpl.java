@@ -8,7 +8,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.types.ChannelAddress;
@@ -28,7 +27,7 @@ import io.openems.edge.controller.api.Controller;
 public class ControllerIoAlarmImpl extends AbstractOpenemsComponent
 		implements ControllerIoAlarm, Controller, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(ControllerIoAlarmImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ComponentManager componentManager;
@@ -76,7 +75,7 @@ public class ControllerIoAlarmImpl extends AbstractOpenemsComponent
 				.getChannel(ChannelAddress.fromString(this.config.outputChannelAddress()));
 		var currentValueOpt = outputChannel.value().asOptional();
 		if (!currentValueOpt.isPresent() || currentValueOpt.get() != setOutput) {
-			this.logInfo(this.log, "Set output [" + outputChannel.address() + "] " + setOutput + ".");
+			this.log.info("Set output [{}] {}.", outputChannel.address(), setOutput);
 			outputChannel.setNextWriteValue(setOutput);
 		}
 	}

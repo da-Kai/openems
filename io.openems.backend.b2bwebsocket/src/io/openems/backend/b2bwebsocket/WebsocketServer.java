@@ -1,7 +1,6 @@
 package io.openems.backend.b2bwebsocket;
 
 import org.java_websocket.WebSocket;
-import org.slf4j.Logger;
 
 import io.openems.common.websocket.AbstractWebsocketServer;
 
@@ -19,12 +18,11 @@ public class WebsocketServer extends AbstractWebsocketServer<WsData> {
 		this.parent = parent;
 		this.onOpen = new OnOpen(//
 				() -> parent.metadata, //
-				() -> parent.userAuthService, //
-				this::logInfo);
+				() -> parent.userAuthService);
 		this.onRequest = new OnRequest(parent);
-		this.onNotification = new OnNotification(parent);
-		this.onError = new OnError(parent);
-		this.onClose = new OnClose(parent);
+		this.onNotification = new OnNotification(name);
+		this.onError = new OnError(name);
+		this.onClose = new OnClose(name);
 	}
 
 	@Override
@@ -55,20 +53,5 @@ public class WebsocketServer extends AbstractWebsocketServer<WsData> {
 	@Override
 	protected OnClose getOnClose() {
 		return this.onClose;
-	}
-
-	@Override
-	protected void logInfo(Logger log, String message) {
-		this.parent.logInfo(log, message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		this.parent.logWarn(log, message);
-	}
-
-	@Override
-	protected void logError(Logger log, String message) {
-		this.parent.logError(log, message);
 	}
 }

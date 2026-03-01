@@ -17,7 +17,6 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonArray;
 
@@ -47,7 +46,7 @@ import io.openems.edge.meter.api.ElectricityMeter;
 public class ControllerEssBalancingScheduleImpl extends AbstractOpenemsComponent
 		implements ControllerEssBalancingSchedule, Controller, OpenemsComponent, ComponentJsonApi {
 
-	private final Logger log = LoggerFactory.getLogger(ControllerEssBalancingScheduleImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ConfigurationAdmin cm;
@@ -93,8 +92,7 @@ public class ControllerEssBalancingScheduleImpl extends AbstractOpenemsComponent
 
 		} catch (OpenemsNamedException e) {
 			this._setScheduleParseFailed(true);
-			this.logError(this.log, "Unable to parse Schedule: " + e.getMessage());
-			e.printStackTrace();
+			this.log.error("Unable to parse Schedule: {}", e.getMessage(), e);
 		}
 	}
 
@@ -136,7 +134,7 @@ public class ControllerEssBalancingScheduleImpl extends AbstractOpenemsComponent
 		 */
 		var gridMode = this.ess.getGridMode();
 		if (gridMode.isUndefined()) {
-			this.logWarn(this.log, "Grid-Mode is [UNDEFINED]");
+			this.log.warn("Grid-Mode is [UNDEFINED]");
 		}
 		switch (gridMode) {
 		case ON_GRID:

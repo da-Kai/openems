@@ -29,7 +29,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.channel.Level;
@@ -100,7 +99,7 @@ public class BatteryFeneconHomeImpl extends AbstractOpenemsModbusComponent imple
 
 	protected final StateMachine stateMachine = new StateMachine(State.UNDEFINED);
 
-	private final Logger log = LoggerFactory.getLogger(BatteryFeneconHomeImpl.class);
+	private final Logger log;
 	private final AtomicReference<StartStop> startStopTarget = new AtomicReference<>(StartStop.UNDEFINED);
 
 	private Instant timeCriticalMinVoltage;
@@ -134,6 +133,7 @@ public class BatteryFeneconHomeImpl extends AbstractOpenemsModbusComponent imple
 				BatteryProtection.ChannelId.values(), //
 				BatteryFeneconHome.ChannelId.values() //
 		);
+		this.log = OpenemsComponent.getComponentLogger(this);
 	}
 
 	@Activate
@@ -186,7 +186,7 @@ public class BatteryFeneconHomeImpl extends AbstractOpenemsModbusComponent imple
 		var batteryStartUpRelay = batteryStartUpRelayChannel != null ? batteryStartUpRelayChannel.value().get() : null;
 		var context = new Context(this, this.componentManager.getClock(), //
 				batteryStartUpRelay,
-				value -> setBatteryStartUpRelay(batteryStartUpRelayChannel, value, this::logInfo, this::logWarn), //
+				value -> setBatteryStartUpRelay(batteryStartUpRelayChannel, value, this.log), //
 				this.getBmsControl(), //
 				this.getModbusCommunicationFailed(), //
 				this::retryModbusCommunication);
@@ -199,7 +199,7 @@ public class BatteryFeneconHomeImpl extends AbstractOpenemsModbusComponent imple
 
 		} catch (OpenemsNamedException e) {
 			this.channel(BatteryFeneconHome.ChannelId.RUN_FAILED).setNextValue(true);
-			this.logError(this.log, "StateMachine failed: " + e.getMessage());
+			this.log.error("StateMachine failed: {}", e.getMessage());
 		}
 	}
 
@@ -409,7 +409,7 @@ public class BatteryFeneconHomeImpl extends AbstractOpenemsModbusComponent imple
 
 					var hardwareType = parseHardwareTypeFromRegisterValue(value);
 					if (hardwareType == null) {
-						this.logWarn(this.log, "Unable to Identify Hardware Type from Register value [" + value + "]");
+						this.log.warn("Unable to Identify Hardware Type from Register value [{}]", value);
 						hardwareType = BatteryFeneconHomeHardwareType.DEFAULT;
 					}
 					this.updateHardwareType(hardwareType);
@@ -576,7 +576,7 @@ public class BatteryFeneconHomeImpl extends AbstractOpenemsModbusComponent imple
 		try {
 			this.initializeTowerModulesChannels(numberOfTowers, numberOfModulesPerTower);
 		} catch (OpenemsException e) {
-			this.logError(this.log, "Unable to initialize tower modules channels: " + e.getMessage());
+			this.log.error("Unable to initialize tower modules channels: {}", e.getMessage());
 			e.printStackTrace();
 		}
 	}
@@ -1034,14 +1034,6 @@ public class BatteryFeneconHomeImpl extends AbstractOpenemsModbusComponent imple
 		return (1 << length) - 1 & value >> position - 1;
 	}
 
-	private void logInfo(String message) {
-		this.logInfo(this.log, message);
-	}
-
-	private void logWarn(String message) {
-		this.logWarn(this.log, message);
-	}
-
 	/**
 	 * Gets the Battery-Start-Up-Relay Channel.
 	 * 
@@ -1052,7 +1044,7 @@ public class BatteryFeneconHomeImpl extends AbstractOpenemsModbusComponent imple
 			return this.componentManager
 					.<BooleanWriteChannel>getChannel(ChannelAddress.fromString(this.config.batteryStartUpRelay()));
 		} catch (Exception e) {
-			this.logWarn("Unable to get Battery-Start-Up-Relay: " + e.getMessage());
+			this.log.warn("Unable to get Battery-Start-Up-Relay: {}", e.getMessage());
 			return null;
 		}
 	}
@@ -1064,29 +1056,25 @@ public class BatteryFeneconHomeImpl extends AbstractOpenemsModbusComponent imple
 	 *                                   {@link BooleanWriteChannel}; or null
 	 * @param value                      true to switch the relay on; <br/>
 	 *                                   false to switch the relay off
-	 * @param logInfo                    Consumer for log messages
-	 * @param logWarn                    Consumer for warn messages
+	 * @param log                        the logger to log the switching process
 	 */
-	private static void setBatteryStartUpRelay(BooleanWriteChannel batteryStartUpRelayChannel, boolean value,
-			Consumer<String> logInfo, Consumer<String> logWarn) {
+	private static void setBatteryStartUpRelay(BooleanWriteChannel batteryStartUpRelayChannel, boolean value, Logger log) {
 		var valueString = value ? "ON" : "OFF";
-
-		String logMessage = "Switching Battery Start Up Relay ";
 
 		// Validate availability of batteryStartUpRelay, otherwise ignore
 		if (batteryStartUpRelayChannel == null) {
-			logWarn.accept(logMessage + valueString + " failed. Relay is missing");
+			log.warn("Switching Battery Start Up Relay {} failed. Relay is missing", valueString);
 			return;
 		}
 
 		// Switch StartUpRelay
 		try {
 			batteryStartUpRelayChannel.setNextWriteValue(value);
-			logInfo.accept(logMessage + valueString //
-					+ " [" + batteryStartUpRelayChannel.address() + "]");
+			log.info("Switching Battery Start Up Relay {} [{}]", valueString,
+					batteryStartUpRelayChannel.address());
 		} catch (OpenemsNamedException e) {
-			logWarn.accept(logMessage + valueString //
-					+ " failed [" + batteryStartUpRelayChannel.address() + "]: " + e.getMessage());
+			log.warn("Switching Battery Start Up Relay {} failed [{}]: {}", valueString,
+					batteryStartUpRelayChannel.address(), e.getMessage());
 		}
 	}
 

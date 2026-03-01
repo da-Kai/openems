@@ -19,7 +19,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -53,7 +52,7 @@ import io.openems.edge.ess.power.api.Power;
 public class EssClusterImpl extends AbstractOpenemsComponent implements EssCluster, ManagedAsymmetricEss, AsymmetricEss,
 		ManagedSymmetricEss, SymmetricEss, MetaEss, OpenemsComponent, ModbusSlave, EventHandler, StartStoppable {
 
-	private final Logger log = LoggerFactory.getLogger(EssClusterImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final AtomicReference<StartStop> startStopTarget = new AtomicReference<>(StartStop.UNDEFINED);
 	private final ChannelManager channelManager = new ChannelManager(this);
 	private final List<SymmetricEss> esss = new CopyOnWriteArrayList<>();
@@ -182,7 +181,7 @@ public class EssClusterImpl extends AbstractOpenemsComponent implements EssClust
 					try {
 						ess.setStartStop(target);
 					} catch (OpenemsNamedException e) {
-						this.logError(this.log, e.getMessage());
+						this.log.error(e.getMessage());
 					}
 				});
 	}

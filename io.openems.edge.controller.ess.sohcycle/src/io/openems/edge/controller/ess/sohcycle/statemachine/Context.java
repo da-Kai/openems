@@ -17,7 +17,6 @@ import io.openems.edge.controller.ess.sohcycle.BatteryBalanceStatus;
 import io.openems.edge.controller.ess.sohcycle.Config;
 import io.openems.edge.controller.ess.sohcycle.ControllerEssSohCycle;
 import io.openems.edge.controller.ess.sohcycle.ControllerEssSohCycleImpl;
-import io.openems.edge.controller.ess.sohcycle.LogVerbosity;
 import io.openems.edge.ess.api.ManagedSymmetricEss;
 
 public class Context extends AbstractContext<ControllerEssSohCycleImpl> {
@@ -106,22 +105,6 @@ public class Context extends AbstractContext<ControllerEssSohCycleImpl> {
         return new ReferenceTargetResult(soc, limitedPower, thresholdReached);
     }
 
-    @Override
-    public void logInfo(Logger logger, String message) {
-        if (this.config.logVerbosity() != LogVerbosity.DEBUG_LOG) {
-            return;
-        }
-        super.logInfo(logger, message);
-    }
-
-	@Override
-	public void logDebug(Logger logger, String message) {
-		if (this.config.logVerbosity() != LogVerbosity.DEBUG_LOG) {
-			return;
-		}
-		super.logDebug(logger, message);
-	}
-
     /**
      * Logs a standardized charging/discharging message when DEBUG_LOG is enabled.
      * @param logger   destination logger
@@ -133,9 +116,8 @@ public class Context extends AbstractContext<ControllerEssSohCycleImpl> {
     public void logPowerState(Logger logger, StateMachine.State state, ReferenceTargetResult result,
  			int targetSoc, boolean charging) {
  		final String mode = charging ? "charging" : "discharging";
- 		this.logInfo(logger, String.format(
- 				"%s: SoC=%d%%, target=%d%%, %s with %.1f W (C-rate=%.1f)",
- 				state.getName(), result.soc(), targetSoc, mode, result.limitedPower(), C_RATE));
+ 		log.info("{}: SoC={}%, target={}, {} with {} W (C-rate={})", //
+ 				state.getName(), result.soc(), targetSoc, mode, result.limitedPower(), C_RATE);
  	}
 
     /**
@@ -153,9 +135,8 @@ public class Context extends AbstractContext<ControllerEssSohCycleImpl> {
         final var capacityValue = this.ess.getCapacity();
 
         if (!socValue.isDefined() || !maxPowerValue.isDefined() || !capacityValue.isDefined()) {
-            this.logError(log, String.format(
-                    "Cannot calculate power details: socDefined=%s, maxPowerDefined=%s, capacityDefined=%s",
-                    socValue.isDefined(), maxPowerValue.isDefined(), capacityValue.isDefined()));
+            log.info("Cannot calculate power details: socDefined={}, maxPowerDefined={}, capacityDefined={}",
+                    socValue.isDefined(), maxPowerValue.isDefined(), capacityValue.isDefined());
             return null;
         }
 
@@ -208,13 +189,13 @@ public class Context extends AbstractContext<ControllerEssSohCycleImpl> {
     public VoltageDeltaResult calculateCellVoltageDeltaWithReason() {
         final var maxVoltage = this.getMeasurementChargingMaxVoltage();
         if (maxVoltage == null) {
-            this.logDebug(log, "Cell voltage delta undefined: max cell voltage not available");
+            log.debug("Cell voltage delta undefined: max cell voltage not available");
             return new VoltageDeltaResult(null, BatteryBalanceError.MAX_VOLTAGE_UNDEFINED);
         }
 
         final Integer minVoltage = this.getMeasurementChargingMaxMinVoltage();
         if (minVoltage == null) {
-            this.logDebug(log, "Cell voltage delta undefined: baseline min voltage not yet captured");
+            log.debug("Cell voltage delta undefined: baseline min voltage not yet captured");
             return new VoltageDeltaResult(null, BatteryBalanceError.BASELINE_MIN_MISSING);
         }
 
@@ -311,17 +292,17 @@ public class Context extends AbstractContext<ControllerEssSohCycleImpl> {
      */
     public void ensureMeasurementStartEnergyWh(Value<Long> energyValue) {
         if (energyValue == null || !energyValue.isDefined()) {
-            this.logDebug(log,"Measurement baseline not captured: energy undefined at this step");
+            log.debug("Measurement baseline not captured: energy undefined at this step");
             return;
         }
         final var existing = this.getParent().getMeasurementStartEnergyWh();
         if (existing == null) {
             final var currentEnergyWh = energyValue.get();
             this.getParent().setMeasurementStartEnergyWh(currentEnergyWh);
-            this.logDebug(log,"Measurement baseline captured: %d Wh".formatted(currentEnergyWh));
+            log.debug("Measurement baseline captured: {} Wh", currentEnergyWh);
         } else {
             // Baseline already set; do not overwrite
-            this.logDebug(log, "Measurement baseline already set: %d Wh; keeping existing value".formatted(existing));
+            log.debug("Measurement baseline already set: {} Wh; keeping existing value", existing);
         }
     }
 
@@ -333,11 +314,11 @@ public class Context extends AbstractContext<ControllerEssSohCycleImpl> {
      */
     public Optional<SohResult> calculateSoh(Long measuredCapacityWh) {
         if (!this.ess.getCapacity().isDefined()) {
-            logWarn(log,"SoH calculation skipped: nominal capacity undefined");
+            log.warn("SoH calculation skipped: nominal capacity undefined");
             return Optional.empty();
         }
         if (measuredCapacityWh == null || measuredCapacityWh <= 0) {
-            logWarn(log, "Invalid measured capacity for SoH calculation: %d Wh".formatted(measuredCapacityWh));
+            log.warn("Invalid measured capacity for SoH calculation: {} Wh", measuredCapacityWh);
             return Optional.empty();
         }
 

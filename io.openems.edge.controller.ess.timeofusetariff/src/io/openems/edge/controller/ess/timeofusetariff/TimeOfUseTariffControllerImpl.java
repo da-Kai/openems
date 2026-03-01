@@ -26,7 +26,6 @@ import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.jscalendar.JSCalendar.Tasks.OneTask;
@@ -68,7 +67,7 @@ import io.openems.edge.timeofusetariff.api.TimeOfUseTariff;
 public class TimeOfUseTariffControllerImpl extends AbstractOpenemsComponent implements TimeOfUseTariffController,
 		EnergySchedulable, Controller, OpenemsComponent, TimedataProvider, ComponentJsonApi {
 
-	private final Logger log = LoggerFactory.getLogger(TimeOfUseTariffControllerImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Deprecated
 	private final EnergyScheduleHandlerV1 energyScheduleHandlerV1;
@@ -170,7 +169,7 @@ public class TimeOfUseTariffControllerImpl extends AbstractOpenemsComponent impl
 	@Override
 	public void run() throws OpenemsNamedException {
 		if (this.energyScheduler == null) {
-			this.logWarn(this.log, "EnergyScheduler reference is not available");
+			this.log.warn("EnergyScheduler reference is not available");
 			return;
 		}
 
@@ -255,7 +254,7 @@ public class TimeOfUseTariffControllerImpl extends AbstractOpenemsComponent impl
 	public void buildJsonApiRoutes(JsonApiBuilder builder) {
 		builder.handleRequest(GetScheduleRequest.METHOD, call -> {
 			if (this.energyScheduler == null) {
-				this.logWarn(this.log, "EnergyScheduler reference is not available");
+				this.log.warn("EnergyScheduler reference is not available");
 				throw new IllegalStateException("No EnergyScheduler reference available");
 			}
 

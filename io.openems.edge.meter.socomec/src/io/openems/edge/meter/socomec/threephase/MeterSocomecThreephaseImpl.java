@@ -17,7 +17,6 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsException;
@@ -45,7 +44,7 @@ import io.openems.edge.meter.socomec.SocomecMeter;
 public class MeterSocomecThreephaseImpl extends AbstractSocomecMeter implements MeterSocomecThreephase, SocomecMeter,
 		ElectricityMeter, ModbusComponent, OpenemsComponent, ModbusSlave {
 
-	private final Logger log = LoggerFactory.getLogger(MeterSocomecThreephaseImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ConfigurationAdmin cm;
@@ -348,7 +347,7 @@ public class MeterSocomecThreephaseImpl extends AbstractSocomecMeter implements 
 	}
 
 	private void thisIsNotAThreePhaseMeter() {
-		this.logError(this.log, "This is not a threephase meter!");
+		this.log.error("This is not a threephase meter!");
 		this.channel(MeterSocomecThreephase.ChannelId.NOT_A_THREEPHASE_METER).setNextValue(true);
 	}
 

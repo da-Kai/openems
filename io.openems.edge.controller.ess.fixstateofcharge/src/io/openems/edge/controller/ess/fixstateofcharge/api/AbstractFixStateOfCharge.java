@@ -18,7 +18,6 @@ import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Stopwatch;
 
@@ -84,7 +83,7 @@ public abstract class AbstractFixStateOfCharge extends AbstractOpenemsComponent
 	 */
 	private final Stopwatch stopwatch = Stopwatch.createUnstarted();
 
-	private final Logger log = LoggerFactory.getLogger(AbstractFixStateOfCharge.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	private ConfigProperties config;
 
@@ -188,7 +187,7 @@ public abstract class AbstractFixStateOfCharge extends AbstractOpenemsComponent
 
 		} catch (OpenemsNamedException e) {
 			this.channel(Controller.ChannelId.RUN_FAILED).setNextValue(true);
-			this.logError(this.log, "StateMachine failed: " + e.getMessage());
+			this.log.error("StateMachine failed: {}", e.getMessage());
 		}
 
 		return context;
@@ -323,7 +322,7 @@ public abstract class AbstractFixStateOfCharge extends AbstractOpenemsComponent
 		try {
 			var pid = this.servicePid();
 			if (pid.isEmpty()) {
-				this.logInfo(this.log, "PID of " + this.id() + " is Empty");
+				this.log.error("PID of {} is Empty", this.id());
 				return;
 			}
 			c = this.getConfigurationAdmin().getConfiguration(pid, "?");
@@ -335,7 +334,7 @@ public abstract class AbstractFixStateOfCharge extends AbstractOpenemsComponent
 				c.update(properties);
 			}
 		} catch (IOException | SecurityException e) {
-			this.logError(this.log, "ERROR: " + e.getMessage());
+			this.log.error("ERROR: {}", e.getMessage());
 		}
 	}
 

@@ -30,7 +30,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -90,7 +89,7 @@ public class BatterySoltaroClusterVersionCImpl extends AbstractOpenemsModbusComp
 
 	private static final int WATCHDOG = 90;
 
-	private final Logger log = LoggerFactory.getLogger(BatterySoltaroClusterVersionCImpl.class);
+	private final Logger log;
 	private final StateMachine stateMachine = new StateMachine(State.UNDEFINED);
 	private final TreeSet<Rack> racks = new TreeSet<>();
 
@@ -119,6 +118,7 @@ public class BatterySoltaroClusterVersionCImpl extends AbstractOpenemsModbusComp
 				BatterySoltaroClusterVersionC.ChannelId.values(), //
 				BatteryProtection.ChannelId.values() //
 		);
+		this.log = OpenemsComponent.getComponentLogger(this);
 
 	}
 
@@ -167,9 +167,7 @@ public class BatterySoltaroClusterVersionCImpl extends AbstractOpenemsModbusComp
 				try {
 					this.updateRackChannels(numberOfTower, racks);
 				} catch (OpenemsException e) {
-					this.logError(this.log,
-							"Error while updatingRackChannels(" + numberOfTower + "): " + e.getMessage());
-					e.printStackTrace();
+					this.log.error("Error while updatingRackChannels({}): {}", numberOfTower, e.getMessage(), e);
 				}
 				this.racks.addAll(racks);
 			});
@@ -744,7 +742,7 @@ public class BatterySoltaroClusterVersionCImpl extends AbstractOpenemsModbusComp
 
 		} catch (OpenemsNamedException e) {
 			this.channel(BatterySoltaroClusterVersionC.ChannelId.RUN_FAILED).setNextValue(true);
-			this.logError(this.log, "StateMachine failed: " + e.getMessage());
+			this.log.error("StateMachine failed: {}", e.getMessage());
 		}
 	}
 

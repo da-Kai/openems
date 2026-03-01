@@ -110,10 +110,9 @@ public class PeriodicWriteWorker {
 			edge.updateOpenemsIsConnected(edgesByConnection.getOrDefault(false, emptySet()), false);
 			edge.updateOpenemsIsConnected(edgesByConnection.getOrDefault(true, emptySet()), true);
 			if (PeriodicWriteWorker.DEBUG_MODE) {
-				this.parent.logInfo(this.log,
-						"Update Edge connection states online["
-								+ edgesByConnection.getOrDefault(true, emptySet()).size() + "] offline["
-								+ edgesByConnection.getOrDefault(false, emptySet()).size() + "]");
+				this.log.info("Update Edge connection states online[{}] offline[{}]", //
+						edgesByConnection.getOrDefault(true, emptySet()).size(), //
+						edgesByConnection.getOrDefault(false, emptySet()).size());
 			}
 
 			// Sum-State
@@ -124,7 +123,7 @@ public class PeriodicWriteWorker {
 				edge.updateSumState(stateEntry.getValue(), stateEntry.getKey());
 			}
 			if (PeriodicWriteWorker.DEBUG_MODE) {
-				this.parent.logInfo(this.log, "Update Edge sum states " + Stream.of(Level.values()) //
+				this.log.info("Update Edge sum states {}", Stream.of(Level.values()) //
 						.map(level -> {
 							final var itemsToUpdate = edgesByState.getOrDefault(level, emptySet());
 							return level.getName() + "[" + itemsToUpdate.size() + "]";
@@ -192,9 +191,8 @@ public class PeriodicWriteWorker {
 	private synchronized void debugLog() {
 		var now = LocalDateTime.now();
 		if (this.lastExecute != null) {
-			this.parent.logInfo(this.log, "PeriodicWriteWorker. " //
-					+ "Time since last run: [" + ChronoUnit.SECONDS.between(this.lastExecute, now) + "s]" //
-			);
+			this.log.info("PeriodicWriteWorker. Time since last run: [{}s]", //
+					ChronoUnit.SECONDS.between(this.lastExecute, now));
 		}
 		this.lastExecute = now;
 	}

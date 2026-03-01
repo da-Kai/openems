@@ -41,7 +41,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -76,6 +75,7 @@ import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.common.jsonrpc.request.GetEdgesRequest.PaginationOptions;
 import io.openems.common.jsonrpc.response.GetEdgesResponse.EdgeMetadata;
+import io.openems.common.logger.ContextLogger;
 import io.openems.common.oem.OpenemsBackendOem;
 import io.openems.common.session.Language;
 import io.openems.common.session.Role;
@@ -105,7 +105,7 @@ public class MetadataOdoo extends AbstractMetadata implements AppCenterMetadata,
 	public static final String ODOO_SETUP_PROTOCOL_EDGE_FIELD = "device_id";
 	public static final int EXPECTED_NUMBER_OF_EDGES = 1_000;
 	
-	private final Logger log = LoggerFactory.getLogger(MetadataOdoo.class);
+	private final Logger log;
 	private final EdgeCache edgeCache;
 	private final OdooEdgeHandler edgeHandler = new OdooEdgeHandler(this);
 	/** Maps User-ID to {@link User}. */
@@ -137,18 +137,18 @@ public class MetadataOdoo extends AbstractMetadata implements AppCenterMetadata,
 
 	public MetadataOdoo() {
 		super("Metadata.Odoo");
-
+		this.log = new ContextLogger(MetadataOdoo.class, getName());
 		this.edgeCache = new EdgeCache(this);
 	}
 
 	@Activate
 	private void activate(Config config, ComponentContext context) throws SQLException {
-		this.logInfo(this.log, "Activate. " //
-				+ "Odoo [" + config.odooHost() + ":" + config.odooPort() + ";PW "
-				+ (config.odooPassword() != null ? "ok" : "NOT_SET") + "] " //
-				+ "Postgres [" + config.pgHost() + ":" + config.pgPort() + ";PW "
-				+ (config.pgPassword() != null ? "ok" : "NOT_SET") + "] " //
-				+ "Database [" + config.database() + "]");
+		this.log.info("Activate. Odoo [{}:{};PW {}] Postgres [{}:{};PW {}] Database [{}]", //
+				config.odooHost(), config.odooPort(),
+				(config.odooPassword() != null ? "ok" : "NOT_SET"), //
+				config.pgHost(), config.pgPort(),
+				(config.pgPassword() != null ? "ok" : "NOT_SET"), //
+				config.database());
 
 		this.debugMode = config.debugMode();
 		this.authOAuthProviderName = config.authOAuthProviderName();
@@ -162,9 +162,7 @@ public class MetadataOdoo extends AbstractMetadata implements AppCenterMetadata,
 
 		this.odooHandler = new OdooHandler(this, this.edgeCache, config, this.refreshTokenExecutor,
 				this.requestExecutor);
-		this.postgresHandler = new PostgresHandler(this, this.edgeCache, config, () -> {
-			this.setInitialized();
-		});
+		this.postgresHandler = new PostgresHandler(this.getName(), this.edgeCache, config, this::setInitialized);
 
 		this.enablePasswordAuthentication = config.enablePasswordAuthentication();
 		if (config.enablePasswordAuthentication()) {
@@ -175,7 +173,7 @@ public class MetadataOdoo extends AbstractMetadata implements AppCenterMetadata,
 
 	@Deactivate
 	private void deactivate() {
-		this.logInfo(this.log, "Deactivate");
+		this.log.info("Deactivate");
 		shutdownAndAwaitTermination(this.eventExecutor, 5);
 		shutdownAndAwaitTermination(this.requestExecutor, 5);
 		shutdownAndAwaitTermination(this.refreshTokenExecutor, 5);
@@ -312,21 +310,6 @@ public class MetadataOdoo extends AbstractMetadata implements AppCenterMetadata,
 	}
 
 	@Override
-	public void logInfo(Logger log, String message) {
-		super.logInfo(log, message);
-	}
-
-	@Override
-	public void logWarn(Logger log, String message) {
-		super.logWarn(log, message);
-	}
-
-	@Override
-	public void logError(Logger log, String message) {
-		super.logError(log, message);
-	}
-
-	@Override
 	public void addEdgeToUser(User user, Edge edge) throws OpenemsNamedException {
 		this.odooHandler.assignEdgeToUser(user, (MyEdge) edge, OdooUserRole.INSTALLER);
 		this.setRole(user, edge.getId(), Role.INSTALLER);
@@ -450,8 +433,7 @@ public class MetadataOdoo extends AbstractMetadata implements AppCenterMetadata,
 				this.postgresHandler.edge.updateProductType(edge.getOdooId(), producttype);
 			}).whenComplete((r, t) -> {
 				if (t != null) {
-					this.logWarn(this.log, "Edge [" + edge.getId() + "] " //
-							+ "Unable to insert update Product Type: " + t.getMessage());
+					this.log.warn("Edge [{}] Unable to insert update Product Type: {}", t.getMessage());
 				}
 			});
 		}
@@ -465,7 +447,7 @@ public class MetadataOdoo extends AbstractMetadata implements AppCenterMetadata,
 			this.postgresHandler.edge.insertGenericSystemLog(edge.getOdooId(), systemLog);
 		}).whenComplete((r, t) -> {
 			if (t != null) {
-				this.logWarn(this.log, "Unable to insert " + t.getMessage());
+				this.log.warn("Unable to insert {}", t.getMessage());
 			}
 		});
 	}
@@ -475,8 +457,8 @@ public class MetadataOdoo extends AbstractMetadata implements AppCenterMetadata,
 		if (this.pendingEdgeConfigIds.putIfAbsent(edge.getId(), Boolean.TRUE) != null) {
 			// A task for this Edge-ID is already scheduled
 			// TODO it would be better to drop the old task and not the new one
-			this.logWarn(this.log,
-					"Edge [" + edge.getId() + "]. Update config ignored: another task is already scheduled");
+			this.log.warn("Edge [{}]. Update config ignored: another task is already scheduled",
+					edge.getId());
 			return;
 		}
 
@@ -489,7 +471,7 @@ public class MetadataOdoo extends AbstractMetadata implements AppCenterMetadata,
 
 			} catch (OpenemsNamedException e) {
 				oldConfig = EdgeConfig.empty();
-				this.logWarn(this.log, "Edge [" + edge.getId() + "]. " + e.getMessage());
+				this.log.warn("Edge [{}]. {}", edge.getId(), e.getMessage());
 			}
 
 			var diff = EdgeConfigDiff.diff(newConfig, oldConfig);
@@ -497,14 +479,13 @@ public class MetadataOdoo extends AbstractMetadata implements AppCenterMetadata,
 				// Update "EdgeConfigUpdate"
 				var diffString = diff.toString();
 				if (!diffString.isBlank()) {
-					this.logInfo(this.log, "Edge [" + edge.getId() + "]. Update config: " + diff.toString());
+					this.log.info("Edge [{}]. Update config: {}", edge.getId(), diffString);
 				}
 
 				try {
 					this.postgresHandler.edge.insertEdgeConfigUpdate(edge.getOdooId(), diff);
 				} catch (SQLException | OpenemsNamedException e) {
-					this.logWarn(this.log, "Edge [" + edge.getId() + "] " //
-							+ "Unable to insert EdgeConfigUpdate: " + e.getMessage());
+					this.log.warn("Edge [{}] Unable to insert EdgeConfigUpdate: {}", edge.getId(), e.getMessage());
 				}
 			}
 
@@ -512,8 +493,7 @@ public class MetadataOdoo extends AbstractMetadata implements AppCenterMetadata,
 			try {
 				this.postgresHandler.edge.updateEdgeConfig(edge.getOdooId(), newConfig);
 			} catch (SQLException | OpenemsNamedException e) {
-				this.logWarn(this.log, "Edge [" + edge.getId() + "] " //
-						+ "Unable to insert EdgeConfigUpdate: " + e.getMessage());
+				this.log.warn("Edge [{}] Unable to update EdgeConfig: {}", edge.getId(), e.getMessage());
 			}
 
 			EventBuilder.from(this.eventAdmin, Edge.Events.ON_UPDATE_CONFIG) //
@@ -524,7 +504,7 @@ public class MetadataOdoo extends AbstractMetadata implements AppCenterMetadata,
 		}).whenComplete((r, t) -> {
 			this.pendingEdgeConfigIds.remove(edge.getId());
 			if (t != null) {
-				this.logWarn(this.log, "Unable to SetConfig " + t.getMessage());
+				this.log.warn("Unable to SetConfig {}", t.getMessage());
 			}
 		});
 	}
@@ -701,8 +681,7 @@ public class MetadataOdoo extends AbstractMetadata implements AppCenterMetadata,
 						this.setRole(user, metadata.id(), metadata.role());
 						resultMetadata.add(metadata);
 					} catch (OpenemsNamedException e) {
-						this.logWarn(this.log,
-								"Unable to read EdgeMetadata for [" + jElement.toString() + "]: " + e.getMessage());
+						this.log.warn("Unable to read EdgeMetadata for [{}]: {}", jElement.toString(), e.getMessage());
 						lastException = e;
 					}
 				}

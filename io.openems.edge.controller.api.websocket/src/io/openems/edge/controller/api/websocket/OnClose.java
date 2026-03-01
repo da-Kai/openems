@@ -2,15 +2,15 @@ package io.openems.edge.controller.api.websocket;
 
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import io.openems.common.logger.ContextLogger;
 
 public class OnClose implements io.openems.common.websocket.OnClose {
 
-	private final Logger log = LoggerFactory.getLogger(OnClose.class);
-	private final ControllerApiWebsocketImpl parent;
+	private final Logger log;
 
-	public OnClose(ControllerApiWebsocketImpl parent) {
-		this.parent = parent;
+	public OnClose(String name) {
+		this.log = new ContextLogger(OnClose.class, name);
 	}
 
 	@Override
@@ -20,13 +20,11 @@ public class OnClose implements io.openems.common.websocket.OnClose {
 		var user = wsData.getUser();
 
 		// print log message
-		String logMessage;
 		if (user.isPresent()) {
-			logMessage = "User [" + user.get() + "] closed websocket connection.";
+			this.log.info("User [{}] closed websocket connection.", user.get());
 		} else {
-			logMessage = "Unknown User [" + wsData.getSessionToken() + "] closed websocket connection.";
+			this.log.info("Unknown User [{}] closed websocket connection.", wsData.getSessionToken());
 		}
-		this.parent.logInfo(this.log, logMessage);
 	}
 
 }

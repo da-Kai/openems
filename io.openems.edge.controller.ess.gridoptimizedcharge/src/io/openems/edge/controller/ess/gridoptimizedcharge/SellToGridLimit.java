@@ -48,9 +48,10 @@ public class SellToGridLimit {
 		var essMinChargePower = gridPower + essActivePower + maximumSellToGridPower;
 
 		// Log debug
-		this.parent.logDebug("Maximum Discharge/Minimum Charge Power: " + essMinChargePower + "(Grid:" + gridPower
-				+ " + Ess:" + essActivePower + " + MaximumGrid:" + maximumSellToGridPower + ")| Last limit: "
-				+ this.lastSellToGridLimit);
+		this.parent.debug().setMessage("Maximum Discharge/Minimum Charge Power: {} (Grid:{} + Ess:{} + MaximumGrid:{})| Last limit: {}")
+			.addArgument(essMinChargePower).addArgument(gridPower).addArgument(essActivePower)
+			.addArgument(maximumSellToGridPower).addArgument(this.lastSellToGridLimit)
+			.log();
 
 		return this.applyPowerRamp(essMinChargePower);
 	}
@@ -101,7 +102,7 @@ public class SellToGridLimit {
 		if (Math.abs(this.lastSellToGridLimit - essPowerLimit) > rampValue) {
 			essPowerLimit = this.lastSellToGridLimit + rampValue;
 			// REMOVE
-			this.parent.logDebug("Ramp added: " + rampValue);
+			this.parent.debug().setMessage("Ramp added: {}").addArgument(rampValue).log();
 		}
 		return essPowerLimit;
 	}

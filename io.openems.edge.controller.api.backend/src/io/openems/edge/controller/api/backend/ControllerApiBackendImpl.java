@@ -69,7 +69,7 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 	public static final Key<WebsocketClient> WEBSOCKET_CLIENT_KEY = new Key<>("websocketClient", WebsocketClient.class);
 
 	protected final SendChannelValuesWorker sendChannelValuesWorker = new SendChannelValuesWorker(this);
-	protected final ApiWorker apiWorker = new ApiWorker(this);
+	protected final ApiWorker apiWorker = new ApiWorker(this.id());
 
 	private final Logger log = LoggerFactory.getLogger(ControllerApiBackendImpl.class);
 
@@ -181,21 +181,6 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 	@Override
 	public void run() throws OpenemsNamedException {
 		this.apiWorker.run();
-	}
-
-	@Override
-	protected void logInfo(Logger log, String message) {
-		super.logInfo(log, message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		super.logWarn(log, message);
-	}
-
-	@Override
-	protected void logError(Logger log, String message) {
-		super.logError(log, message);
 	}
 
 	@Override

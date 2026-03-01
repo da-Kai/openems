@@ -19,7 +19,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 
@@ -52,7 +51,7 @@ import io.openems.edge.timedata.api.utils.CalculateEnergyFromPower;
 public class SamsungEssImpl extends AbstractOpenemsComponent
 		implements SamsungEss, SymmetricEss, OpenemsComponent, EventHandler, TimedataProvider, HybridEss {
 
-	private final Logger log = LoggerFactory.getLogger(SamsungEssImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final CalculateEnergyFromPower calculateAcChargeEnergy = new CalculateEnergyFromPower(this,
 			SymmetricEss.ChannelId.ACTIVE_CHARGE_ENERGY);
 	private final CalculateEnergyFromPower calculateAcDischargeEnergy = new CalculateEnergyFromPower(this,
@@ -137,7 +136,7 @@ public class SamsungEssImpl extends AbstractOpenemsComponent
 		Integer soc = null;
 
 		if (error != null) {
-			this.logDebug(this.log, error.getMessage());
+			this.log.debug(error.getMessage());
 
 		} else {
 			try {
@@ -152,7 +151,7 @@ public class SamsungEssImpl extends AbstractOpenemsComponent
 				soc = round(getAsInt(essRealtimeStatus, "BtSoc"));
 
 			} catch (OpenemsNamedException e) {
-				this.logDebug(this.log, e.getMessage());
+				this.log.debug(e.getMessage());
 			}
 		}
 
@@ -165,7 +164,7 @@ public class SamsungEssImpl extends AbstractOpenemsComponent
 		case 2 -> 0;
 		// Handle unknown status codes
 		default -> {
-			this.logWarn(this.log, "Unknown Battery Status Code: " + batteryStatus);
+			this.log.warn("Unknown Battery Status Code: {}", batteryStatus);
 			yield null;
 		}
 		};

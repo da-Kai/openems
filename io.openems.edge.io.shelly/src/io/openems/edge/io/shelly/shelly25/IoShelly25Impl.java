@@ -18,7 +18,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 
@@ -47,7 +46,7 @@ import io.openems.edge.io.api.DigitalOutput;
 public class IoShelly25Impl extends AbstractOpenemsComponent
 		implements IoShelly25, DigitalOutput, OpenemsComponent, EventHandler {
 
-	private final Logger log = LoggerFactory.getLogger(IoShelly25Impl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final BooleanWriteChannel[] digitalOutputChannels;
 
 	private String baseUrl;
@@ -142,7 +141,7 @@ public class IoShelly25Impl extends AbstractOpenemsComponent
 		var relay2State = new RelayState(null, null, null);
 
 		if (error != null) {
-			this.logDebug(this.log, error.getMessage());
+			this.log.debug(error.getMessage());
 
 		} else {
 			try {
@@ -151,7 +150,7 @@ public class IoShelly25Impl extends AbstractOpenemsComponent
 				relay2State = RelayState.from(getAsJsonObject(relays.get(1)));
 
 			} catch (OpenemsNamedException | IndexOutOfBoundsException e) {
-				this.logDebug(this.log, e.getMessage());
+				this.log.debug(e.getMessage());
 				slaveCommunicationFailed = true;
 			}
 		}
@@ -185,9 +184,9 @@ public class IoShelly25Impl extends AbstractOpenemsComponent
 		this.httpBridge.get(url).whenComplete((t, e) -> {
 			this._setSlaveCommunicationFailed(e != null);
 			if (e == null) {
-				this.logInfo(this.log, "Executed write successfully for URL: " + url);
+				this.log.info("Executed write successfully for URL: {}", url);
 			} else {
-				this.logError(this.log, "Failed to execute write for URL: " + url + "; Error: " + e.getMessage());
+				this.log.error("Failed to execute write for URL: {}; Error: {}", url, e.getMessage());
 			}
 		});
 	}

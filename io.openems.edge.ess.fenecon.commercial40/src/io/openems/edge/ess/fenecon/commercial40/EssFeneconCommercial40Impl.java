@@ -27,7 +27,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -88,7 +87,7 @@ public class EssFeneconCommercial40Impl extends AbstractOpenemsModbusComponent
 	private static final int MIN_REACTIVE_POWER = -10000;
 	private static final int MAX_REACTIVE_POWER = 10000;
 
-	private final Logger log = LoggerFactory.getLogger(EssFeneconCommercial40Impl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	private final CalculateEnergyFromPower calculateAcChargeEnergy = new CalculateEnergyFromPower(this,
 			SymmetricEss.ChannelId.ACTIVE_CHARGE_ENERGY);
@@ -752,7 +751,7 @@ public class EssFeneconCommercial40Impl extends AbstractOpenemsModbusComponent
 			try {
 				setWorkStateChannel.setNextWriteValue(SetWorkState.START);
 			} catch (OpenemsNamedException e) {
-				this.logError(this.log, "Unable to start: " + e.getMessage());
+				this.log.error("Unable to start: {}", e.getMessage());
 			}
 		}
 	}
@@ -809,11 +808,6 @@ public class EssFeneconCommercial40Impl extends AbstractOpenemsModbusComponent
 		this.chargers.remove(charger);
 	}
 
-	@Override
-	protected void logInfo(Logger log, String message) {
-		super.logInfo(log, message);
-	}
-
 	private void applyPowerLimitOnPowerDecreaseCausedByOvertemperatureError() {
 		if (this.config.powerLimitOnPowerDecreaseCausedByOvertemperatureChannel() != 0) {
 			StateChannel powerDecreaseCausedByOvertemperatureChannel = this
@@ -830,7 +824,7 @@ public class EssFeneconCommercial40Impl extends AbstractOpenemsModbusComponent
 							"Limit On PowerDecreaseCausedByOvertemperature Error", ALL, ACTIVE, LESS_OR_EQUALS,
 							this.config.powerLimitOnPowerDecreaseCausedByOvertemperatureChannel()));
 				} catch (OpenemsException e) {
-					this.logError(this.log, e.getMessage());
+					this.log.error(e.getMessage());
 				}
 				/*
 				 * Apply limit on Charger
@@ -842,7 +836,7 @@ public class EssFeneconCommercial40Impl extends AbstractOpenemsModbusComponent
 						setPvPowerLimit.setNextWriteValue(
 								this.config.powerLimitOnPowerDecreaseCausedByOvertemperatureChannel());
 					} catch (OpenemsNamedException e) {
-						this.logError(this.log, e.getMessage());
+						this.log.error(e.getMessage());
 					}
 				}
 

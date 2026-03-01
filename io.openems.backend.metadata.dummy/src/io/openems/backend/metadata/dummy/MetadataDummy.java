@@ -27,7 +27,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonObject;
 
@@ -49,6 +48,7 @@ import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.common.jsonrpc.request.GetEdgesRequest.PaginationOptions;
 import io.openems.common.jsonrpc.response.GetEdgesResponse.EdgeMetadata;
+import io.openems.common.logger.ContextLogger;
 import io.openems.common.session.Language;
 import io.openems.common.session.Role;
 import io.openems.common.utils.ThreadPoolUtils;
@@ -67,7 +67,7 @@ public class MetadataDummy extends AbstractMetadata implements Metadata, EventHa
 
 	private static final Pattern NAME_NUMBER_PATTERN = Pattern.compile("[^0-9]+([0-9]+)$");
 
-	private final Logger log = LoggerFactory.getLogger(MetadataDummy.class);
+	private final Logger log;
 
 	private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 	private final EventAdmin eventAdmin;
@@ -83,13 +83,14 @@ public class MetadataDummy extends AbstractMetadata implements Metadata, EventHa
 	@Activate
 	public MetadataDummy(@Reference EventAdmin eventadmin, Config config) {
 		super("Metadata.Dummy");
+		this.log = new ContextLogger(MetadataDummy.class, "Metadata.Dummy");
 		this.eventAdmin = eventadmin;
-		this.logInfo(this.log, "Activate");
+		this.log.info("Activate");
 
 		// Prefill
-		this.logInfo(this.log, "Prefilling Edges [" //
-				+ String.format(config.edgeIdTemplate(), 0) + "..."
-				+ String.format(config.edgeIdTemplate(), config.edgeIdMax()) + "]");
+		this.log.info("Prefilling Edges [{}...{}]", //
+				String.format(config.edgeIdTemplate(), 0), //
+				String.format(config.edgeIdTemplate(), config.edgeIdMax()));
 		for (var i = 0; i < config.edgeIdMax() + 1; i++) {
 			this.createEdge(config.edgeIdTemplate(), i);
 		}
@@ -104,7 +105,7 @@ public class MetadataDummy extends AbstractMetadata implements Metadata, EventHa
 	@Deactivate
 	private void deactivate() {
 		ThreadPoolUtils.shutdownAndAwaitTermination(this.executor, 0);
-		this.logInfo(this.log, "Deactivate");
+		this.log.info("Deactivate");
 	}
 
 	@Override
@@ -379,11 +380,13 @@ public class MetadataDummy extends AbstractMetadata implements Metadata, EventHa
 
 	@Override
 	public void logGenericSystemLog(GenericSystemLog systemLog) {
-		this.logInfo(this.log,
-				"%s on %s executed %s [%s]".formatted(systemLog.user().getId(), systemLog.edgeId(), systemLog.teaser(),
-						systemLog.getValues().entrySet().stream() //
-								.map(t -> t.getKey() + "=" + t.getValue()) //
-								.collect(joining(", "))));
+		this.log.info("{} on {} executed {} [{}]", //
+				systemLog.user().getId(), //
+				systemLog.edgeId(), //
+				systemLog.teaser(), //
+				systemLog.getValues().entrySet().stream() //
+						.map(t -> t.getKey() + "=" + t.getValue()) //
+						.collect(joining(", ")));
 	}
 
 	@Override

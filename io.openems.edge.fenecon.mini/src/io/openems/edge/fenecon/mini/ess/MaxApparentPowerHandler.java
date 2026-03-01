@@ -1,7 +1,8 @@
 package io.openems.edge.fenecon.mini.ess;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import io.openems.edge.common.component.OpenemsComponent;
 
 public class MaxApparentPowerHandler {
 
@@ -9,13 +10,14 @@ public class MaxApparentPowerHandler {
 	private static final int ADJUST_CYCLES = 10;
 
 	private final FeneconMiniEssImpl parent;
-	private final Logger log = LoggerFactory.getLogger(MaxApparentPowerHandler.class);
+	private final Logger log;
 
 	private int exceededCounter = 0;
 	private int withinCounter = 0;
 
 	public MaxApparentPowerHandler(FeneconMiniEssImpl parent) {
 		this.parent = parent;
+		this.log = OpenemsComponent.getComponentLogger(MaxApparentPowerHandler.class, parent);
 	}
 
 	protected void calculateMaxApparentPower() {
@@ -69,12 +71,8 @@ public class MaxApparentPowerHandler {
 		newMaxApparentPower = Math.min(newMaxApparentPower, FeneconMiniEss.MAX_APPARENT_POWER);
 
 		if (oldMaxApparentPower != newMaxApparentPower) {
-			this.parent.logInfo(this.log, //
-					description + ": " //
-							+ "SetPower [" + setPower + "] " //
-							+ "Power [" + power + "] " //
-							+ "Old [" + oldMaxApparentPower + "] " //
-							+ "New [" + newMaxApparentPower + "]");
+			this.log.info("{}: SetPower [{}] Power [{}] Old [{}] New [{}]", //
+					description, setPower, power, oldMaxApparentPower, newMaxApparentPower);
 			this.parent._setMaxApparentPower(newMaxApparentPower);
 		}
 	}

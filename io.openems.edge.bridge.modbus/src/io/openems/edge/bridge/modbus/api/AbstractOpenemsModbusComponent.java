@@ -10,7 +10,6 @@ import java.util.function.Function;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.common.types.OpenemsType;
@@ -30,7 +29,7 @@ import io.openems.edge.common.type.TypeUtils;
 
 public abstract class AbstractOpenemsModbusComponent extends AbstractOpenemsComponent implements ModbusComponent {
 
-	private final Logger log = LoggerFactory.getLogger(AbstractOpenemsModbusComponent.class);
+	private final Logger log;
 
 	private Integer unitId;
 
@@ -79,6 +78,7 @@ public abstract class AbstractOpenemsModbusComponent extends AbstractOpenemsComp
 	protected AbstractOpenemsModbusComponent(io.openems.edge.common.channel.ChannelId[] firstInitialChannelIds,
 			io.openems.edge.common.channel.ChannelId[]... furtherInitialChannelIds) {
 		super(firstInitialChannelIds, furtherInitialChannelIds);
+		this.log = OpenemsComponent.getComponentLogger(this);
 	}
 
 	protected void activate(String id) {
@@ -359,12 +359,9 @@ public abstract class AbstractOpenemsModbusComponent extends AbstractOpenemsComp
 							try {
 								registerElement.setNextWriteValueFromObject(convertedValue);
 							} catch (IllegalArgumentException e) {
-								AbstractOpenemsModbusComponent.this.logWarn(AbstractOpenemsModbusComponent.this.log,
-										"Unable to write to ModbusRegisterElement. " //
-												+ "Address [" + this.element.startAddress + "] " //
-												+ "Channel [" + channel.address() + "]. " //
-												+ "Exception [" + e.getClass().getSimpleName() + "] " //
-												+ ": " + e.getMessage());
+								AbstractOpenemsModbusComponent.this.log.warn(//
+										"Unable to write to ModbusRegisterElement. Address [{}] Channel [{}]. Exception [{}]: {}", //
+										this.element.startAddress, channel.address(), e.getClass().getSimpleName(), e.getMessage());
 								if (e instanceof IllegalArgumentException) {
 									// This is likely a software development bug. Draw some attention:
 									e.printStackTrace();
@@ -376,16 +373,14 @@ public abstract class AbstractOpenemsModbusComponent extends AbstractOpenemsComp
 							try {
 								coilElement.setNextWriteValue(TypeUtils.getAsType(OpenemsType.BOOLEAN, convertedValue));
 							} catch (IllegalArgumentException e) {
-								AbstractOpenemsModbusComponent.this.logWarn(AbstractOpenemsModbusComponent.this.log,
-										"Unable to write to ModbusCoilElement " //
-												+ "[" + this.element.startAddress + "]: " + e.getMessage());
+								AbstractOpenemsModbusComponent.this.log.warn("Unable to write to ModbusCoilElement [{}]: {}", //
+										this.element.startAddress, e.getMessage());
 							}
 						}
 
 						default //
-							-> AbstractOpenemsModbusComponent.this.logWarn(AbstractOpenemsModbusComponent.this.log,
-									"Unable to write to Element " //
-											+ "[" + this.element.startAddress + "]: it is not a ModbusElement");
+							-> AbstractOpenemsModbusComponent.this.log.warn("Unable to write to Element [{}]: it is not a ModbusElement", //
+											this.element.startAddress);
 						}
 					});
 				}

@@ -66,7 +66,7 @@ public class Backend2BackendRest extends AbstractOpenemsBackendComponent {
 			this.server = new Server(port);
 			this.server.setHandler(new RestHandler(this));
 			this.server.start();
-			this.logInfo(this.log, "Backend2Backend.Rest started on port [" + port + "].");
+			this.log.info("Backend2Backend.Rest started on port [{}].", port);
 		} catch (Exception e) {
 			throw new OpenemsException("Backend2Backend.Rest failed on port [" + port + "].", e);
 		}
@@ -80,19 +80,9 @@ public class Backend2BackendRest extends AbstractOpenemsBackendComponent {
 			try {
 				this.server.stop();
 			} catch (Exception e) {
-				this.logWarn(this.log, "Backend2Backend.Rest failed to stop: " + e.getMessage());
+				this.log.warn("Backend2Backend.Rest failed to stop: {}", e.getMessage());
 			}
 		}
-	}
-
-	@Override
-	protected void logInfo(Logger log, String message) {
-		super.logInfo(log, message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		super.logWarn(log, message);
 	}
 
 }

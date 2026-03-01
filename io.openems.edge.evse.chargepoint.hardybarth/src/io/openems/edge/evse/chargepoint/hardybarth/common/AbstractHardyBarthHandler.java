@@ -17,12 +17,10 @@ import static java.lang.Math.round;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import org.osgi.service.event.Event;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -58,7 +56,7 @@ public abstract class AbstractHardyBarthHandler<T extends HardyBarth> {
 	// Default Heartbeat timeout is 30 seconds
 	public static final int HEART_BEAT_TIME = 15;
 
-	private final Logger log = LoggerFactory.getLogger(AbstractHardyBarthHandler.class);
+	protected final Logger log;
 
 	// TODO protected
 	protected final T parent;
@@ -66,20 +64,19 @@ public abstract class AbstractHardyBarthHandler<T extends HardyBarth> {
 
 	private final String ip;
 	private final String apikey;
-	private final BiConsumer<Logger, String> logInfoCallback;
 	private final BridgeHttpFactory httpBridgeFactory;
 	private final HttpBridgeCycleService cycleService;
 	private final HttpBridgeTimeService timeService;
 	private BridgeHttp httpBridge;
 
 	protected AbstractHardyBarthHandler(T parent, String ip, String apikey, PhaseRotation phaseRotation,
-			LogVerbosity logVerbosity, BiConsumer<Logger, String> logInfo, BridgeHttpFactory httpBridgeFactory,
+			LogVerbosity logVerbosity, BridgeHttpFactory httpBridgeFactory,
 			HttpBridgeCycleServiceDefinition httpBridgeCycleServiceDefinition, BooleanConsumer communicationFailed) {
 		this.parent = parent;
 		this.ip = ip;
 		this.apikey = apikey;
 		this.logVerbosity = logVerbosity;
-		this.logInfoCallback = logInfo;
+		this.log = OpenemsComponent.getComponentLogger(AbstractHardyBarthHandler.class, parent);
 		this.httpBridgeFactory = httpBridgeFactory;
 		this.httpBridge = httpBridgeFactory.get();
 
@@ -102,7 +99,7 @@ public abstract class AbstractHardyBarthHandler<T extends HardyBarth> {
 				t -> {
 					switch (this.logVerbosity) {
 					case NONE, DEBUG_LOG -> doNothing();
-					case WRITES, READS -> this.logInfo("Set heartbeat=" + heartBeat);
+					case WRITES, READS -> this.log.info("Set heartbeat={}", heartBeat);
 					}
 				}, //
 				t -> {
@@ -158,7 +155,7 @@ public abstract class AbstractHardyBarthHandler<T extends HardyBarth> {
 				.thenAccept(t -> {
 					switch (this.logVerbosity) {
 					case NONE, DEBUG_LOG -> FunctionUtils.doNothing();
-					case WRITES, READS -> this.logInfo("Set chargemode=" + chargeMode);
+					case WRITES, READS -> this.log.info("Set chargemode={}", chargeMode);
 					}
 				});
 	}
@@ -173,7 +170,7 @@ public abstract class AbstractHardyBarthHandler<T extends HardyBarth> {
 	public boolean setTarget(int current) {
 		switch (this.logVerbosity) {
 		case NONE, DEBUG_LOG -> doNothing();
-		case WRITES, READS -> this.logInfo("Set Target=" + current);
+		case WRITES, READS -> this.log.info("Set Target={}", current);
 		}
 
 		final var ep = this.createEndpoint(PUT, "/api/secc", buildJsonObject() //
@@ -215,7 +212,7 @@ public abstract class AbstractHardyBarthHandler<T extends HardyBarth> {
 		final var json = parseToJsonObject(response.data());
 		switch (this.logVerbosity) {
 		case NONE, DEBUG_LOG -> FunctionUtils.doNothing();
-		case READS, WRITES -> this.logInfo("RESPONSE " + json);
+		case READS, WRITES -> this.log.info("RESPONSE {}", json);
 		}
 		this.parent.channels() //
 				.stream() //
@@ -244,11 +241,6 @@ public abstract class AbstractHardyBarthHandler<T extends HardyBarth> {
 		return b.toString();
 	}
 
-	// TODO Protected
-	protected void logInfo(String message) {
-		this.logInfoCallback.accept(this.log, message);
-	}
-
 	protected void updateChannels(JsonElement json, PhaseRotation phaseRotation) {
 		final var hb = this.parent;
 
@@ -267,7 +259,7 @@ public abstract class AbstractHardyBarthHandler<T extends HardyBarth> {
 		// and otherwise returns, so that no new values are written this cycle
 		// TODO: find a better long term solution
 		if (currentL1 == null || currentL2 == null || currentL3 == null) {
-			this.logInfo("Invalid current values detected");
+			this.log.info("Invalid current values detected");
 			if (this.handleUndefinedError()) {
 				return;
 			}
@@ -287,14 +279,14 @@ public abstract class AbstractHardyBarthHandler<T extends HardyBarth> {
 		final var voltageL3 = activePowerL3 == null ? null : round(activePowerL3 * 1_000_000F / currentL3);
 
 		if (activePowerL1 == null || activePowerL2 == null || activePowerL3 == null) {
-			this.logInfo("Active power values are null");
+			this.log.info("Active power values are null");
 			if (this.handleUndefinedError()) {
 				return;
 			}
 		}
 
 		if (voltageL1 == null || voltageL2 == null || voltageL3 == null) {
-			this.logInfo("Voltage values are null");
+			this.log.info("Voltage values are null");
 			if (this.handleUndefinedError()) {
 				return;
 			}

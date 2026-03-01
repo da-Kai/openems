@@ -109,7 +109,7 @@ public class CoreJsonRpcRequestHandlerImpl extends AbstractOpenemsBackendCompone
 		case SetGridConnScheduleRequest.METHOD //
 			-> this.handleSetGridConnScheduleRequest(user, request.getId(), SetGridConnScheduleRequest.from(request));
 		default -> {
-			this.logWarn(context, "Unhandled Request: " + request);
+			this.log.warn("[{}] Unhandled Request: {}", context, request);
 			throw OpenemsError.JSONRPC_UNHANDLED_METHOD.exception(request.getMethod());
 		}
 		};
@@ -199,35 +199,5 @@ public class CoreJsonRpcRequestHandlerImpl extends AbstractOpenemsBackendCompone
 			}
 		});
 		return result;
-	}
-
-	/**
-	 * Log an info message including the Handler name.
-	 *
-	 * @param context the Logger context, i.e. the name of the parent source
-	 * @param message the Info-message
-	 */
-	protected void logInfo(String context, String message) {
-		this.log.info("[" + context + "] " + message);
-	}
-
-	/**
-	 * Log a warn message including the Handler name.
-	 *
-	 * @param context the Logger context, i.e. the name of the parent source
-	 * @param message the Warn-message
-	 */
-	protected void logWarn(String context, String message) {
-		this.log.warn("[" + context + "] " + message);
-	}
-
-	/**
-	 * Log an error message including the Handler name.
-	 *
-	 * @param context the Logger context, i.e. the name of the parent source
-	 * @param message the Error-message
-	 */
-	protected void logError(String context, String message) {
-		this.log.error("[" + context + "] " + message);
 	}
 }

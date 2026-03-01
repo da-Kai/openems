@@ -16,7 +16,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
@@ -35,7 +34,7 @@ import io.openems.edge.timeofusetariff.api.TouManualHelper;
 )
 public class TouAncillaryCostsImpl extends AbstractOpenemsComponent implements TimeOfUseTariff, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(TouAncillaryCostsImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private Meta meta;
@@ -67,7 +66,7 @@ public class TouAncillaryCostsImpl extends AbstractOpenemsComponent implements T
 			var schedule = parseForGermany(clock, config.ancillaryCosts());
 			this.helper = new TouManualHelper(clock, schedule, 0.0);
 		} catch (OpenemsNamedException e) {
-			this.logWarn(this.log, "Unable to parse Schedule:" + e.getMessage());
+			this.log.warn("Unable to parse Schedule: {}", e.getMessage());
 			this.helper = EMPTY_TOU_MANUAL_HELPER;
 			this.channel(TouAncillaryCosts.ChannelId.INVALID_PRICE).setNextValue(true);
 		}

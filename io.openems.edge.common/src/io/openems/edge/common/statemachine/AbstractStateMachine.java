@@ -4,9 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
+import io.openems.common.logger.ContextLogger;
 
 /**
  * Manages the States of the StateMachine.
@@ -17,7 +17,7 @@ import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
  */
 public abstract class AbstractStateMachine<STATE extends State<STATE>, CONTEXT extends AbstractContext<?>> {
 
-	private final Logger log = LoggerFactory.getLogger(AbstractStateMachine.class);
+	private final Logger log = new ContextLogger(AbstractStateMachine.class, this.getClass().getSimpleName());
 
 	private final Map<STATE, StateHandler<STATE, CONTEXT>> stateHandlers = new HashMap<>();
 
@@ -140,8 +140,7 @@ public abstract class AbstractStateMachine<STATE extends State<STATE>, CONTEXT e
 
 		// Call StateMachine events on transition
 		if (this.previousState != this.state) {
-			context.logInfo(this.log,
-					"Changing StateMachine from [" + this.previousState + "] to [" + this.state + "]");
+			this.log.info("Changing StateMachine from [{}] to [{}]", this.previousState, this.state);
 
 			// On-Exit of the last State
 			try {

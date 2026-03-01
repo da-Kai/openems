@@ -26,8 +26,6 @@ import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
@@ -68,8 +66,6 @@ import io.openems.edge.meter.api.PhaseRotation;
 })
 public class EvcsMennekesImpl extends AbstractOpenemsModbusComponent
 		implements Evcs, ElectricityMeter, ManagedEvcs, OpenemsComponent, ModbusComponent, EventHandler, EvcsMennekes {
-
-	private final Logger log = LoggerFactory.getLogger(EvcsMennekesImpl.class);
 
 	// TODO: Add functionality to distinguish between firmware version. For firmware
 	// version >= 5.22 there are several new registers. Currently it is programmed
@@ -299,13 +295,6 @@ public class EvcsMennekesImpl extends AbstractOpenemsModbusComponent
 	@Override
 	public ChargeStateHandler getChargeStateHandler() {
 		return this.chargeStateHandler;
-	}
-
-	@Override
-	public void logDebug(String message) {
-		if (this.config.debugMode()) {
-			this.logInfo(this.log, message);
-		}
 	}
 
 	@Override

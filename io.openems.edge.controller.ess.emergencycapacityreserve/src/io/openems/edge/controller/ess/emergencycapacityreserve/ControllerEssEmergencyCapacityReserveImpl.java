@@ -14,7 +14,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.edge.common.channel.IntegerReadChannel;
@@ -43,11 +42,11 @@ public class ControllerEssEmergencyCapacityReserveImpl extends AbstractOpenemsCo
 		implements ControllerEssEmergencyCapacityReserve, EnergySchedulable, Controller, OpenemsComponent {
 
 	/** Minimum reserve SoC value in [%]. */
-	private static final int reservSocMinValue = 5;
+	private static final int RESERVE_SOC_MIN_VALUE = 5;
 	/** Maximum reserve SoC value in [%]. */
-	private static final int reservSocMaxValue = 100;
+	private static final int RESERVE_SOC_MAX_VALUE = 100;
 
-	private final Logger log = LoggerFactory.getLogger(ControllerEssEmergencyCapacityReserveImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final StateMachine stateMachine = new StateMachine(State.UNDEFINED);
 	private final RampFilter rampFilter = new RampFilter();
 
@@ -140,7 +139,7 @@ public class ControllerEssEmergencyCapacityReserveImpl extends AbstractOpenemsCo
 		this.config = config;
 
 		var enableWarning = false;
-		if (this.config.reserveSoc() < reservSocMinValue || this.config.reserveSoc() > reservSocMaxValue) {
+		if (this.config.reserveSoc() < RESERVE_SOC_MIN_VALUE || this.config.reserveSoc() > RESERVE_SOC_MAX_VALUE) {
 			enableWarning = true;
 		}
 
@@ -186,7 +185,7 @@ public class ControllerEssEmergencyCapacityReserveImpl extends AbstractOpenemsCo
 
 		} catch (OpenemsNamedException e) {
 			this.channel(Controller.ChannelId.RUN_FAILED).setNextValue(true);
-			this.logError(this.log, "StateMachine failed: " + e.getMessage());
+			this.log.error("StateMachine failed: {}", e.getMessage());
 		}
 
 		return context;

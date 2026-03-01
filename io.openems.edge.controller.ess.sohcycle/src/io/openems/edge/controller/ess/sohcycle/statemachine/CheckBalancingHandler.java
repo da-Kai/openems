@@ -33,9 +33,8 @@ public class CheckBalancingHandler extends StateHandler<StateMachine.State, Cont
 			final BatteryBalanceStatus balanceStatus;
 			if (voltageDelta == null) {
 				balanceStatus = BatteryBalanceStatus.NOT_MEASURED;
-				context.logInfo(log, String.format(
-						"%s: SoC=%d%%, cell voltage data not available (%s)",
-						StateMachine.State.CHECK_BALANCING.getName(), soc, error.getDescription()));
+				log.info("{}: SoC={}%, cell voltage data not available ({})", //
+						StateMachine.State.CHECK_BALANCING.getName(), soc, error.getDescription());
 			} else {
 				final boolean isBalanced = context.isBatteryBalanced(maxAllowedDelta);
 				balanceStatus = isBalanced ? BatteryBalanceStatus.BALANCED : BatteryBalanceStatus.NOT_BALANCED;
@@ -46,12 +45,12 @@ public class CheckBalancingHandler extends StateHandler<StateMachine.State, Cont
 					context.setBalancingError(BatteryBalanceError.DELTA_ABOVE_THRESHOLD);
 				}
 
-				context.logInfo(log, String.format(
-						"%s: SoC=%d%%, voltage delta=%d mV, threshold=%d mV, balanced=%s",
-						StateMachine.State.CHECK_BALANCING.getName(), soc, voltageDelta,
-						maxAllowedDelta, isBalanced ? "yes" : "no"));
+				log.info("{}: SoC={}%, voltage delta={} mV, threshold={} mV, balanced={}", //
+						StateMachine.State.CHECK_BALANCING.getName(), soc, voltageDelta, //
+						maxAllowedDelta, isBalanced ? "yes" : "no");
 			}
-			ChannelUtils.setValue(context.getParent(), ControllerEssSohCycle.ChannelId.IS_BATTERY_BALANCED, balanceStatus);
+			ChannelUtils.setValue(context.getParent(), ControllerEssSohCycle.ChannelId.IS_BATTERY_BALANCED,
+					balanceStatus);
 
 			// do not abort the cycle if not balanced - just log and continue
 			return StateMachine.State.MEASUREMENT_CYCLE_DISCHARGING;

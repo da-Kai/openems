@@ -12,7 +12,6 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
@@ -30,7 +29,7 @@ import io.openems.edge.meter.api.ElectricityMeter;
 public class ControllerEssDelayedSellToGridImpl extends AbstractOpenemsComponent
 		implements ControllerEssDelayedSellToGrid, Controller, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(ControllerEssDelayedSellToGridImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ConfigurationAdmin cm;
@@ -75,7 +74,7 @@ public class ControllerEssDelayedSellToGridImpl extends AbstractOpenemsComponent
 		 */
 		var gridMode = this.ess.getGridMode();
 		if (gridMode.isUndefined()) {
-			this.logWarn(this.log, "Grid-Mode is [UNDEFINED]");
+			this.log.warn("Grid-Mode is [UNDEFINED]");
 		}
 		switch (gridMode) {
 		case ON_GRID:

@@ -1,7 +1,6 @@
 package io.openems.common.websocket;
 
 import org.java_websocket.WebSocket;
-import org.slf4j.Logger;
 
 public class DummyWebsocketServer extends AbstractWebsocketServer<WsData> implements AutoCloseable {
 
@@ -119,21 +118,6 @@ public class DummyWebsocketServer extends AbstractWebsocketServer<WsData> implem
 	@Override
 	protected OnClose getOnClose() {
 		return this.builder.onClose;
-	}
-
-	@Override
-	protected void logInfo(Logger log, String message) {
-		log.info(message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		log.warn(message);
-	}
-
-	@Override
-	protected void logError(Logger log, String message) {
-		log.error(message);
 	}
 
 	@Override

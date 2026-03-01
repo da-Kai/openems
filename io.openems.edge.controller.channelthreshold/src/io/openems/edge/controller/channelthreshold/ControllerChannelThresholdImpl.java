@@ -11,7 +11,6 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
@@ -37,7 +36,7 @@ import io.openems.edge.timedata.api.utils.CalculateActiveTime;
 public class ControllerChannelThresholdImpl extends AbstractOpenemsComponent
 		implements ControllerChannelThreshold, Controller, OpenemsComponent, TimedataProvider {
 
-	private final Logger log = LoggerFactory.getLogger(ControllerChannelThresholdImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final CalculateActiveTime calculateCumulatedActiveTime = new CalculateActiveTime(this,
 			ControllerChannelThreshold.ChannelId.CUMULATED_ACTIVE_TIME);
 
@@ -100,7 +99,7 @@ public class ControllerChannelThresholdImpl extends AbstractOpenemsComponent
 			Channel<?> inputChannel = this.componentManager.getChannel(this.inputChannelAddress);
 			value = TypeUtils.getAsType(OpenemsType.INTEGER, inputChannel.value().getOrError());
 		} catch (Exception e) {
-			this.logError(this.log, e.getClass().getSimpleName() + ": " + e.getMessage());
+			this.log.error("{}; {}", e.getClass().getSimpleName(), e.getMessage());
 			return;
 		}
 
@@ -266,13 +265,12 @@ public class ControllerChannelThresholdImpl extends AbstractOpenemsComponent
 			WriteChannel<Boolean> outputChannel = this.componentManager.getChannel(this.outputChannelAddress);
 			var currentValueOpt = outputChannel.value().asOptional();
 			if (!currentValueOpt.isPresent() || currentValueOpt.get() != outputValue) {
-				this.logInfo(this.log,
-						"Set output [" + outputChannel.address() + "] " + (outputValue ? "ON" : "OFF") + ".");
+				this.log.info("Set output [{}] {}.", outputChannel.address(), (outputValue ? "ON" : "OFF"));
 				outputChannel.setNextWriteValue(outputValue);
 			}
 
 		} catch (OpenemsException e) {
-			this.logError(this.log, "Unable to set output: [" + this.outputChannelAddress + "] " + e.getMessage());
+			this.log.error("Unable to set output: [{}] {}", this.outputChannelAddress, e.getMessage());
 		}
 	}
 

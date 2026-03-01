@@ -7,7 +7,6 @@ import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Deactivate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.batteryinverter.api.ManagedSymmetricBatteryInverter;
@@ -20,7 +19,7 @@ import io.openems.edge.common.taskmanager.Priority;
 public abstract class AbstractSunSpecBatteryInverter extends AbstractOpenemsSunSpecComponent
 		implements ManagedSymmetricBatteryInverter, SymmetricBatteryInverter, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(AbstractSunSpecBatteryInverter.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	public AbstractSunSpecBatteryInverter(Map<SunSpecModel, Priority> activeModels,
 			io.openems.edge.common.channel.ChannelId[] firstInitialChannelIds,
@@ -58,6 +57,6 @@ public abstract class AbstractSunSpecBatteryInverter extends AbstractOpenemsSunS
 
 	@Override
 	protected void onSunSpecInitializationCompleted() {
-		this.logInfo(this.log, "SunSpec initialization finished. " + this.channels().size() + " Channels available.");
+		this.log.info("SunSpec initialization finished. {} Channels available.", this.channels().size());
 	}
 }

@@ -30,7 +30,6 @@ import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
@@ -66,7 +65,7 @@ import io.openems.edge.timedata.api.utils.CalculateActiveTime;
 public class ControllerIoHeatingElementImpl extends AbstractOpenemsComponent
 		implements ControllerIoHeatingElement, Controller, OpenemsComponent, TimedataProvider {
 
-	private final Logger log = LoggerFactory.getLogger(ControllerIoHeatingElementImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	private static final Duration LAST_PHASE_DURATION_TO_TURN_UP = Duration.ofMinutes(30);
 	private static final double LAST_PHASE_PERCENTAGE_TO_TURN_UP = 0.9;
@@ -923,7 +922,7 @@ public class ControllerIoHeatingElementImpl extends AbstractOpenemsComponent
 		WriteChannel<Boolean> outputChannel = this.componentManager.getChannel(channelAddress);
 		var currentValueOpt = outputChannel.value().asOptional();
 		if (!currentValueOpt.isPresent() || currentValueOpt.get() != value) {
-			this.logInfo(this.log, "Set output [" + outputChannel.address() + "] " + value + ".");
+			this.log.info("Set output [{}] {}.", outputChannel.address(), value);
 			outputChannel.setNextWriteValue(value);
 		}
 	}

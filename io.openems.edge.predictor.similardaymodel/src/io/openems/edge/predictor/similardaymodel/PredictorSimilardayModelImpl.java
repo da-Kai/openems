@@ -18,7 +18,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
 import com.google.gson.JsonElement;
@@ -44,7 +43,7 @@ import io.openems.edge.timedata.api.Timedata;
 )
 public class PredictorSimilardayModelImpl extends AbstractPredictor implements Predictor, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(PredictorSimilardayModelImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	public static final int NUM_OF_DAYS_OF_WEEK = 7;
 	public static final int NUM_OF_DATA_PER_DAY = 96;
@@ -99,8 +98,7 @@ public class PredictorSimilardayModelImpl extends AbstractPredictor implements P
 			queryResult = this.timedata.queryHistoricData(null, fromDate, now, Sets.newHashSet(channelAddress),
 					new Resolution(15, ChronoUnit.MINUTES));
 		} catch (OpenemsNamedException e) {
-			this.logError(this.log, e.getMessage());
-			e.printStackTrace();
+			this.log.error(e.getMessage(), e);
 			return EMPTY_PREDICTION;
 		}
 

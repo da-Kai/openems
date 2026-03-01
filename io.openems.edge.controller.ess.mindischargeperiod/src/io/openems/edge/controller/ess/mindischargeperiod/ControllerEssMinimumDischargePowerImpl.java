@@ -14,7 +14,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Stopwatch;
 
@@ -35,7 +34,7 @@ import io.openems.edge.ess.api.ManagedSymmetricEss;
 public class ControllerEssMinimumDischargePowerImpl extends AbstractOpenemsComponent
 		implements ControllerEssMinimumDischargePower, Controller, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(ControllerEssMinimumDischargePowerImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ComponentManager componentManager;
@@ -73,7 +72,7 @@ public class ControllerEssMinimumDischargePowerImpl extends AbstractOpenemsCompo
 		 */
 		var gridMode = ess.getGridMode();
 		if (gridMode.isUndefined()) {
-			this.logWarn(this.log, "Grid-Mode is [UNDEFINED]");
+			this.log.warn("Grid-Mode is [UNDEFINED]");
 		}
 		switch (gridMode) {
 		case ON_GRID:
@@ -87,8 +86,7 @@ public class ControllerEssMinimumDischargePowerImpl extends AbstractOpenemsCompo
 			int essActivePower = ess.getActivePower().getOrError();
 			if (essActivePower >= this.config.activateDischargePower()) {
 				this.stopwatch.start();
-				this.logInfo(this.log,
-						"Started the stopwatch. Trying to discharge with " + this.config.minDischargePower());
+				this.log.info("Started the stopwatch. Trying to discharge with {}", this.config.minDischargePower());
 			}
 			this.channel(ControllerEssMinimumDischargePower.ChannelId.TIME_PASSED)
 					.setNextValue(this.stopwatch.elapsed(TimeUnit.SECONDS));
@@ -114,8 +112,7 @@ public class ControllerEssMinimumDischargePowerImpl extends AbstractOpenemsCompo
 					this.config.minDischargePower());
 
 		} catch (OpenemsException e) {
-			this.logWarn(this.log, e.getMessage());
-			this.logInfo(this.log, "Make sure that the controller is running before balancing or peakshaving.");
+			this.log.warn("Make sure that the controller is running before balancing or peakshaving. Exception: {}", e.getMessage());
 		}
 	}
 }

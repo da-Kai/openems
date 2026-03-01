@@ -15,7 +15,6 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.utils.DateUtils;
@@ -40,7 +39,7 @@ public class ControllerEssCycleImpl extends AbstractOpenemsComponent
 	private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 	private final AtomicBoolean processFinished = new AtomicBoolean(false);
 
-	private final Logger log = LoggerFactory.getLogger(ControllerEssCycleImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final StateMachine stateMachine = new StateMachine(State.UNDEFINED);
 
 	private LocalDateTime parsedStartTime;
@@ -96,7 +95,7 @@ public class ControllerEssCycleImpl extends AbstractOpenemsComponent
 	@Override
 	public void run() throws OpenemsNamedException {
 		if (this.parsedStartTime == null) {
-			this.logError(this.log, "Start time could not be parsed");
+			this.log.error("Start time could not be parsed");
 			return;
 		}
 

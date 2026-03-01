@@ -16,7 +16,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
@@ -36,7 +35,7 @@ import io.openems.edge.ess.api.ManagedSymmetricEss;
 public class ControllerEssLimitTotalDischargeImpl extends AbstractOpenemsComponent
 		implements ControllerEssLimitTotalDischarge, EnergySchedulable, Controller, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(ControllerEssLimitTotalDischargeImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ComponentManager componentManager;
@@ -95,9 +94,8 @@ public class ControllerEssLimitTotalDischargeImpl extends AbstractOpenemsCompone
 		// Force-Charge-SoC must be smaller than Min-SoC
 		if (this.forceChargeSoc >= this.minSoc) {
 			this.forceChargeSoc = this.minSoc - 1;
-			this.logWarn(this.log,
-					"Force-Charge-SoC [" + config.forceChargeSoc() + "] is invalid in combination with Min-SoC ["
-							+ config.minSoc() + "]. Setting it to [" + this.forceChargeSoc + "]");
+			this.log.warn("Force-Charge-SoC [{}] is invalid in combination with Min-SoC [{}]. Setting it to [{}]", //
+					config.forceChargeSoc(), config.minSoc(), this.forceChargeSoc);
 		}
 	}
 

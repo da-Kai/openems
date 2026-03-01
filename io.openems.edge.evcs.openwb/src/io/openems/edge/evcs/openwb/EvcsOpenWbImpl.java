@@ -14,7 +14,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -46,7 +45,7 @@ import io.openems.edge.timedata.api.TimedataProvider;
 public class EvcsOpenWbImpl extends AbstractOpenemsComponent
 		implements EvcsOpenWb, ElectricityMeter, OpenemsComponent, Evcs, TimedataProvider, ModbusSlave, MqttComponent {
 
-	private final Logger log = LoggerFactory.getLogger(EvcsOpenWbImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	private static final String TOPIC_PREFIX = "openWB/internal_chargepoint/";
 
@@ -106,10 +105,10 @@ public class EvcsOpenWbImpl extends AbstractOpenemsComponent
 			var subscribeTopicPattern = this.topicPrefix + "#";
 			this.subscription = this.mqttBridge.subscribe(subscribeTopicPattern, QoS.AT_LEAST_ONCE,
 					this::handleMqttMessage);
-			this.logInfo(this.log, "Subscribed to: " + subscribeTopicPattern);
+			this.log.info("Subscribed to: {}", subscribeTopicPattern);
 			this._setMqttCommunicationFailed(false);
 		} catch (Exception e) {
-			this.logError(this.log, "Failed to subscribe to MQTT topics: " + e.getMessage());
+			this.log.error("Failed to subscribe to MQTT topics: {}", e.getMessage());
 			this._setMqttCommunicationFailed(true);
 		}
 	}
@@ -127,7 +126,7 @@ public class EvcsOpenWbImpl extends AbstractOpenemsComponent
 			this.handleMessage(message.topic(), json);
 			this._setMqttCommunicationFailed(false);
 		} catch (Exception e) {
-			this.logWarn(this.log, "Failed to parse MQTT message on topic " + message.topic() + ": " + e.getMessage());
+			this.log.warn("Failed to parse MQTT message on topic {}: {}", message.topic(), e.getMessage());
 		}
 	}
 
@@ -137,7 +136,7 @@ public class EvcsOpenWbImpl extends AbstractOpenemsComponent
 			try {
 				this.subscription.unsubscribe();
 			} catch (Exception e) {
-				this.logWarn(this.log, "Error unsubscribing from MQTT: " + e.getMessage());
+				this.log.warn("Error unsubscribing from MQTT: {}", e.getMessage());
 			}
 			this.subscription = null;
 		}

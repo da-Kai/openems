@@ -23,7 +23,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 
@@ -53,7 +52,7 @@ import io.openems.edge.timedata.api.TimedataProvider;
 public class IoShelly1Impl extends AbstractOpenemsComponent
 		implements IoShelly1, DigitalOutput, OpenemsComponent, TimedataProvider, EventHandler {
 
-	private final Logger log = LoggerFactory.getLogger(IoShelly1.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final BooleanWriteChannel[] digitalOutputChannels;
 
 	private String baseUrl;
@@ -140,7 +139,7 @@ public class IoShelly1Impl extends AbstractOpenemsComponent
 		var relay1State = new RelayState(null);
 
 		if (error != null) {
-			this.logDebug(this.log, error.getMessage());
+			this.log.debug(error.getMessage());
 
 		} else {
 			try {
@@ -148,7 +147,7 @@ public class IoShelly1Impl extends AbstractOpenemsComponent
 				relay1State = RelayState.from(getAsJsonObject(relays.get(0)));
 
 			} catch (OpenemsNamedException | IndexOutOfBoundsException e) {
-				this.logDebug(this.log, e.getMessage());
+				this.log.debug(e.getMessage());
 				slaveCommunicationFailed = true;
 			}
 		}
@@ -177,7 +176,7 @@ public class IoShelly1Impl extends AbstractOpenemsComponent
 		final String url = this.baseUrl + "/relay/" + index + "?turn=" + (writeValue.get() ? "on" : "off");
 		this.httpBridge.get(url).whenComplete((response, error) -> {
 			if (error != null) {
-				this.logError(this.log, "HTTP request failed: " + error.getMessage());
+				this.log.error("HTTP request failed: {}", error.getMessage());
 				this._setSlaveCommunicationFailed(true);
 			} else {
 				// Optionally log success or handle response

@@ -18,7 +18,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.utils.JsonUtils;
@@ -47,7 +46,7 @@ public class TimeOfUseTariffTibberImpl extends AbstractOpenemsComponent
 	protected static final int CLIENT_ERROR_CODE = 400;
 	protected static final int TOO_MANY_REQUESTS_CODE = 429;
 
-	private final Logger log = LoggerFactory.getLogger(TimeOfUseTariffTibberImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 	private final AtomicReference<TimeOfUsePrices> prices = new AtomicReference<>(TimeOfUsePrices.EMPTY_PRICES);
 
@@ -144,7 +143,7 @@ public class TimeOfUseTariffTibberImpl extends AbstractOpenemsComponent
 		switch (httpStatusCode) {
 		case CLIENT_ERROR_CODE:
 			authenticationFailed = true;
-			this.logWarn(this.log, "Authentication failed, please try again with valid token.");
+			this.log.warn("Authentication failed, please try again with valid token.");
 			break;
 
 		case TOO_MANY_REQUESTS_CODE:
@@ -156,7 +155,7 @@ public class TimeOfUseTariffTibberImpl extends AbstractOpenemsComponent
 				// No error
 			} else {
 				serverError = true;
-				this.logWarn(this.log, "An unexpected error occurred on the server. Please try again later");
+				this.log.warn("An unexpected error occurred on the server. Please try again later");
 			}
 			break;
 		}

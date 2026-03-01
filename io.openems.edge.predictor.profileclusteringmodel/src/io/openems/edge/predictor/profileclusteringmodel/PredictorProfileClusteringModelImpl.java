@@ -22,7 +22,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
 
@@ -34,7 +33,6 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.meta.Meta;
 import io.openems.edge.common.sum.Sum;
 import io.openems.edge.controller.api.Controller;
-import io.openems.edge.predictor.api.common.LogSeverity;
 import io.openems.edge.predictor.api.common.PredictionException;
 import io.openems.edge.predictor.api.common.PredictionState;
 import io.openems.edge.predictor.api.common.TrainingError;
@@ -66,7 +64,7 @@ public class PredictorProfileClusteringModelImpl extends AbstractPredictor
 	private static final int NO_INITIAL_DELAY = 0;
 	private static final int MINUTES_PER_QUARTER = 15;
 
-	private final Logger log = LoggerFactory.getLogger(PredictorProfileClusteringModelImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
 	@Reference
@@ -133,29 +131,29 @@ public class PredictorProfileClusteringModelImpl extends AbstractPredictor
 	protected Prediction createNewPrediction(ChannelAddress channelAddress) {
 		if (this.currentModels == null) {
 			this._setPredictionState(PredictionState.FAILED_NO_MODEL);
-			this.logPredictionError(PredictionState.FAILED_NO_MODEL, LogSeverity.INFO, "No trained model available");
+			this.log.info("Prediction Failed [{}]: No trained model available", PredictionState.FAILED_NO_MODEL);
 			return Prediction.EMPTY_PREDICTION;
 		}
 
 		if (this.isModelTooOld()) {
 			this._setPredictionState(PredictionState.FAILED_MODEL_OUTDATED);
-			this.logPredictionError(PredictionState.FAILED_MODEL_OUTDATED, LogSeverity.INFO, "Trained model outdated");
+			this.log.info("Prediction Failed [{}]: Trained model outdated", PredictionState.FAILED_MODEL_OUTDATED);
 			return Prediction.EMPTY_PREDICTION;
 		}
 
 		var predictionContext = this.createPredictionContext();
-		var predictionOrchestrator = this.predictorConfig.predictionOrchestratorFactory().create(predictionContext);
+		var predictionOchestrator = this.predictorConfig.predictionOrchestratorFactory().create(predictionContext);
 
 		List<Profile> predictedProfiles;
 		try {
-			predictedProfiles = predictionOrchestrator.predictProfiles(this.predictorConfig.forecastDays());
+			predictedProfiles = predictionOchestrator.predictProfiles(this.predictorConfig.forecastDays());
 		} catch (PredictionException e) {
 			this._setPredictionState(e.getError().getFailedState());
-			this.logPredictionError(e.getError().getFailedState(), e.getError().getSeverity(), e.getMessage());
+			this.log.error("Prediction Failed [{}]: {}", e.getError().getFailedState(), e.getMessage());
 			return Prediction.EMPTY_PREDICTION;
 		} catch (Exception e) {
 			this._setPredictionState(PredictionState.FAILED_UNKNOWN);
-			this.logPredictionError(PredictionState.FAILED_UNKNOWN, LogSeverity.ERROR, e.getMessage());
+			this.log.error("Prediction Failed [{}]: {}", PredictionState.FAILED_UNKNOWN, e.getMessage());
 			return Prediction.EMPTY_PREDICTION;
 		}
 
@@ -176,15 +174,13 @@ public class PredictorProfileClusteringModelImpl extends AbstractPredictor
 		this.currentModels = bundle;
 		this.currentProfile = null;
 		this._setTrainingState(TrainingState.SUCCESSFUL);
-		this.logInfo(this.log, String.format(//
-				"Training succeeded [%s]", //
-				TrainingState.SUCCESSFUL.getName()));
+		this.log.info("Training succeeded [{}]", TrainingState.SUCCESSFUL.getName());
 	}
 
 	@Override
 	public void onTrainingError(TrainingError error, String message) {
 		this._setTrainingState(error.getFailedState());
-		this.logTrainingError(error.getFailedState(), error.getSeverity(), message);
+		this.log.error("Training failed [{}]: {}", error.getFailedState().getName(), message);
 	}
 
 	private boolean isModelTooOld() {
@@ -243,16 +239,6 @@ public class PredictorProfileClusteringModelImpl extends AbstractPredictor
 				() -> this.meta.getSubdivisionCode(), //
 				this.predictorConfig.profileSwitcherFactory(), //
 				this.currentProfile);
-	}
-
-	private void logTrainingError(TrainingState state, LogSeverity severity, String message) {
-		var logMessage = String.format("Training failed [%s]: %s", state.getName(), message);
-		this.logWithSeverity(this.log, severity, logMessage);
-	}
-
-	private void logPredictionError(PredictionState state, LogSeverity severity, String message) {
-		var logMessage = String.format("Prediction failed [%s]: %s", state.getName(), message);
-		this.logWithSeverity(this.log, severity, logMessage);
 	}
 
 	@Override

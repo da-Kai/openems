@@ -13,7 +13,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.HashMultimap;
@@ -43,7 +42,7 @@ public class ControllerDebugDetailedLogImpl extends AbstractOpenemsComponent
 
 	private static final int WIDTH_FIRST = 30;
 
-	private final Logger log = LoggerFactory.getLogger(ControllerDebugDetailedLogImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final Set<String> finishedFirstRun = new HashSet<>();
 	private final Map<ChannelAddress, String> lastPrinted = new HashMap<>();
 
@@ -82,7 +81,7 @@ public class ControllerDebugDetailedLogImpl extends AbstractOpenemsComponent
 				/*
 				 * Print on first run
 				 */
-				this.logInfo(this.log, "=======================================");
+				this.log.info("=======================================");
 				this.log("ID", component.id());
 				this.log("Service-PID", component.servicePid());
 				this.log("Implementation", reducePackageName(component.getClass()));
@@ -156,15 +155,15 @@ public class ControllerDebugDetailedLogImpl extends AbstractOpenemsComponent
 					/*
 					 * Print header (this is not the first run)
 					 */
-					this.logInfo(this.log, "=======================================");
+					this.log.info("=======================================");
 					this.log("ID", component.id());
 				}
 
-				this.logInfo(this.log, "---------------------------------------");
+				this.log.info("---------------------------------------");
 				shouldPrint.values().stream().sorted().forEach(line -> {
-					this.logInfo(this.log, line);
+					this.log.info(line);
 				});
-				this.logInfo(this.log, "---------------------------------------");
+				this.log.info("---------------------------------------");
 			}
 		}
 	}
@@ -191,7 +190,8 @@ public class ControllerDebugDetailedLogImpl extends AbstractOpenemsComponent
 	}
 
 	private void log(String topic, String message) {
-		this.logInfo(this.log, String.format("%-" + WIDTH_FIRST + "s : %s", topic, message));
+		final var formatTopic = String.format("%-" + WIDTH_FIRST + "s", topic);
+		this.log.info("{} : {}", formatTopic, message);
 	}
 
 	private static String reducePackageName(Class<?> clazz) {

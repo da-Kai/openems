@@ -29,7 +29,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -95,7 +94,7 @@ public class BatteryInverterSinexcelImpl extends AbstractOpenemsModbusComponent
 	private static final int MAX_CURRENT = 90; // [A]
 	private static final int MAX_TOPPING_CHARGE_VOLTAGE = 750;
 
-	private final Logger log = LoggerFactory.getLogger(BatteryInverterSinexcelImpl.class);
+	private final Logger log;
 	private final StateMachine stateMachine = new StateMachine(State.UNDEFINED);
 
 	private final CalculateEnergyFromPower calculateChargeEnergy = new CalculateEnergyFromPower(this,
@@ -130,6 +129,7 @@ public class BatteryInverterSinexcelImpl extends AbstractOpenemsModbusComponent
 				OffGridBatteryInverter.ChannelId.values(), //
 				BatteryInverterSinexcel.ChannelId.values() //
 		);
+		this.log = OpenemsComponent.getComponentLogger(this);
 		this._setMaxApparentPower(MAX_APPARENT_POWER);
 	}
 
@@ -176,7 +176,7 @@ public class BatteryInverterSinexcelImpl extends AbstractOpenemsModbusComponent
 
 		} catch (OpenemsNamedException e) {
 			this.channel(BatteryInverterSinexcel.ChannelId.RUN_FAILED).setNextValue(true);
-			this.logError(this.log, "StateMachine failed: " + e.getMessage());
+			this.log.error("StateMachine failed: {}", e.getMessage());
 		}
 	}
 
@@ -207,9 +207,7 @@ public class BatteryInverterSinexcelImpl extends AbstractOpenemsModbusComponent
 			try {
 				channel.setNextWriteValue(newValue);
 			} catch (OpenemsNamedException e) {
-				this.logWarn(this.log, "Unable to update Channel [" + channel.address() + "] from [" + currentValue
-						+ "] to [" + newValue + "]");
-				e.printStackTrace();
+				this.log.warn("Unable to update Channel [{}] from [{}] to [{}]", channel.address(), currentValue, newValue, e);
 			}
 		}
 	}
@@ -258,9 +256,7 @@ public class BatteryInverterSinexcelImpl extends AbstractOpenemsModbusComponent
 		this.updateIfNotEqual(BatteryInverterSinexcel.ChannelId.POWER_RISING_MODE, DEFAULT_POWER_RISING_MODE);
 
 		switch (this.config.countryCode()) {
-		case AUSTRIA:
-		case GERMANY:
-		case SWITZERLAND:
+		case AUSTRIA, GERMANY, SWITZERLAND:
 			this.updateIfNotEqual(BatteryInverterSinexcel.ChannelId.VOLTAGE_LEVEL, VoltageLevel.V_400);
 			this.updateIfNotEqual(BatteryInverterSinexcel.ChannelId.FREQUENCY_LEVEL, FrequencyLevel.HZ_50);
 			this.updateIfNotEqual(BatteryInverterSinexcel.ChannelId.GRID_CODE_SELECTION, GridCodeSelection.VDE);

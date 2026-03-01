@@ -15,7 +15,6 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -55,7 +54,7 @@ public class BatteryInverterSmaStpSeImpl extends AbstractSunSpecBatteryInverter
 		implements BatteryInverterSmaStpSe, HybridManagedSymmetricBatteryInverter, ManagedSymmetricBatteryInverter,
 		SymmetricBatteryInverter, StartStoppable, ModbusComponent, TimedataProvider, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(BatteryInverterSmaStpSeImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private static final int READ_FROM_MODBUS_BLOCK = 1;
 
 	private static final Map<SunSpecModel, Priority> ACTIVE_MODELS = ImmutableMap.<SunSpecModel, Priority>builder()
@@ -135,7 +134,7 @@ public class BatteryInverterSmaStpSeImpl extends AbstractSunSpecBatteryInverter
 
 	@Override
 	protected void onSunSpecInitializationCompleted() {
-		this.logInfo(this.log, "SunSpec initialization finished. " + this.channels().size() + " Channels available.");
+		this.log.info("SunSpec initialization finished. {} Channels available.", this.channels().size());
 
 		this.mapFirstPointToChannel(SymmetricBatteryInverter.ChannelId.REACTIVE_POWER,
 				ElementToChannelConverter.DIRECT_1_TO_1, DefaultSunSpecModel.S103.V_AR);

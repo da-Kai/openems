@@ -15,7 +15,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 
@@ -28,6 +27,7 @@ import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.jsonrpc.notification.AggregatedDataNotification;
 import io.openems.common.jsonrpc.notification.ResendDataNotification;
 import io.openems.common.jsonrpc.notification.TimestampedDataNotification;
+import io.openems.common.logger.LazyContextLogger;
 import io.openems.common.timedata.Resolution;
 import io.openems.common.types.ChannelAddress;
 import io.openems.common.utils.ThreadPoolUtils;
@@ -40,7 +40,7 @@ import io.openems.common.utils.ThreadPoolUtils;
 )
 public class TimedataTimescaleDb extends AbstractOpenemsBackendComponent implements Timedata {
 
-	private final Logger log = LoggerFactory.getLogger(TimedataTimescaleDb.class);
+	private final Logger log;
 
 	private final Config config;
 	private final TimescaledbWriteHandler timescaledbWriteHandler;
@@ -52,13 +52,14 @@ public class TimedataTimescaleDb extends AbstractOpenemsBackendComponent impleme
 	public TimedataTimescaleDb(@Reference Metadata metadata, Config config) throws SQLException {
 		super("Timedata.TimescaleDB");
 		this.config = config;
+		this.log = new LazyContextLogger(TimedataTimescaleDb.class, this.config::id);
 
-		this.logInfo(this.log, "Activate [" //
-				+ config.user() + (config.password() != null ? ":xxx" : "") //
-				+ "@" + config.host() + ":" + config.port() //
-				+ "/" + config.database() //
-				+ (config.isReadOnly() ? "|READ_ONLY_MODE" : "") //
-				+ "]");
+		this.log.info("Activate [{}{}@{}:{}/{}{}]", //
+				config.user(), //
+				(config.password() != null ? ":xxx" : ""), //
+				config.host(), config.port(), config.database(), //
+				(config.isReadOnly() ? "|READ_ONLY_MODE" : "") //
+		);
 
 		this.timescaledbReadHandler = new TimescaledbReadHandler(config);
 		this.timescaledbWriteHandler = new TimescaledbWriteHandler(config,
@@ -77,7 +78,7 @@ public class TimedataTimescaleDb extends AbstractOpenemsBackendComponent impleme
 
 	@Deactivate
 	private void deactivate() {
-		this.logInfo(this.log, "Deactivate");
+		this.log.info("Deactivate");
 		this.timescaledbWriteHandler.deactivate();
 		this.timescaledbReadHandler.deactivate();
 		ThreadPoolUtils.shutdownAndAwaitTermination(this.debugLogExecutor, 0);
@@ -91,7 +92,7 @@ public class TimedataTimescaleDb extends AbstractOpenemsBackendComponent impleme
 	@Override
 	public void write(String edgeId, AggregatedDataNotification data) {
 		// TODO
-		this.logWarn(this.log, "Timedata.TimescaleDB do not support write of AggregatedDataNotification");
+		this.log.warn("Timedata.TimescaleDB do not support write of AggregatedDataNotification");
 	}
 
 	@Override

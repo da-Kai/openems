@@ -22,7 +22,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.jsonrpc.serialization.EmptyObject;
@@ -70,7 +69,7 @@ public class EssGenericManagedSymmetricImpl
 		OpenemsComponent, EventHandler, StartStoppable, ModbusSlave, CycleProvider, EssProtection, EssErrorAcknowledge,
 		ComponentJsonApi, TimedataProvider, RuntimeChannels {
 
-	private final Logger log = LoggerFactory.getLogger(EssGenericManagedSymmetricImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final StateMachine stateMachine = new StateMachine(UNDEFINED);
 	private final ChannelManager channelManager = new ChannelManager(this);
 
@@ -141,7 +140,7 @@ public class EssGenericManagedSymmetricImpl
 			this._setRunFailed(false);
 		} catch (OpenemsNamedException e) {
 			this._setRunFailed(true);
-			this.logError(this.log, "StateMachine failed: " + e.getMessage());
+			this.log.error("StateMachine failed: {}", e.getMessage());
 		}
 	}
 
@@ -244,7 +243,7 @@ public class EssGenericManagedSymmetricImpl
 
 			this.stateMachine.forceNextState(UNDEFINED);
 		} catch (Exception e) {
-			this.logError(this.log, e.getClass().getSimpleName() + ": " + e.getMessage());
+			this.log.error("{}: {}", e.getClass().getSimpleName(), e.getMessage());
 		}
 	}
 

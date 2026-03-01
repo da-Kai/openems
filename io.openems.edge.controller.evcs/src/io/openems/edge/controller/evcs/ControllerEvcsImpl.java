@@ -19,7 +19,7 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.slf4j.spi.LoggingEventBuilder;
 
 import io.openems.common.channel.AccessMode;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -46,7 +46,7 @@ public class ControllerEvcsImpl extends AbstractOpenemsComponent
 	private static final int CHARGE_POWER_BUFFER = 200;
 	private static final double DEFAULT_UPPER_TARGET_DIFFERENCE_PERCENT = 0.10; // 10%
 
-	private final Logger log = LoggerFactory.getLogger(ControllerEvcsImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final ChargingLowerThanTargetHandler chargingLowerThanTargetHandler;
 	private final Clock clock;
 
@@ -221,8 +221,8 @@ public class ControllerEvcsImpl extends AbstractOpenemsComponent
 				var maximumPower = this.chargingLowerThanTargetHandler.getMaximumChargePower();
 				if (maximumPower != null) {
 					this.evcs._setMaximumPower(maximumPower + CHARGE_POWER_BUFFER);
-					this.logDebug(this.log,
-							"Maximum Charge Power of the EV reduced to" + maximumPower + " W plus buffer");
+					this.debug().setMessage("Maximum Charge Power of the EV reduced to {} W plus buffer")
+							.addArgument(maximumPower).log();
 				}
 			} else {
 				int currMax = this.evcs.getMaximumPower().orElse(0);
@@ -247,7 +247,7 @@ public class ControllerEvcsImpl extends AbstractOpenemsComponent
 		} else {
 			this.evcs.setChargePowerLimit(nextChargePower);
 		}
-		this.logDebug(this.log, "Next charge power: " + nextChargePower + " W");
+		this.debug().setMessage("Next charge power: {} W").addArgument(nextChargePower).log();
 	}
 
 	/**
@@ -407,7 +407,7 @@ public class ControllerEvcsImpl extends AbstractOpenemsComponent
 		try {
 			var pid = this.servicePid();
 			if (pid.isEmpty()) {
-				this.logInfo(this.log, "PID of " + this.id() + " is Empty");
+				this.log.info("PID of {} is Empty", this.id());
 				return;
 			}
 			c = this.cm.getConfiguration(pid, "?");
@@ -419,24 +419,15 @@ public class ControllerEvcsImpl extends AbstractOpenemsComponent
 				c.update(properties);
 			}
 		} catch (IOException | SecurityException e) {
-			this.logError(this.log, "ERROR: " + e.getMessage());
+			this.log.error("ERROR: {}", e.getMessage());
 		}
 	}
 
-	@Override
-	public void logInfo(Logger log, String message) {
-		super.logInfo(log, message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		super.logWarn(log, message);
-	}
-
-	@Override
-	protected void logDebug(Logger log, String message) {
+	protected LoggingEventBuilder debug() {
 		if (this.config.debugMode()) {
-			this.logInfo(this.log, message);
+			return this.log.atInfo();
+		} else {
+			return this.log.atDebug();
 		}
 	}
 }

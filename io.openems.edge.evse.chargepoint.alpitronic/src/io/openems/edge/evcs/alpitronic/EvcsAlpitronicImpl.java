@@ -21,8 +21,6 @@ import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
@@ -70,7 +68,6 @@ public class EvcsAlpitronicImpl extends AbstractOpenemsModbusComponent
 		implements Evcs, ManagedEvcs, DeprecatedEvcs, ElectricityMeter, OpenemsComponent, ModbusComponent, EventHandler,
 		Alpitronic, EvcsAlpitronic, TimedataProvider {
 
-	private final Logger log = LoggerFactory.getLogger(EvcsAlpitronicImpl.class);
 	/** Modbus offset for multiple connectors. */
 	private final IntFunction<Integer> offset = addr -> addr + this.config.connector().modbusOffset;
 
@@ -354,13 +351,6 @@ public class EvcsAlpitronicImpl extends AbstractOpenemsModbusComponent
 	@Override
 	public ChargeStateHandler getChargeStateHandler() {
 		return this.chargeStateHandler;
-	}
-
-	@Override
-	public void logDebug(String message) {
-		if (this.config.debugMode()) {
-			this.logInfo(this.log, message);
-		}
 	}
 
 	@Override

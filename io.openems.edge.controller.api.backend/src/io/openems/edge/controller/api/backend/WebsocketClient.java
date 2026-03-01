@@ -9,15 +9,15 @@ import java.util.concurrent.TimeUnit;
 
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import io.openems.common.logger.ContextLogger;
 import io.openems.common.websocket.AbstractWebsocketClient;
 import io.openems.common.websocket.OnClose;
 import io.openems.common.websocket.WsData;
 
 public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 
-	private final Logger log = LoggerFactory.getLogger(WebsocketClient.class);
+	private final Logger log;
 
 	private final ControllerApiBackendImpl parent;
 	private final OnOpen onOpen;
@@ -28,13 +28,15 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	protected WebsocketClient(ControllerApiBackendImpl parent, String name, URI serverUri,
 			Map<String, String> httpHeaders, Proxy proxy) {
 		super(name, serverUri, httpHeaders, proxy);
+		this.log = new ContextLogger(WebsocketClient.class, name);
 		this.parent = parent;
 		this.onOpen = new OnOpen(parent);
 		this.onNotification = new OnNotification(parent);
 		this.onError = new OnError(parent);
 		this.onClose = (ws, code, reason, remote) -> {
-			this.log.error("Disconnected from OpenEMS Backend [" + serverUri.toString() //
-					+ (proxy != AbstractWebsocketClient.NO_PROXY ? " via Proxy" : "") + "]");
+			this.log.error("Disconnected from OpenEMS Backend [{}{}]", // 
+					serverUri, //
+					proxy == AbstractWebsocketClient.NO_PROXY ? "" : " via Proxy");
 			this.parent.getUnableToSendChannel().setNextValue(true);
 		};
 	}
@@ -69,21 +71,6 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 		return new WsData(ws);
 	}
 
-	@Override
-	protected void logInfo(Logger log, String message) {
-		this.parent.logInfo(log, message);
-	}
-
-	@Override
-	protected void logWarn(Logger log, String message) {
-		this.parent.logWarn(log, message);
-	}
-
-	@Override
-	protected void logError(Logger log, String message) {
-		this.parent.logError(log, message);
-	}
-
 	public boolean isConnected() {
 		return this.ws.isOpen();
 	}
@@ -105,5 +92,10 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	protected ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay,
 			TimeUnit unit) {
 		return this.parent.scheduleWithFixedDelay(command, initialDelay, delay, unit);
+	}
+
+	@Override
+	protected Logger getLogger() {
+		return this.log;
 	}
 }

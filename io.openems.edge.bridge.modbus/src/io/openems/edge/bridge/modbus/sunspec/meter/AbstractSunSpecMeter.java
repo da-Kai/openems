@@ -12,7 +12,6 @@ import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Deactivate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.bridge.modbus.sunspec.AbstractOpenemsSunSpecComponent;
@@ -31,7 +30,7 @@ import io.openems.edge.meter.api.ElectricityMeter;
 public abstract class AbstractSunSpecMeter extends AbstractOpenemsSunSpecComponent
 		implements ElectricityMeter, OpenemsComponent {
 
-	private final Logger log = LoggerFactory.getLogger(AbstractSunSpecMeter.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	private boolean invert = false;
 
@@ -98,7 +97,7 @@ public abstract class AbstractSunSpecMeter extends AbstractOpenemsSunSpecCompone
 
 	@Override
 	protected void onSunSpecInitializationCompleted() {
-		this.logInfo(this.log, "SunSpec initialization finished. " + this.channels().size() + " Channels available.");
+		this.log.info("SunSpec initialization finished. {} Channels available.", this.channels().size());
 
 		this.mapFirstPointToChannel(//
 				ElectricityMeter.ChannelId.FREQUENCY, //

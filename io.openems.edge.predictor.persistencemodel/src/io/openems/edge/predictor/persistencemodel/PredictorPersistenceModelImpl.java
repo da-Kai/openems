@@ -20,7 +20,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -61,7 +60,7 @@ public class PredictorPersistenceModelImpl extends AbstractPredictor
 
 	private static final int EXTRA_QUERY_QUARTERS = Math.max(SMOOTH_QUERY_QUARTERS, REGRESSION_QUERY_QUARTERS);
 
-	private final Logger log = LoggerFactory.getLogger(PredictorPersistenceModelImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private Sum sum;
@@ -103,12 +102,12 @@ public class PredictorPersistenceModelImpl extends AbstractPredictor
 			queryResult = this.timedata.queryHistoricData(null, fromDate, now, Sets.newHashSet(channelAddress),
 					new Resolution(15, ChronoUnit.MINUTES));
 		} catch (OpenemsNamedException e) {
-			this.logError(this.log, "Historic data is not available: " + e.getMessage());
+			this.log.error("Historic data is not available: {}", e.getMessage());
 			e.printStackTrace();
 			return EMPTY_PREDICTION;
 		}
 		if (queryResult == null) {
-			this.logError(this.log, "Historic data is not available: query result is null");
+			this.log.error("Historic data is not available: query result is null");
 			return EMPTY_PREDICTION;
 		}
 		// Extract data
@@ -124,7 +123,7 @@ public class PredictorPersistenceModelImpl extends AbstractPredictor
 					return v.getAsInt();
 				}).toList();
 		if (data.isEmpty()) {
-			this.logError(this.log, "Historic data is not available: query result is empty");
+			this.log.error("Historic data is not available: query result is empty");
 			return EMPTY_PREDICTION;
 		}
 

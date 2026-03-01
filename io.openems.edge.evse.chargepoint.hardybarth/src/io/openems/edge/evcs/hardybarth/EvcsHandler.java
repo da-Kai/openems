@@ -5,10 +5,6 @@ import static io.openems.common.types.OpenemsType.STRING;
 import static io.openems.edge.evcs.api.Evcs.evaluatePhaseCountFromCurrent;
 import static java.lang.Math.round;
 
-import java.util.function.BiConsumer;
-
-import org.slf4j.Logger;
-
 import com.google.gson.JsonElement;
 
 import io.openems.common.bridge.http.api.BridgeHttpFactory;
@@ -26,9 +22,9 @@ public class EvcsHandler extends AbstractHardyBarthHandler<EvcsHardyBarthImpl> {
 	private int errorCounter = 0;
 
 	public EvcsHandler(EvcsHardyBarthImpl parent, String ip, String apikey, PhaseRotation phaseRotation,
-			LogVerbosity logVerbosity, BiConsumer<Logger, String> logInfo, BridgeHttpFactory httpBridgeFactory,
+			LogVerbosity logVerbosity, BridgeHttpFactory httpBridgeFactory,
 			HttpBridgeCycleServiceDefinition httpBridgeCycleServiceDefinition, BooleanConsumer communicationFailed) {
-		super(parent, ip, apikey, phaseRotation, logVerbosity, logInfo, httpBridgeFactory,
+		super(parent, ip, apikey, phaseRotation, logVerbosity, httpBridgeFactory,
 				httpBridgeCycleServiceDefinition, communicationFailed);
 	}
 
@@ -54,7 +50,7 @@ public class EvcsHandler extends AbstractHardyBarthHandler<EvcsHardyBarthImpl> {
 			hb._setPhases(phases);
 			switch (this.logVerbosity) {
 			case NONE, DEBUG_LOG -> FunctionUtils.doNothing();
-			case READS, WRITES -> this.logInfo("Used phases: " + phases);
+			case READS, WRITES -> super.log.info("Used phases: {}", phases);
 			}
 		}
 
@@ -65,7 +61,7 @@ public class EvcsHandler extends AbstractHardyBarthHandler<EvcsHardyBarthImpl> {
 				this.errorCounter++;
 				switch (this.logVerbosity) {
 				case NONE, DEBUG_LOG -> FunctionUtils.doNothing();
-				case READS, WRITES -> this.logInfo("Hardy Barth RAW_STATUS would be null! Raw value: " + value);
+				case READS, WRITES -> super.log.info("Hardy Barth RAW_STATUS would be null! Raw value: {}", value);
 				}
 				if (this.errorCounter > 3) {
 					return Status.ERROR;
@@ -93,8 +89,7 @@ public class EvcsHandler extends AbstractHardyBarthHandler<EvcsHardyBarthImpl> {
 				this.errorCounter++;
 				switch (this.logVerbosity) {
 				case NONE, DEBUG_LOG -> FunctionUtils.doNothing();
-				case READS, WRITES -> this.logInfo("Hardy Barth RAW_STATUS would be an error! Raw value: " + stringValue
-						+ " - Error counter: " + this.errorCounter);
+				case READS, WRITES -> super.log.info("Hardy Barth RAW_STATUS would be an error! Raw value: {} - Error counter: {}", stringValue, this.errorCounter);
 				}
 				if (this.errorCounter > 3) {
 					yield Status.ERROR;
@@ -104,7 +99,7 @@ public class EvcsHandler extends AbstractHardyBarthHandler<EvcsHardyBarthImpl> {
 			default -> {
 				switch (this.logVerbosity) {
 				case NONE, DEBUG_LOG -> FunctionUtils.doNothing();
-				case READS, WRITES -> this.logInfo("State " + stringValue + " is not a valid state");
+				case READS, WRITES -> super.log.info("State {} is not a valid state", stringValue);
 				}
 				yield Status.UNDEFINED;
 			}

@@ -21,7 +21,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
@@ -55,7 +54,7 @@ import io.openems.edge.ess.power.api.Relationship;
 })
 public class EssPowerImpl extends AbstractOpenemsComponent implements EssPower, OpenemsComponent, EventHandler, Power {
 
-	private final Logger log = LoggerFactory.getLogger(EssPowerImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private ConfigurationAdmin cm;
@@ -155,7 +154,7 @@ public class EssPowerImpl extends AbstractOpenemsComponent implements EssPower, 
 			if (this.debugMode) {
 				var allConstraints = this.data.getConstraintsForAllInverters();
 				debugLogConstraints(this.log, "Unable to validate with following constraints:", allConstraints);
-				this.logWarn(this.log, "Failed to add Constraint: " + constraint);
+				this.log.warn("Failed to add Constraint: {}", constraint);
 			}
 			if (e instanceof PowerException pe) {
 				pe.setReason(constraint);
@@ -201,13 +200,13 @@ public class EssPowerImpl extends AbstractOpenemsComponent implements EssPower, 
 		try {
 			allConstraints = this.data.getConstraintsForAllInverters();
 		} catch (OpenemsException e) {
-			this.logError(this.log, "Unable to get Constraints " + e.getMessage());
+			this.log.error("Unable to get Constraints {}", e.getMessage());
 			return 0;
 		}
 		var power = CalculatePowerExtrema.from(this.data.getCoefficients(), allConstraints, ess.id(), phase, pwr, goal);
 		if (power <= Integer.MIN_VALUE || power >= Integer.MAX_VALUE) {
-			this.logError(this.log, goal.name() + " Power for [" + ess.toString() + "," + phase.toString() + ","
-					+ pwr.toString() + "=" + power + "] is out of bounds. Returning '0'");
+			this.log.error("{} Power for [{} ,{}, {}={}] is out of bounds. Returning '0'", //
+					goal.name(), ess, phase, pwr);
 			return 0;
 		}
 		if (goal == GoalType.MAXIMIZE) {
@@ -228,9 +227,7 @@ public class EssPowerImpl extends AbstractOpenemsComponent implements EssPower, 
 			}
 
 		} catch (Exception e) {
-			this.logError(this.log,
-					"Error during handleEvent(). " + e.getClass().getSimpleName() + ": " + e.getMessage());
-			e.printStackTrace();
+			this.log.error("Error during handleEvent(). {}: {}", e.getClass().getSimpleName(), e.getMessage(), e);
 		}
 	}
 
@@ -242,11 +239,6 @@ public class EssPowerImpl extends AbstractOpenemsComponent implements EssPower, 
 	 */
 	protected ManagedSymmetricEss getEss(String essId) {
 		return this.data.getEss(essId);
-	}
-
-	@Override
-	protected void logError(Logger log, String message) {
-		super.logError(log, message);
 	}
 
 	@Override
