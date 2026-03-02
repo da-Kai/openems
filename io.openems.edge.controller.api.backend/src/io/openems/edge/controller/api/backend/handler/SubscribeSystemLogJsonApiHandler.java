@@ -56,7 +56,9 @@ public class SubscribeSystemLogJsonApiHandler implements JsonApi, PaxAppender {
 		}
 
 		final var logs = new ArrayList<SystemLog>();
-		this.logBuffer.drainTo(logs, LOG_BUFFER_SIZE);
+		synchronized (this.logBuffer) {
+			this.logBuffer.drainTo(logs, LOG_BUFFER_SIZE);
+		}
 		if (logs.isEmpty()) {
 			return;
 		}
