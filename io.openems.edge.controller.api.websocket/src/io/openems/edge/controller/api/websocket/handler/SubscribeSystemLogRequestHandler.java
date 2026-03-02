@@ -94,7 +94,7 @@ public class SubscribeSystemLogRequestHandler implements JsonApi, PaxAppender {
 	}
 
 	@Override
-	public synchronized void doAppend(PaxLoggingEvent event) {
+	public void doAppend(PaxLoggingEvent event) {
 		if (this.subscribers.isEmpty()) {
 			return;
 		}
