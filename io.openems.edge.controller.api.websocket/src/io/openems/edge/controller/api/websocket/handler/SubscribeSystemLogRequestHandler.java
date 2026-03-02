@@ -31,7 +31,7 @@ import io.openems.edge.controller.api.websocket.WsData;
 })
 public class SubscribeSystemLogRequestHandler implements JsonApi, PaxAppender {
 
-	private final Set<WsData> subscriber = ConcurrentHashMap.newKeySet();
+	private final Set<WsData> subscribers = ConcurrentHashMap.newKeySet();
 	private final ConcurrentLinkedDeque<SystemLog> logBuffer = new ConcurrentLinkedDeque<>();
 
 	private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
@@ -47,7 +47,8 @@ public class SubscribeSystemLogRequestHandler implements JsonApi, PaxAppender {
 	}
 
 	private void push() {
-		if (this.subscriber.isEmpty()) {
+		if (this.subscribers.isEmpty()) {
+			this.logBuffer.clear();
 			return;
 		}
 
@@ -62,7 +63,7 @@ public class SubscribeSystemLogRequestHandler implements JsonApi, PaxAppender {
 
 		final var notification = new EdgeRpcNotification(ControllerApiWebsocket.EDGE_ID, new SystemLogNotification(logs));
 		
-		final var iter = this.subscriber.iterator();
+		final var iter = this.subscribers.iterator();
 		while (iter.hasNext()) {
 			final var wsData = iter.next();
 			if (wsData.getWebsocket().isFlushAndClose()) {
@@ -80,9 +81,9 @@ public class SubscribeSystemLogRequestHandler implements JsonApi, PaxAppender {
 			final var wsData = call.get(OnRequest.WS_DATA_KEY);
 
 			if (request.isSubscribe()) {
-				this.subscriber.add(wsData);
+				this.subscribers.add(wsData);
 			} else {
-				this.subscriber.remove(wsData);
+				this.subscribers.remove(wsData);
 			}
 
 			return new GenericJsonrpcResponseSuccess(request.getId());
@@ -91,7 +92,7 @@ public class SubscribeSystemLogRequestHandler implements JsonApi, PaxAppender {
 
 	@Override
 	public void doAppend(PaxLoggingEvent event) {
-		if (this.subscriber.isEmpty()) {
+		if (this.subscribers.isEmpty()) {
 			return;
 		}
 

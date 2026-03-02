@@ -31,7 +31,7 @@ import io.openems.edge.controller.api.backend.WebsocketClient;
 })
 public class SubscribeSystemLogJsonApiHandler implements JsonApi, PaxAppender {
 
-	private final Set<WebsocketClient> subscriber = ConcurrentHashMap.newKeySet();
+	private final Set<WebsocketClient> subscribers = ConcurrentHashMap.newKeySet();
 	private final ConcurrentLinkedDeque<SystemLog> logBuffer = new ConcurrentLinkedDeque<>();
 
 	private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
@@ -47,7 +47,8 @@ public class SubscribeSystemLogJsonApiHandler implements JsonApi, PaxAppender {
 	}
 	
 	private void push() {
-		if (this.subscriber.isEmpty()) {
+		if (this.subscribers.isEmpty()) {
+			this.logBuffer.clear();
 			return;
 		}
 
@@ -62,7 +63,7 @@ public class SubscribeSystemLogJsonApiHandler implements JsonApi, PaxAppender {
 
 		final var notification = new SystemLogNotification(logs);
 		
-		final var iterator = this.subscriber.iterator();
+		final var iterator = this.subscribers.iterator();
 		while (iterator.hasNext()) {
 			final var ws = iterator.next();
 			if (!ws.sendMessage(notification)) {
@@ -80,9 +81,9 @@ public class SubscribeSystemLogJsonApiHandler implements JsonApi, PaxAppender {
 			}
 			final var request = SubscribeSystemLogRequest.from(call.getRequest());
 			if (request.isSubscribe()) {
-				this.subscriber.add(webSocket);
+				this.subscribers.add(webSocket);
 			} else {
-				this.subscriber.remove(webSocket);
+				this.subscribers.remove(webSocket);
 			}
 
 			return new AuthenticatedRpcResponse(call.getRequest().getId(),
@@ -92,7 +93,7 @@ public class SubscribeSystemLogJsonApiHandler implements JsonApi, PaxAppender {
 
 	@Override
 	public void doAppend(PaxLoggingEvent event) {
-		if (this.subscriber.isEmpty()) {
+		if (this.subscribers.isEmpty()) {
 			return;
 		}
 

@@ -19,7 +19,9 @@ import io.openems.common.utils.JsonUtils;
  *   "jsonrpc": "2.0",
  *   "method": "systemLog",
  *   "params": {
- *     "line": {@link SystemLog#toJson()}
+ *     "lines": [
+ *     	{@link SystemLog#toJson()}
+ *     ]
  *   }
  * }
  * </pre>

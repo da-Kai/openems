@@ -82,7 +82,7 @@ public final class JsonUtils {
 	}
 	
 	/**
-	 * Provide a easy way to convert a JsonArray to a list of objects using the given
+	 * Provide a easy way to convert a JsonArray to a list of objects using the given convert function to convert each element.
 	 * 
 	 * @param <T> type of an element from list
 	 * @param jsonArray to convert
