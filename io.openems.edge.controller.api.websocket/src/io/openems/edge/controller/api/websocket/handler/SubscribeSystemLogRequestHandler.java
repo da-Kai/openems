@@ -2,9 +2,10 @@ package io.openems.edge.controller.api.websocket.handler;
 
 import java.util.ArrayList;
 import java.util.Set;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -31,8 +32,10 @@ import io.openems.edge.controller.api.websocket.WsData;
 })
 public class SubscribeSystemLogRequestHandler implements JsonApi, PaxAppender {
 
+	private static final int LOG_BUFFER_SIZE = 64;
+
 	private final Set<WsData> subscribers = ConcurrentHashMap.newKeySet();
-	private final ConcurrentLinkedDeque<SystemLog> logBuffer = new ConcurrentLinkedDeque<>();
+	private final BlockingDeque<SystemLog> logBuffer = new LinkedBlockingDeque<>(LOG_BUFFER_SIZE*2);
 
 	private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
@@ -53,16 +56,14 @@ public class SubscribeSystemLogRequestHandler implements JsonApi, PaxAppender {
 		}
 
 		final var logs = new ArrayList<SystemLog>();
-		SystemLog log;
-		while ((log = this.logBuffer.poll()) != null) {
-			logs.add(log);
-		}
+		this.logBuffer.drainTo(logs, LOG_BUFFER_SIZE);
 		if (logs.isEmpty()) {
 			return;
 		}
 
-		final var notification = new EdgeRpcNotification(ControllerApiWebsocket.EDGE_ID, new SystemLogNotification(logs));
-		
+		final var notification = new EdgeRpcNotification(ControllerApiWebsocket.EDGE_ID,
+				new SystemLogNotification(logs));
+
 		final var iter = this.subscribers.iterator();
 		while (iter.hasNext()) {
 			final var wsData = iter.next();
@@ -91,12 +92,17 @@ public class SubscribeSystemLogRequestHandler implements JsonApi, PaxAppender {
 	}
 
 	@Override
-	public void doAppend(PaxLoggingEvent event) {
+	public synchronized void doAppend(PaxLoggingEvent event) {
 		if (this.subscribers.isEmpty()) {
 			return;
 		}
-
-		this.logBuffer.offer(SystemLog.fromPaxLoggingEvent(event));
+		final var sysLog = SystemLog.fromPaxLoggingEvent(event);
+		synchronized (this.logBuffer) {
+			if (!this.logBuffer.offerLast(sysLog)) {
+				this.logBuffer.pollFirst();
+				this.logBuffer.offerLast(sysLog);
+			}
+		}
 	}
 
 }

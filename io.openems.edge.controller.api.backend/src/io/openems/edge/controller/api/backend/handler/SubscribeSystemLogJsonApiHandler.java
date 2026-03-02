@@ -2,9 +2,10 @@ package io.openems.edge.controller.api.backend.handler;
 
 import java.util.ArrayList;
 import java.util.Set;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -31,11 +32,13 @@ import io.openems.edge.controller.api.backend.WebsocketClient;
 })
 public class SubscribeSystemLogJsonApiHandler implements JsonApi, PaxAppender {
 
+	private static final int LOG_BUFFER_SIZE = 64;
+
 	private final Set<WebsocketClient> subscribers = ConcurrentHashMap.newKeySet();
-	private final ConcurrentLinkedDeque<SystemLog> logBuffer = new ConcurrentLinkedDeque<>();
+	private final BlockingDeque<SystemLog> logBuffer = new LinkedBlockingDeque<>(LOG_BUFFER_SIZE*2);
 
 	private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-	
+
 	@Activate
 	protected void activate() {
 		this.executor.scheduleAtFixedRate(this::push, 1, 1, TimeUnit.SECONDS);
@@ -45,7 +48,7 @@ public class SubscribeSystemLogJsonApiHandler implements JsonApi, PaxAppender {
 	protected void deactivate() {
 		this.executor.shutdownNow();
 	}
-	
+
 	private void push() {
 		if (this.subscribers.isEmpty()) {
 			this.logBuffer.clear();
@@ -53,16 +56,13 @@ public class SubscribeSystemLogJsonApiHandler implements JsonApi, PaxAppender {
 		}
 
 		final var logs = new ArrayList<SystemLog>();
-		SystemLog log;
-		while ((log = this.logBuffer.poll()) != null) {
-			logs.add(log);
-		}
+		this.logBuffer.drainTo(logs, LOG_BUFFER_SIZE);
 		if (logs.isEmpty()) {
 			return;
 		}
 
 		final var notification = new SystemLogNotification(logs);
-		
+
 		final var iterator = this.subscribers.iterator();
 		while (iterator.hasNext()) {
 			final var ws = iterator.next();
@@ -96,8 +96,13 @@ public class SubscribeSystemLogJsonApiHandler implements JsonApi, PaxAppender {
 		if (this.subscribers.isEmpty()) {
 			return;
 		}
-
-		this.logBuffer.offer(SystemLog.fromPaxLoggingEvent(event));
+		final var sysLog = SystemLog.fromPaxLoggingEvent(event);
+		synchronized (this.logBuffer) {
+			if (!this.logBuffer.offerLast(sysLog)) {
+				this.logBuffer.pollFirst();
+				this.logBuffer.offerLast(sysLog);
+			}
+		}
 	}
 
 }

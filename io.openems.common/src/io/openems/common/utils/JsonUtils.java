@@ -71,7 +71,7 @@ public final class JsonUtils {
 	}
 
 	/**
-	 * Provide a easy way to generate a JsonArray from a collection of JsonElements.
+	 * Provide an easy way to generate a JsonArray from a collection of JsonElements.
 	 *
 	 * @param <T>  type of element from list
 	 * @param list to convert
@@ -88,11 +88,11 @@ public final class JsonUtils {
 	 * @param jsonArray to convert
 	 * @param convert function to convert elements
 	 * @return list of converted elements
-	 * @throws OpenemsNamedException on error
+	 * @throws OpenemsNamedException if jsonArray is null or if the convert function throws an exception
 	 */
 	public static <T> List<T> toList(JsonArray jsonArray, ThrowingFunction<JsonElement, T, OpenemsNamedException> convert) throws OpenemsNamedException {
 		if (jsonArray == null) {
-			return null;
+			throw OpenemsError.GENERIC.exception("JsonArray is null");
 		}
 		final var list = new ArrayList<T>(jsonArray.size());
 		for (int i = 0; i < jsonArray.size(); i++) {
