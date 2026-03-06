@@ -80,10 +80,24 @@ describe("OverviewComponent", () => {
         expect(button).toBeTruthy();
     });
 
-    fit("+loggedInUserCanInstall & ibn-button doesnt exist - Global role OWNER", async () => {
+    it("+loggedInUserCanInstall & ibn-button doesnt exist - Global role OWNER", async () => {
         const button = await getIbnButtonElement(component, fixture, "owner");
         expect(component.loggedInUserCanInstall).toEqual(false);
         expect(button).toBeNull();
+    });
+
+    it("+ionViewWillEnter populates filteredEdges with edges from the first page", async () => {
+        const mockEdges: Edge[] = [
+            DummyConfig.dummyEdge({ edgeId: "edge0", role: Role.ADMIN }),
+            DummyConfig.dummyEdge({ edgeId: "edge1", role: Role.ADMIN }),
+        ];
+        serviceSpyObject.getEdges.and.returnValue(Promise.resolve(mockEdges));
+
+        component.ionViewWillEnter();
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(component.filteredEdges).toEqual(mockEdges);
     });
 
     async function getIbnButtonElement(component: OverViewComponent, fixture: ComponentFixture<OverViewComponent>, globalRole: "installer" | "owner") {

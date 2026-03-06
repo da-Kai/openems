@@ -70,7 +70,9 @@ export class OverViewComponent implements ViewWillEnter, OnDestroy {
                     ...(this.isAtLeastOwner ? [ORDER_STATES(this.translate)] : []),
                     ...(this.loggedInUserCanInstall ? [environment.PRODUCT_TYPES(this.translate), SUM_STATES(this.translate)] : []),
                 ];
-                this.loadNextPage();
+                this.loadNextPage().then((edges) => {
+                    this.filteredEdges = edges;
+                });
             }
         });
     }
@@ -83,6 +85,9 @@ export class OverViewComponent implements ViewWillEnter, OnDestroy {
             ...(this.isAtLeastOwner ? [ORDER_STATES(this.translate)] : []),
             ...(this.loggedInUserCanInstall ? [environment.PRODUCT_TYPES(this.translate), SUM_STATES(this.translate)] : []),
         ];
+        this.loadNextPage().then((edges) => {
+            this.filteredEdges = edges;
+        });
     }
 
     ionViewDidEnter() {
