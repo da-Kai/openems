@@ -49,7 +49,6 @@ import { DirectiveModule } from "./directive/directive";
 import de from "./i18n/de.json";
 import en from "./i18n/en.json";
 import { ChartOptionsComponent } from "./legacy/chartoptions/chartoptions.component";
-import { AppStateTracker } from "./ngrx-store/states";
 import { PipeModule } from "./pipe/pipe.module";
 import { Logger } from "./service/logger";
 import { RouteService } from "./service/route.service";
@@ -225,7 +224,6 @@ export function PersonNameProhibitedCharactersValidator(control: FormControl): V
         PickDateTimeRangeComponent,
     ],
     providers: [
-        AppStateTracker,
         Logger,
         RouteService,
         Service,

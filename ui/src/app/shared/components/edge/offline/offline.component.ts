@@ -1,6 +1,6 @@
 import { Component, OnInit } from "@angular/core";
 import { TranslateService } from "@ngx-translate/core";
-import { Edge, Producttype, Service, Utils } from "src/app/shared/shared";
+import { Edge, Service, Utils } from "src/app/shared/shared";
 import { Role } from "src/app/shared/type/role";
 import { DateUtils } from "src/app/shared/utils/date/dateutils";
 import { TimeUtils } from "src/app/shared/utils/time/timeutils";
@@ -22,7 +22,6 @@ export class OfflineComponent implements OnInit {
     protected timeSinceOffline: string | null = null;
     protected isAtLeastInstaller: boolean = false;
     protected readonly environment = environment;
-    protected readonly Producttype = Producttype;
 
     constructor(
         public service: Service,

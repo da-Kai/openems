@@ -42,9 +42,6 @@ addIcons({
     "oe-time-of-use-thin": environment.icons.COMMON.TIME_OF_USE.TIME_OF_USE_THIN,
 });
 
-export class Permission {
-}
-
 export class EdgePermission {
 
     /**
@@ -178,9 +175,6 @@ export class UserPermission {
         return edge.isVersionAtLeast("2025.5.4") && edge.roleIsAtLeast(Role.ADMIN);
     }
 
-}
-
-export enum Producttype {
 }
 
 export namespace Currency {
