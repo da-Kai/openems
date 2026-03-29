@@ -50,7 +50,8 @@ common_initialize_environment() {
 
     VERSION_STRING=""
     VERSION="$(_get_version)"
-    local tmp_version="$(echo "${VERSION}" | cut -d'-' -f1)"
+
+    tmp_version="$(echo "${VERSION}" | cut -d'-' -f1)"
     VERSION_MAJOR="$(echo "${tmp_version}" | cut -d'.' -f1)"
     VERSION_MINOR="$(echo "${tmp_version}" | cut -d'.' -f2)"
     VERSION_PATCH="$(echo "${tmp_version}" | cut -d'.' -f3)"
@@ -95,12 +96,12 @@ common_update_version_in_code() {
         sed --in-place "s#\(VERSION_DEV_COMMIT = \)\"\(.*\)\";#\1\"$VERSION_DEV_COMMIT\";#" "$SRC_OPENEMS_CONSTANTS"
         sed --in-place "s#\(VERSION_DEV_BUILD_TIME = \)\"\(.*\)\";#\1\"$VERSION_DEV_BUILD_TIME\";#" "$SRC_OPENEMS_CONSTANTS"
     fi
-    
+
     if [[ -f "$SRC_PACKAGE_JSON" ]]; then
         echo "## Update $SRC_PACKAGE_JSON"
         sed --in-place "s#^\(  \"version\": \"\).*\(\".*$\)#\1$VERSION\2#" "$SRC_PACKAGE_JSON"
     fi
-    
+
     if [[ -f "$SRC_PACKAGE_LOCK_JSON" ]]; then
         echo "## Update $SRC_PACKAGE_LOCK_JSON"
         sed --in-place "s#^\(  \"version\": \"\).*\(\".*$\)#\1$VERSION\2#" "$SRC_PACKAGE_LOCK_JSON"

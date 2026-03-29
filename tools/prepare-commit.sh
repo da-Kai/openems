@@ -150,17 +150,19 @@ echo "# building Java projects"
 
 update_bndrun() {
 	# Updates the given .bndrun file to include all bundles in the respective project
-	# $1 = App name (EdgeApp, BackendEdgeApp, BackendApp)
-	# $2 = Directory prefix (io.openems.edge, io.openems.backend)
-	# $3 = Application bundle
+	local app_name = "$1"
+	local dir_prefix = "$2"
+	local app_bundle = "$3"
+	local bndrun = "${app_bundle}/${app_name}.bndrun"
+
 	echo "#"
-	echo "# updating $1"
-	local bndrun="${3}/${1}.bndrun"
-	head -n $(grep -n '\-runrequires:' $bndrun | grep -Eo '^[^:]+' | head -n1) "$bndrun" > "$bndrun.new"
+	echo "# updating ${app_name}"
+
+	head -n "$(grep -n '\-runrequires:' $bndrun | grep -Eo '^[^:]+' | head -n1)" "$bndrun" > "$bndrun.new"
 	echo "	bnd.identity;id='org.ops4j.pax.logging.pax-logging-api',\\" >> "$bndrun.new"
 	echo "	bnd.identity;id='org.ops4j.pax.logging.pax-logging-log4j2',\\" >> "$bndrun.new"
-	if [[ "$1" == "BackendApp" ]]; then
-		echo "	bnd.identity;id='org.osgi.service.jdbc',\\" >> "${bndrun_tmp}"
+	if [[ "${app_name}" == "BackendApp" ]]; then
+		echo "	bnd.identity;id='org.osgi.service.jdbc',\\" >> "$bndrun.new"
 	fi
 	echo "	bnd.identity;id='org.apache.felix.http.jetty12',\\" >> "$bndrun.new"
 	echo "	bnd.identity;id='org.apache.felix.http.servlet-api',\\" >> "$bndrun.new"
@@ -172,12 +174,12 @@ update_bndrun() {
 	echo "	bnd.identity;id='org.apache.felix.metatype',\\" >> "$bndrun.new"
 
 	entries=()
-	case "$1" in
+	case "$app_name" in
 	"EdgeApp" | "BackendApp")
-	   	for D in $2.*; do
+		for D in "${dir_prefix}."*; do
 			if [[ "$D" == *api ]]; then
 				continue # ignore api bundle
-			elif [[ "$D" == *application && "$D" != "$3" ]]; then
+			elif [[ "$D" == *application && "$D" != "${app_bundle}" ]]; then
 				continue # ignore other application bundle
 			fi
 			entries+=("$D")
@@ -199,11 +201,13 @@ update_bndrun() {
 		echo -e "\tbnd.identity;id='$D',\\" >> "$bndrun.new"
 	done
 
-	local runbundles=$(grep -n '\-runbundles:' $bndrun | grep -Eo '^[^:]+' | head -n1)
-	tail -n +$(expr $runbundles - 1) "$bndrun" >> "$bndrun.new"
-	head -n $(grep -n '\-runbundles:' "$bndrun.new" | grep -Eo '^[^:]+' | head -n1) "$bndrun.new" > "$bndrun"
+	local runbundles
+
+	runbundles=$(grep -n '\-runbundles:' $bndrun | grep -Eo '^[^:]+' | head -n1)
+	tail -n +"$(expr $runbundles - 1)" "$bndrun" >> "$bndrun.new"
+	head -n "$(grep -n '\-runbundles:' "$bndrun.new" | grep -Eo '^[^:]+' | head -n1)" "$bndrun.new" > "$bndrun"
 	rm "$bndrun.new"
-	./gradlew resolve.$1
+	./gradlew resolve.$app_name
 }
 
 update_bndrun EdgeApp 'io.openems.edge' 'io.openems.edge.application'

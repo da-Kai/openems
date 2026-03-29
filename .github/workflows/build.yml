@@ -84,7 +84,6 @@ jobs:
 
   check-auxiliary-scripts:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v5
 
