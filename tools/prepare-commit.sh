@@ -150,10 +150,10 @@ echo "# building Java projects"
 
 update_bndrun() {
 	# Updates the given .bndrun file to include all bundles in the respective project
-	local app_name = "$1"
-	local dir_prefix = "$2"
-	local app_bundle = "$3"
-	local bndrun = "${app_bundle}/${app_name}.bndrun"
+	local app_name="$1"
+	local dir_prefix="$2"
+	local app_bundle="$3"
+	local bndrun="${app_bundle}/${app_name}.bndrun"
 
 	echo "#"
 	echo "# updating ${app_name}"

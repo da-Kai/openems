@@ -94,10 +94,12 @@ jobs:
 
       - name: lint auxiliary scripts
         run: |
+          set -e
           find tools/ -name "*.sh" -exec shellcheck -e SC2120,SC2034 -S warning -x {} \;
 
       - name: validate yaml files
         run: |
+          set -e
           CONFIG="{extends: relaxed, rules: {document-start: disable, line-length: {max: 256}}}"
           find .github/ \( -name "*.yml" -o -name "*.yaml" \) -exec yamllint -d "${CONFIG}" {} \;
           find tools/ \( -name "*.yml" -o -name "*.yaml" \) -exec yamllint -d "${CONFIG}" {} \;
