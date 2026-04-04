@@ -3,21 +3,19 @@ package io.openems.edge.controller.api.backend;
 import io.openems.common.types.URISet;
 import io.openems.common.websocket.AbstractWebsocketClient;
 import io.openems.common.websocket.OnClose;
+import io.openems.common.websocket.WebsocketClientParams;
 import io.openems.common.websocket.WsData;
+import io.openems.edge.common.component.OpenemsComponent;
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.net.Proxy;
-import java.net.URI;
-import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 
-	private final Logger log = LoggerFactory.getLogger(WebsocketClient.class);
+	private final Logger log;
 
 	private final ControllerApiBackendImpl parent;
 	private final OnOpen onOpen;
@@ -25,14 +23,9 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	private final OnError onError;
 	private final OnClose onClose;
 
-	protected WebsocketClient(ControllerApiBackendImpl parent, String name, URI serverUri,
-	                          Map<String, String> httpHeaders, Proxy proxy) {
-		this(parent, name, new URISet(serverUri), httpHeaders, proxy);
-	}
-
-	protected WebsocketClient(ControllerApiBackendImpl parent, String name, URISet serverUris,
-	                          Map<String, String> httpHeaders, Proxy proxy) {
-		super(name, serverUris, httpHeaders, proxy);
+	protected WebsocketClient(ControllerApiBackendImpl parent, String name, WebsocketClientParams params) {
+		super(name, params);
+		this.log = OpenemsComponent.getComponentLogger(WebsocketClient.class, parent);
 		this.parent = parent;
 		this.onOpen = new OnOpen(parent);
 		this.onNotification = new OnNotification(parent);
@@ -47,7 +40,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 						}
 						return addr.getHostString();
 					}) //
-					.addArgument(proxy == AbstractWebsocketClient.NO_PROXY ? "" : " via Proxy") //
+					.addArgument(params.proxy() == WebsocketClientParams.NO_PROXY ? "" : " via Proxy") //
 					.log();
 			this.parent.getUnableToSendChannel().setNextValue(true);
 		};

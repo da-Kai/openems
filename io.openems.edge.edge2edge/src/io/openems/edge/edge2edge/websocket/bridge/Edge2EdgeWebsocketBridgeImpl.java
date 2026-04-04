@@ -18,6 +18,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import io.openems.common.websocket.ClientReconnectorWorker;
+import io.openems.common.websocket.WebsocketClientParams;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -170,8 +172,10 @@ public class Edge2EdgeWebsocketBridgeImpl extends AbstractOpenemsComponent
 		super.activate(context, config.id(), config.alias(), config.enabled());
 		this.config = config;
 
-		this.client = new WebsocketClient(config.id(), URI.create("ws://" + config.ip() + ":" + config.port()),
-				emptyMap(), AbstractWebsocketClient.NO_PROXY, this::setConnectionState, this::onCurrentData,
+		var wsConfig = new WebsocketClientParams.Builder(URI.create("ws://" + config.ip() + ":" + config.port())) //
+				.reconnectorConfig(new ClientReconnectorWorker.Config(5, 10, 5)) //
+				.build();
+		this.client = new WebsocketClient(config.id(), wsConfig, this::setConnectionState, this::onCurrentData,
 				this::onEdgeConfig, this::onChannelChange);
 
 		this.client.start();

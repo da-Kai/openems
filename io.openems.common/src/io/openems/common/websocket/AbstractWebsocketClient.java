@@ -8,12 +8,9 @@ import io.openems.common.jsonrpc.base.JsonrpcResponseSuccess;
 import io.openems.common.logger.ContextLogger;
 import io.openems.common.types.ResolvedURI;
 import io.openems.common.types.URISet;
-import io.openems.common.utils.FunctionUtils;
 import org.java_websocket.WebSocket;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft;
-import org.java_websocket.drafts.Draft_6455;
-import org.java_websocket.extensions.permessage_deflate.PerMessageDeflateExtension;
 import org.java_websocket.framing.CloseFrame;
 import org.java_websocket.handshake.ServerHandshake;
 import org.slf4j.Logger;
@@ -22,7 +19,6 @@ import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SSLParameters;
 import java.net.ConnectException;
 import java.net.Proxy;
-import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,10 +34,6 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public abstract class AbstractWebsocketClient<T extends WsData> extends AbstractWebsocket<T> {
 
-	public static final Map<String, String> NO_HTTP_HEADERS = new HashMap<>();
-	public static final Proxy NO_PROXY = null;
-	public static final Draft DEFAULT_DRAFT = new Draft_6455(new PerMessageDeflateExtension());
-
 	protected final TriFunction<ResolvedURI, Draft, Map<String, String>, WebSocketClient> wsBuilder;
 	protected final AtomicReference<WebSocketClient> ws = new AtomicReference<>();
 
@@ -49,56 +41,19 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	private final Proxy proxy;
 	private final Draft draft;
 	private final Map<String, String> httpHeaders;
-	private final URISet serverUri;
+	private final URISet serverUris;
 	private final BooleanConsumer onConnectedChange;
 	private final AtomicBoolean isConnected = new AtomicBoolean(false);
 	private final ClientReconnectorWorker reconnectorWorker;
 
-	protected AbstractWebsocketClient(String name, URI serverUri) {
-		this(name, serverUri, AbstractWebsocketClient.DEFAULT_DRAFT, AbstractWebsocketClient.NO_HTTP_HEADERS,
-				AbstractWebsocketClient.NO_PROXY, null /* onConnectedChange */);
-	}
-
-	protected AbstractWebsocketClient(String name, URI serverUri, Map<String, String> httpHeaders) {
-		this(name, serverUri, AbstractWebsocketClient.DEFAULT_DRAFT, httpHeaders, AbstractWebsocketClient.NO_PROXY,
-				null /* onConnectedChange */);
-	}
-
-	protected AbstractWebsocketClient(String name, URI serverUri, Map<String, String> httpHeaders,
-	                                  BooleanConsumer onConnectedChange) {
-		this(name, serverUri, AbstractWebsocketClient.DEFAULT_DRAFT, httpHeaders, AbstractWebsocketClient.NO_PROXY,
-				onConnectedChange);
-	}
-
-	protected AbstractWebsocketClient(String name, URI serverUri, Map<String, String> httpHeaders,
-	                                  BooleanConsumer onConnectedChange, ClientReconnectorWorker.Config reconnectorConfig) {
-		this(name, serverUri, AbstractWebsocketClient.DEFAULT_DRAFT, httpHeaders, AbstractWebsocketClient.NO_PROXY,
-				onConnectedChange, reconnectorConfig);
-	}
-
-	protected AbstractWebsocketClient(String name, URISet serverUris, Map<String, String> httpHeaders, Proxy proxy) {
-		this(name, serverUris, AbstractWebsocketClient.DEFAULT_DRAFT, httpHeaders, proxy, null /* onConnectedChange */, ClientReconnectorWorker.DEFAULT_CONFIG);
-	}
-
-	protected AbstractWebsocketClient(String name, URI serverUri, Draft draft, Map<String, String> httpHeaders,
-	                                  Proxy proxy, BooleanConsumer onConnectedChange) {
-		this(name, serverUri, draft, httpHeaders, proxy, onConnectedChange, ClientReconnectorWorker.DEFAULT_CONFIG);
-	}
-
-	protected AbstractWebsocketClient(String name, URI serverUri, Draft draft, Map<String, String> httpHeaders,
-	                                  Proxy proxy, BooleanConsumer onConnectedChange, ClientReconnectorWorker.Config reconnectorConfig) {
-		this(name, new URISet(serverUri), draft, httpHeaders, proxy, onConnectedChange, reconnectorConfig);
-	}
-
-	protected AbstractWebsocketClient(String name, URISet serverUri, Draft draft, Map<String, String> httpHeaders,
-	                                  Proxy proxy, BooleanConsumer onConnectedChange, ClientReconnectorWorker.Config reconnectorConfig) {
+	protected AbstractWebsocketClient(String name, WebsocketClientParams params) {
 		super(name);
 		this.log = new ContextLogger(AbstractWebsocketClient.class, name);
-		this.serverUri = serverUri;
-		this.proxy = proxy;
-		this.draft = draft;
-		this.httpHeaders = httpHeaders;
-		this.onConnectedChange = onConnectedChange == null ? FunctionUtils::doNothing : onConnectedChange;
+		this.serverUris = params.serverUri();
+		this.proxy = params.proxy();
+		this.draft = params.draft();
+		this.httpHeaders = params.httpHeaders();
+		this.onConnectedChange = params.onConnectedChange();
 		this.wsBuilder = (resUri, dr, headers) -> new WebSocketClient(resUri.uri(), dr, headers) {
 
 			@Override
@@ -175,7 +130,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 		};
 
 		// Initialize reconnector
-		this.reconnectorWorker = new ClientReconnectorWorker(this, serverUri, reconnectorConfig);
+		this.reconnectorWorker = new ClientReconnectorWorker(this, this.serverUris, params.reconnectorConfig());
 	}
 
 	/*package*/ void killConnection() {
@@ -230,10 +185,15 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	 * @throws InterruptedException on waiting error
 	 */
 	public void startBlocking() throws InterruptedException {
-		final var uri = this.serverUri.resolve().getFirst();
-		this.logInfo(this.log, "Opening connection to websocket server [" + uri + "]");
-		final var websocket = this.initConnection(uri);
-		websocket.connectBlocking();
+		final var resolvedUris = this.serverUris.resolve();
+		if (resolvedUris.isEmpty()) {
+			this.log.error("Unable to resolve websocket server URI");
+		} else {
+			final var uri = resolvedUris.getFirst();
+			this.log.info("Opening connection to websocket server [{}]", uri);
+			final var websocket = this.initConnection(uri);
+			websocket.connectBlocking();
+		}
 		this.reconnectorWorker.activate(this.getName());
 	}
 
@@ -242,13 +202,13 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	 */
 	@Override
 	public void stop() {
-		this.logInfo(this.log, "Closing connection to websocket server [" + this.serverUri + "]");
+		this.log.info("Closing connection to websocket server [{}]", this.getName());
 		// shutdown reconnector
 		this.reconnectorWorker.deactivate();
 		// close websocket
 		final var websocket = this.ws.get();
 		if (websocket != null) {
-			this.ws.get().close(CloseFrame.NORMAL, "Closing connection [" + this.getName() + "]");
+			websocket.close(CloseFrame.NORMAL, "Closing connection [" + this.getName() + "]");
 		}
 		this.ws.set(null);
 	}

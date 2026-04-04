@@ -10,6 +10,7 @@ import io.openems.common.types.EdgeConfig;
 import io.openems.common.types.URISet;
 import io.openems.common.utils.ThreadPoolUtils;
 import io.openems.common.websocket.AbstractWebsocketClient;
+import io.openems.common.websocket.WebsocketClientParams;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -139,22 +140,24 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent implement
 			}
 		}
 
-		final var uriSet = new URISet(uris);
+		final var wsConfBuilder = new WebsocketClientParams.Builder(uris);
 
 		// Get Proxy configuration
 		Proxy proxy;
 		if (config.proxyAddress().trim().isBlank() || config.proxyPort() == 0) {
-			proxy = AbstractWebsocketClient.NO_PROXY;
+			proxy = WebsocketClientParams.NO_PROXY;
 		} else {
 			proxy = new Proxy(config.proxyType(), new InetSocketAddress(config.proxyAddress(), config.proxyPort()));
 		}
+		wsConfBuilder.proxy(proxy);
 
 		// create http headers
 		Map<String, String> httpHeaders = new HashMap<>();
 		httpHeaders.put("apikey", config.apikey());
+		wsConfBuilder.httpHeaders(httpHeaders);
 
 		// Create Websocket instance
-		this.websocket = new WebsocketClient(this, name, uriSet, httpHeaders, proxy);
+		this.websocket = new WebsocketClient(this, name, wsConfBuilder.build());
 		this.websocket.start();
 
 		this.resendHistoricDataWorker = this.resendHistoricDataWorkerFactory.get();

@@ -7,6 +7,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
+import io.openems.common.websocket.WebsocketClientParams;
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,22 +33,29 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 
 	private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
-	public WebsocketClient(String name, URI serverUri, Map<String, String> httpHeaders, Proxy proxy,
+	public WebsocketClient(String name, WebsocketClientParams params, //
 			Consumer<ConnectionState> onStateChange, //
 			Consumer<Map<ChannelAddress, JsonElement>> onCurrentData, //
 			Consumer<EdgeConfig> onEdgeConfig, //
 			Runnable onChannelChange //
 	) {
-		super(name, serverUri, DEFAULT_DRAFT, httpHeaders, proxy, null /* onConnectedChange */,
-				new ClientReconnectorWorker.Config(5, 10, 5));
+		super(name, params);
 		this.onOpen = new OnOpen(onStateChange);
 		this.onNotification = new OnNotification(onCurrentData, onEdgeConfig, onChannelChange);
 		this.onRequest = new OnRequest();
 		this.onError = new OnError();
 		this.onClose = (ws, code, reason, remote) -> {
 			onStateChange.accept(ConnectionState.NOT_CONNECTED);
-			this.log.error("Disconnected from slave [" + serverUri.toString() //
-					+ (proxy != AbstractWebsocketClient.NO_PROXY ? " via Proxy" : "") + "]");
+			this.log.atError().setMessage("Disconnected from slave [{}{}]") //
+					.addArgument(() -> {
+						final var addr = ws.getRemoteSocketAddress();
+						if (addr == null) {
+							return "N/A";
+						}
+						return addr.getHostString();
+					}) //
+					.addArgument(params.proxy() == WebsocketClientParams.NO_PROXY ? "" : " via Proxy") //
+					.log();
 		};
 	}
 

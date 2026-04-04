@@ -12,6 +12,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
+import io.openems.common.websocket.WebsocketClientParams;
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,12 +49,8 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	 * Builds a {@link WebsocketClient}.
 	 * 
 	 * @param name                   a human readble name
-	 * @param uri                    the connection Uri to OpenEMS Backend
-	 *                               Edge-Manager
-	 * @param id                     unique ID of this Backend Edge Application
+	 * @param params                 the {@link WebsocketClientParams} for the connection
 	 * @param poolSize               number of threads to handle tasks
-	 * @param onConnectedChange      callback for connection to Edge-Manager status
-	 *                               changes
 	 * @param sendRequestToEdge      method to send a {@link JsonrpcRequest} to an
 	 *                               Edge
 	 * @param sendNotificationToEdge method to send a {@link JsonrpcNotification} to
@@ -61,13 +58,11 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	 * @param updateCache            callback for a {@link Cache} update
 	 */
 	public WebsocketClient(//
-			String name, URI uri, String id, int poolSize, //
-			BooleanConsumer onConnectedChange, //
-			BiFunction<String, JsonrpcRequest, CompletableFuture<? extends JsonrpcResponseSuccess>> sendRequestToEdge, //
-			BiConsumer<String, JsonrpcNotification> sendNotificationToEdge, //
-			Consumer<UpdateMetadataCache.Notification> updateCache) {
-		super(name, uri, Map.of("id", id), onConnectedChange,
-				new ClientReconnectorWorker.Config(100, 30, 2));
+	                       String name, WebsocketClientParams params, int poolSize, //
+	                       BiFunction<String, JsonrpcRequest, CompletableFuture<? extends JsonrpcResponseSuccess>> sendRequestToEdge, //
+	                       BiConsumer<String, JsonrpcNotification> sendNotificationToEdge, //
+	                       Consumer<UpdateMetadataCache.Notification> updateCache) {
+		super(name, params);
 		this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(poolSize,
 				new ThreadFactoryBuilder().setNameFormat("Backend.Edge.App-%d").build());
 		this.onNotification = new OnNotification(//

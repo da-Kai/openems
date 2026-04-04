@@ -8,6 +8,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.openems.common.websocket.WebsocketClientParams;
 import io.openems.edge.controller.ess.fastfrequencyreserve.enums.ActivationTime;
 import io.openems.edge.controller.ess.fastfrequencyreserve.enums.SupportDuration;
 import io.openems.edge.controller.ess.fastfrequencyreserve.jsonrpc.SetActivateFastFreqReserveRequest;
@@ -31,7 +32,10 @@ public class JsonRpcTest {
 				Base64.getEncoder().encode((JsonRpcTest.USERNAME + ":" + JsonRpcTest.PASSWORD).getBytes()),
 				StandardCharsets.UTF_8);
 		httpHeaders.put("Authorization", "Basic " + auth);
-		var client = new TestClient(new URI(JsonRpcTest.URI), httpHeaders);
+		var wsParams = new WebsocketClientParams.Builder(new URI(JsonRpcTest.URI)) //
+				.httpHeaders(httpHeaders) //
+				.build();
+		var client = new TestClient(wsParams);
 		client.startBlocking();
 		return client;
 	}
