@@ -9,17 +9,16 @@ import org.java_websocket.extensions.permessage_deflate.PerMessageDeflateExtensi
 
 import java.net.Proxy;
 import java.net.URI;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Configuration parameters for an {@link AbstractWebsocketClient}.
  *
- * @param serverUri the websocket server URIs to resolve and try in order
- * @param draft the websocket draft to use for the connection handshake
- * @param httpHeaders additional HTTP headers to send during the handshake
- * @param proxy the proxy to use, or {@code null} if no proxy should be used
+ * @param serverUri         the websocket server URIs to resolve and try in order
+ * @param draft             the websocket draft to use for the connection handshake
+ * @param httpHeaders       additional HTTP headers to send during the handshake
+ * @param proxy             the proxy to use, or {@code null} if no proxy should be used
  * @param onConnectedChange callback that is notified when the connection state
  *                          changes
  * @param reconnectorConfig configuration for automatic reconnect attempts
@@ -139,7 +138,13 @@ public record WebsocketClientParams(URISet serverUri, Draft draft, Map<String, S
 		 * @return the configured websocket client parameters
 		 */
 		public WebsocketClientParams build() {
-			return new WebsocketClientParams(this.serverUri, this.draft, this.httpHeaders, this.proxy, this.onConnectedChange, this.reconnectorConfig);
+			return new WebsocketClientParams(//
+					this.serverUri, //
+					this.draft, //
+					Map.copyOf(this.httpHeaders), //
+					this.proxy, //
+					this.onConnectedChange, //
+					this.reconnectorConfig);
 		}
 
 	}

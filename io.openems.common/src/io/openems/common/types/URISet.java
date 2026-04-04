@@ -61,6 +61,11 @@ public class URISet {
 
 		for (var uri : this.uris) {
 			final var host = uri.getHost();
+			if (host == null || host.isBlank()) {
+				log.warn("Unable to resolve URI {}: no host found", uri);
+				continue;
+			}
+
 			final InetAddress[] ips;
 			try {
 				ips = InetAddress.getAllByName(host);
