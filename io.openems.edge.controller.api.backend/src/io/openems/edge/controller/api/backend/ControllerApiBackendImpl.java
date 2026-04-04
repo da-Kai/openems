@@ -1,43 +1,13 @@
 package io.openems.edge.controller.api.backend;
 
-import static io.openems.common.utils.StringUtils.definedOrElse;
-
-import java.net.InetSocketAddress;
-import java.net.Proxy;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-
-import io.openems.common.channel.PersistencePriority;
-import io.openems.common.types.URISet;
-import org.osgi.service.component.ComponentContext;
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.ConfigurationPolicy;
-import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.event.Event;
-import org.osgi.service.event.EventHandler;
-import org.osgi.service.event.propertytypes.EventTopics;
-import org.osgi.service.metatype.annotations.Designate;
-import org.slf4j.Logger;
-
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.jsonrpc.base.JsonrpcRequest;
 import io.openems.common.jsonrpc.base.JsonrpcResponseSuccess;
 import io.openems.common.jsonrpc.notification.EdgeConfigNotification;
 import io.openems.common.oem.OpenemsEdgeOem;
 import io.openems.common.types.EdgeConfig;
+import io.openems.common.types.URISet;
 import io.openems.common.utils.ThreadPoolUtils;
 import io.openems.common.websocket.AbstractWebsocketClient;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
@@ -52,6 +22,25 @@ import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.api.backend.api.ControllerApiBackend;
 import io.openems.edge.controller.api.common.ApiWorker;
 import io.openems.edge.controller.api.common.handler.ComponentConfigRequestHandler;
+import org.osgi.service.component.ComponentContext;
+import org.osgi.service.component.annotations.*;
+import org.osgi.service.event.Event;
+import org.osgi.service.event.EventHandler;
+import org.osgi.service.event.propertytypes.EventTopics;
+import org.osgi.service.metatype.annotations.Designate;
+import org.slf4j.Logger;
+
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.*;
+
+import static io.openems.common.utils.StringUtils.definedOrElse;
 
 @Designate(ocd = Config.class, factory = true)
 @Component(//
@@ -63,8 +52,7 @@ import io.openems.edge.controller.api.common.handler.ComponentConfigRequestHandl
 		EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE, //
 		EdgeEventConstants.TOPIC_CONFIG_UPDATE //
 })
-public class ControllerApiBackendImpl extends AbstractOpenemsComponent
-		implements ControllerApiBackend, Controller, OpenemsComponent, EventHandler {
+public class ControllerApiBackendImpl extends AbstractOpenemsComponent implements ControllerApiBackend, Controller, OpenemsComponent, EventHandler {
 
 	protected static final String COMPONENT_NAME = "Controller.Api.Backend";
 
@@ -92,7 +80,9 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 
 	protected WebsocketClient websocket = null;
 	protected Config config;
-	/** Used for SubscribeSystemLogRequests. */
+	/**
+	 * Used for SubscribeSystemLogRequests.
+	 */
 	private ScheduledExecutorService executor;
 
 	public ControllerApiBackendImpl() {
@@ -118,8 +108,7 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 
 		// initialize Executor
 		var name = COMPONENT_NAME + ":" + this.id();
-		this.executor = Executors.newScheduledThreadPool(10,
-				new ThreadFactoryBuilder().setNameFormat(name + "-%d").build());
+		this.executor = Executors.newScheduledThreadPool(10, new ThreadFactoryBuilder().setNameFormat(name + "-%d").build());
 
 		// initialize ApiWorker
 		this.apiWorker.setTimeoutSeconds(config.apiTimeout());
@@ -134,13 +123,13 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 			return;
 		}
 
-		for (String val: config.fallbackUris()) {
+		for (String val : config.fallbackUris()) {
 			try {
 				uris.add(new URI(val));
 			} catch (URISyntaxException e) {
-                this.log.warn("Fallback URI [{}] is invalid: {}", val, e.getMessage());
-            }
-        }
+				this.log.warn("Fallback URI [{}] is invalid: {}", val, e.getMessage());
+			}
+		}
 
 		final var uriSet = new URISet(uris);
 
@@ -218,23 +207,23 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 				return;
 			}
 			switch (event.getTopic()) {
-			case EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE:
-				this.sendChannelValuesWorker.collectData();
-				break;
+				case EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE:
+					this.sendChannelValuesWorker.collectData();
+					break;
 
-			case EdgeEventConstants.TOPIC_CONFIG_UPDATE:
-				// Send new EdgeConfig
-				var config = (EdgeConfig) event.getProperty(EdgeEventConstants.TOPIC_CONFIG_UPDATE_KEY);
-				var message = new EdgeConfigNotification(config);
-				var ws = this.websocket;
-				if (ws == null) {
-					return;
-				}
-				ws.sendMessage(message);
+				case EdgeEventConstants.TOPIC_CONFIG_UPDATE:
+					// Send new EdgeConfig
+					var config = (EdgeConfig) event.getProperty(EdgeEventConstants.TOPIC_CONFIG_UPDATE_KEY);
+					var message = new EdgeConfigNotification(config);
+					var ws = this.websocket;
+					if (ws == null) {
+						return;
+					}
+					ws.sendMessage(message);
 
-				// Trigger sending of all channel values, because a Component might have
-				// disappeared
-				this.sendChannelValuesWorker.sendValuesOfAllChannelsOnce();
+					// Trigger sending of all channel values, because a Component might have
+					// disappeared
+					this.sendChannelValuesWorker.sendValuesOfAllChannelsOnce();
 			}
 		} catch (Exception e) {
 			this.log.error(e.toString(), e);

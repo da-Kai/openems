@@ -58,7 +58,7 @@ public class ClientReconnectorWorker extends AbstractWorker {
 			}
 
 			if (this.isConnected) {
-				this.log.warn("# Connecting WebSocket to '{}' successfully", uri);
+				this.log.info("# Connecting WebSocket to '{}' successfully", uri);
 				break;
 			}
 			this.log.warn("# Connecting WebSocket to '{}' failed", uri);

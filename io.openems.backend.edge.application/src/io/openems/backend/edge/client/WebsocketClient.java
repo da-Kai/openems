@@ -67,7 +67,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 			BiConsumer<String, JsonrpcNotification> sendNotificationToEdge, //
 			Consumer<UpdateMetadataCache.Notification> updateCache) {
 		super(name, uri, Map.of("id", id), onConnectedChange,
-				new ClientReconnectorWorker.Config(100, 30, 2, 30 * 1000 /* 30 seconds */));
+				new ClientReconnectorWorker.Config(100, 30, 2));
 		this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(poolSize,
 				new ThreadFactoryBuilder().setNameFormat("Backend.Edge.App-%d").build());
 		this.onNotification = new OnNotification(//
@@ -176,8 +176,14 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 		log.error("[" + this.getName() + "] " + message);
 	}
 
+	/**
+	 * Checks if the WebSocket connection to the Edge-Manager is currently open.
+	 *
+	 * @return true if Open
+	 */
 	public boolean isConnected() {
-		return this.ws.isOpen();
+		final var websocket = this.ws.get();
+		return websocket != null && websocket.isOpen();
 	}
 
 	@Override

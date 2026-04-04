@@ -230,11 +230,10 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	 * @throws InterruptedException on waiting error
 	 */
 	public void startBlocking() throws InterruptedException {
-		this.logInfo(this.log, "Opening connection to websocket server [" + this.serverUri + "]");
-		final var websocket = this.ws.get();
-		if (websocket != null) {
-			websocket.connectBlocking();
-		}
+		final var uri = this.serverUri.resolve().getFirst();
+		this.logInfo(this.log, "Opening connection to websocket server [" + uri + "]");
+		final var websocket = this.initConnection(uri);
+		websocket.connectBlocking();
 		this.reconnectorWorker.activate(this.getName());
 	}
 
@@ -283,7 +282,11 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	 * @return the future JSON-RPC Response
 	 */
 	public CompletableFuture<JsonrpcResponseSuccess> sendRequest(JsonrpcRequest request) {
-		WsData wsData = this.ws.get().getAttachment();
+		final var websocket = this.ws.get();
+		if (websocket == null) {
+			return CompletableFuture.failedFuture(new ConnectException("Websocket is not connected"));
+		}
+		WsData wsData = websocket.getAttachment();
 		return wsData.send(request);
 	}
 

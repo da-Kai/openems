@@ -1,20 +1,19 @@
 package io.openems.edge.controller.api.backend;
 
+import io.openems.common.types.URISet;
+import io.openems.common.websocket.AbstractWebsocketClient;
+import io.openems.common.websocket.OnClose;
+import io.openems.common.websocket.WsData;
+import org.java_websocket.WebSocket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.Proxy;
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-
-import io.openems.common.types.URISet;
-import org.java_websocket.WebSocket;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.openems.common.websocket.AbstractWebsocketClient;
-import io.openems.common.websocket.OnClose;
-import io.openems.common.websocket.WsData;
 
 public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 
@@ -27,7 +26,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	private final OnClose onClose;
 
 	protected WebsocketClient(ControllerApiBackendImpl parent, String name, URI serverUri,
-			Map<String, String> httpHeaders, Proxy proxy) {
+	                          Map<String, String> httpHeaders, Proxy proxy) {
 		this(parent, name, new URISet(serverUri), httpHeaders, proxy);
 	}
 
@@ -41,7 +40,13 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 		this.onClose = (ws, code, reason, remote) -> {
 			this.log.atError().setMessage("Disconnected from OpenEMS Backend ({}) [{}{}]") //
 					.addArgument(code)
-					.addArgument(ws.getRemoteSocketAddress().getHostString()) //
+					.addArgument(() -> {
+						final var addr = ws.getRemoteSocketAddress();
+						if (addr == null) {
+							return "N/A";
+						}
+						return addr.getHostString();
+					}) //
 					.addArgument(proxy == AbstractWebsocketClient.NO_PROXY ? "" : " via Proxy") //
 					.log();
 			this.parent.getUnableToSendChannel().setNextValue(true);
@@ -95,6 +100,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 
 	/**
 	 * Checks if the WebSocket connection is currently open.
+	 *
 	 * @return true if connection is open
 	 */
 	public boolean isConnected() {
@@ -117,7 +123,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	 * @return a {@link ScheduledFuture}, or null if Executor is shutting down
 	 */
 	protected ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay,
-			TimeUnit unit) {
+	                                                    TimeUnit unit) {
 		return this.parent.scheduleWithFixedDelay(command, initialDelay, delay, unit);
 	}
 }
