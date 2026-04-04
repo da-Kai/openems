@@ -21,7 +21,7 @@ public class ResolvedURITest {
 	public void assertUriBehaviour() throws URISyntaxException {
 		var errUri = new URI("https://my:example.de");
 		assertNull(errUri.getHost());
-		assertThrows(URISyntaxException.class, () -> new URI( //
+		assertThrows(URISyntaxException.class, () -> new URI(//
 				errUri.getScheme(), errUri.getUserInfo(), "my:example.de", //
 				errUri.getPort(), errUri.getPath(), errUri.getQuery(), errUri.getFragment()));
 	}
