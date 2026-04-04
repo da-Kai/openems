@@ -29,13 +29,9 @@ public final class ResolvedURI {
 	private final String host;
 	private final InetAddress ip;
 
-	/*package*/ ResolvedURI(URI uri, InetAddress ip) throws URISyntaxException {
-		this(uri, ip, null);
-	}
-
 	/*package*/ ResolvedURI(URI uri, InetAddress ip, String host) throws URISyntaxException {
-		this.host = host;
 		this.ip = ip;
+		this.host = ip.getHostAddress().equals(host) || host.contains(":") ? null : host;
 		this.uri = uriWithIp(uri, ip);
 	}
 

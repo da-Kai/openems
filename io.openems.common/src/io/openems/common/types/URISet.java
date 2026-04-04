@@ -35,13 +35,6 @@ public class URISet {
 
 	private static final Logger log = LoggerFactory.getLogger(URISet.class);
 
-	private static boolean isHostIP(String host) {
-		if (host == null) {
-			return false;
-		}
-		return host.matches("^[0-9.]+$") || host.matches("^[0-9a-fA-F:]+$");
-	}
-
 	private final List<URI> uris;
 
 	public URISet(URI... uris) {
@@ -68,17 +61,6 @@ public class URISet {
 
 		for (var uri : this.uris) {
 			final var host = uri.getHost();
-
-			if (isHostIP(host)) {
-				try {
-					InetAddress ipAddr = InetAddress.getByName(host);
-					resolvedUris.add(new ResolvedURI(uri, ipAddr));
-				} catch (Exception ex) {
-					log.error("Unable to cast {} to ip-address", host);
-				}
-				continue;
-			}
-
 			final InetAddress[] ips;
 			try {
 				ips = InetAddress.getAllByName(host);
