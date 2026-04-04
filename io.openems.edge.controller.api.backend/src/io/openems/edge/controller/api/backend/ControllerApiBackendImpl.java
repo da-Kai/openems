@@ -6,15 +6,15 @@ import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import io.openems.common.channel.PersistencePriority;
+import io.openems.common.types.URISet;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -26,7 +26,6 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -71,7 +70,7 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 	protected final SendChannelValuesWorker sendChannelValuesWorker = new SendChannelValuesWorker(this);
 	protected final ApiWorker apiWorker = new ApiWorker(this);
 
-	private final Logger log = LoggerFactory.getLogger(ControllerApiBackendImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 
 	@Reference
 	private OpenemsEdgeOem oem;
@@ -123,17 +122,28 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 		this.apiWorker.setTimeoutSeconds(config.apiTimeout());
 
 		// Get URI
-		URI uri = null;
+		final var uris = new ArrayList<URI>();
 		try {
-			uri = new URI(definedOrElse(config.uri(), this.oem.getBackendApiUrl()));
+			var uri = new URI(definedOrElse(config.uri(), this.oem.getBackendApiUrl()));
+			uris.add(uri);
 		} catch (URISyntaxException e) {
-			this.log.error("URI [" + config.uri() + "] is invalid: " + e.getMessage());
+			this.log.error("URI [{}] is invalid: {}", config.uri(), e.getMessage());
 			return;
 		}
 
+		for (String val: config.fallbackUris()) {
+			try {
+				uris.add(new URI(val));
+			} catch (URISyntaxException e) {
+                this.log.warn("Fallback URI [{}] is invalid: {}", val, e.getMessage());
+            }
+        }
+
+		final var uriSet = new URISet(uris);
+
 		// Get Proxy configuration
 		Proxy proxy;
-		if (config.proxyAddress().trim().equals("") || config.proxyPort() == 0) {
+		if (config.proxyAddress().trim().isBlank() || config.proxyPort() == 0) {
 			proxy = AbstractWebsocketClient.NO_PROXY;
 		} else {
 			proxy = new Proxy(config.proxyType(), new InetSocketAddress(config.proxyAddress(), config.proxyPort()));
@@ -144,7 +154,7 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 		httpHeaders.put("apikey", config.apikey());
 
 		// Create Websocket instance
-		this.websocket = new WebsocketClient(this, name, uri, httpHeaders, proxy);
+		this.websocket = new WebsocketClient(this, name, uriSet, httpHeaders, proxy);
 		this.websocket.start();
 
 		this.resendHistoricDataWorker = this.resendHistoricDataWorkerFactory.get();
@@ -224,7 +234,7 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 				this.sendChannelValuesWorker.sendValuesOfAllChannelsOnce();
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			this.log.error(e.toString(), e);
 		}
 	}
 
@@ -233,6 +243,18 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 		return Optional.ofNullable(this.websocket) //
 				.map(WebsocketClient::isConnected) //
 				.orElse(false);
+	}
+
+	public boolean debugMode() {
+		return this.config.debugMode();
+	}
+
+	public PersistencePriority aggregationPriority() {
+		return this.config.aggregationPriority();
+	}
+
+	public PersistencePriority persistencePriority() {
+		return this.config.persistencePriority();
 	}
 
 	/**

@@ -83,7 +83,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	}
 
 	@Override
-	protected WsData createWsData(WebSocket es) {
+	protected WsData createWsData(WebSocket ws) {
 		return new WsData(ws);
 	}
 
@@ -103,7 +103,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	}
 
 	public boolean isConnected() {
-		return this.ws.isOpen();
+		return this.ws.get().isOpen();
 	}
 
 	@Override

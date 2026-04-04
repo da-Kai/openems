@@ -108,7 +108,7 @@ public abstract class AbstractWebsocket<T extends WsData> {
 	 * @return true if sending was successful
 	 */
 	protected final boolean sendMessage(WebSocket ws, JsonrpcMessage message) {
-		if (!ws.isOpen()) {
+		if (ws == null || !ws.isOpen()) {
 			// Catch status before to avoid throwing an expensive
 			// WebsocketNotConnectedException
 			this.sendMessageFailedLog(ws, message);

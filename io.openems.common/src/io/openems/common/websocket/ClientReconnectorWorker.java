@@ -2,11 +2,15 @@ package io.openems.common.websocket;
 
 import java.lang.reflect.Field;
 import java.net.Socket;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import io.openems.common.logger.LazyContextLogger;
+import io.openems.common.types.ResolvedURI;
+import io.openems.common.types.URISet;
 import org.java_websocket.WebSocket;
 import org.java_websocket.WebSocketImpl;
 import org.java_websocket.client.WebSocketClient;
@@ -14,7 +18,6 @@ import org.java_websocket.drafts.Draft;
 import org.java_websocket.enums.ReadyState;
 import org.java_websocket.framing.CloseFrame;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.openems.common.worker.AbstractWorker;
 
@@ -26,29 +29,34 @@ public class ClientReconnectorWorker extends AbstractWorker {
 	public static final ClientReconnectorWorker.Config DEFAULT_CONFIG = new Config(100, 100, 10,
 			2 * 60 * 1000 /* 2 minutes */);
 
-	private final Logger log = LoggerFactory.getLogger(ClientReconnectorWorker.class);
+	private final Logger log;
 	private final AbstractWebsocketClient<?> parent;
 	private final Config config;
 	private final long minWaitSecondsBetweenRetries;
+	private final URISet serverURIs;
+
 	private long lastTry;
 	private String debugLog = null;
 
-	public ClientReconnectorWorker(AbstractWebsocketClient<?> parent, Config config) {
+	public ClientReconnectorWorker(AbstractWebsocketClient<?> parent, URISet serverURIs, Config config) {
 		this.parent = parent;
 		this.config = config;
+		this.serverURIs = serverURIs;
 		this.minWaitSecondsBetweenRetries = ThreadLocalRandom.current() //
 				.nextInt(config.minWaitSeconds, config.maxWaitSeconds + 1);
 		this.lastTry = 0;
+
+		this.log = new LazyContextLogger(ClientReconnectorWorker.class, parent::getName);
 	}
 
-	public ClientReconnectorWorker(AbstractWebsocketClient<?> parent) {
-		this(parent, ClientReconnectorWorker.DEFAULT_CONFIG);
+	public ClientReconnectorWorker(AbstractWebsocketClient<?> parent, URISet serverURIs) {
+		this(parent, serverURIs, ClientReconnectorWorker.DEFAULT_CONFIG);
 	}
 
 	@Override
 	protected void forever() throws Exception {
-		var ws = this.parent.ws;
-		if (ws == null || ws.getReadyState() == ReadyState.OPEN) {
+		final var parentWs = this.parent.ws.get();
+		if (parentWs != null && parentWs.getReadyState() == ReadyState.OPEN) {
 			return;
 		}
 
@@ -61,26 +69,34 @@ public class ClientReconnectorWorker extends AbstractWorker {
 		}
 		this.lastTry = start;
 
-		this.debugLog = "Connecting WebSocket... [" + ws.getReadyState() + "]";
-
-		if (ws.getReadyState() != ReadyState.NOT_YET_CONNECTED) {
-			// Copy of WebSocketClient#reconnectBlocking.
-			// Do not 'reset' if WebSocket has never been connected before.
-			resetWebSocketClient(ws, this.parent::createWsData, this.config.connectTimeoutSeconds());
-		}
+		List<ResolvedURI> retryURIs = serverURIs.resolve();
 
 		var success = false;
-		try {
-			this.parent.logInfo(this.log, "# Connect Blocking [" + this.config.connectTimeoutSeconds() + "]...");
-			success = ws.connectBlocking(this.config.connectTimeoutSeconds(), TimeUnit.SECONDS);
-			this.parent.logInfo(this.log, "# Connect Blocking [" + this.config.connectTimeoutSeconds() + "]... done");
 
-		} catch (IllegalStateException e) {
-			// Catch "WebSocketClient objects are not reuseable" thrown by
-			// WebSocketClient#connect(). Set WebSocketClient#connectReadThread to `null`.
-			this.parent.logInfo(this.log, "# Reset WebSocket Client after Exception... " + e.getMessage());
-			resetWebSocketClient(ws, this.parent::createWsData, this.config.connectTimeoutSeconds());
-			this.parent.logInfo(this.log, "# Reset WebSocket Client after Exception... done");
+		for (var uri : retryURIs) {
+			TimeUnit.SECONDS.sleep(2);
+
+			this.log.info("Connecting WebSocket to '{}' ...", uri);
+			final var ws = parent.initConnection(uri);
+
+			try {
+				this.log.info("# Connect Blocking... [{}s]", this.config.connectTimeoutSeconds());
+				success = ws.connectBlocking(this.config.connectTimeoutSeconds(), TimeUnit.SECONDS);
+				this.log.info("# Connect Blocking... done");
+
+			} catch (IllegalStateException e) {
+				// Catch "WebSocketClient objects are not reuseable" thrown by
+				// WebSocketClient#connect(). Set WebSocketClient#connectReadThread to `null`.
+				this.log.warn("# Reset WebSocket Client after Exception... [{}]", e.getMessage());
+				resetWebSocketClient(ws, this.parent::createWsData, this.config.connectTimeoutSeconds());
+				this.log.warn("# Reset WebSocket Client after Exception... done");
+			}
+
+			if(success) {
+				break;
+			}
+			this.log.warn("Failed to connect to '{}': {}", uri, ws.getReadyState());
+			parent.killConnection();
 		}
 
 		var end = System.nanoTime();
@@ -90,7 +106,7 @@ public class ClientReconnectorWorker extends AbstractWorker {
 					"Connected successfully [" + TimeUnit.NANOSECONDS.toSeconds(end - start) + "s]");
 		} else {
 			this.debugLog = "Connection failed";
-			this.log.info("Connection failed");
+			this.log.error("Connection failed");
 		}
 
 		this.lastTry = end;

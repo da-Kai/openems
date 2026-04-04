@@ -7,6 +7,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import io.openems.common.types.URISet;
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,14 +28,22 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 
 	protected WebsocketClient(ControllerApiBackendImpl parent, String name, URI serverUri,
 			Map<String, String> httpHeaders, Proxy proxy) {
-		super(name, serverUri, httpHeaders, proxy);
+		this(parent, name, new URISet(serverUri), httpHeaders, proxy);
+	}
+
+	protected WebsocketClient(ControllerApiBackendImpl parent, String name, URISet serverUris,
+	                          Map<String, String> httpHeaders, Proxy proxy) {
+		super(parent.id(), serverUris, httpHeaders, proxy);
 		this.parent = parent;
 		this.onOpen = new OnOpen(parent);
 		this.onNotification = new OnNotification(parent);
 		this.onError = new OnError(parent);
 		this.onClose = (ws, code, reason, remote) -> {
-			this.log.error("Disconnected from OpenEMS Backend [" + serverUri.toString() //
-					+ (proxy != AbstractWebsocketClient.NO_PROXY ? " via Proxy" : "") + "]");
+			this.log.atError().setMessage("Disconnected from OpenEMS Backend ({}) [{}{}]") //
+					.addArgument(code)
+					.addArgument(ws.getRemoteSocketAddress().getHostString()) //
+					.addArgument(proxy == AbstractWebsocketClient.NO_PROXY ? "" : " via Proxy") //
+					.log();
 			this.parent.getUnableToSendChannel().setNextValue(true);
 		};
 	}
@@ -65,7 +74,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	}
 
 	@Override
-	protected WsData createWsData(WebSocket es) {
+	protected WsData createWsData(WebSocket ws) {
 		return new WsData(ws);
 	}
 
@@ -85,7 +94,8 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	}
 
 	public boolean isConnected() {
-		return this.ws.isOpen();
+		final var websocket = this.ws.get();
+		return websocket != null && websocket.isOpen();
 	}
 
 	@Override
