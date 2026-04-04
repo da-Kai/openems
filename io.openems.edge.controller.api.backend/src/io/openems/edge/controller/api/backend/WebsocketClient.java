@@ -33,7 +33,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 
 	protected WebsocketClient(ControllerApiBackendImpl parent, String name, URISet serverUris,
 	                          Map<String, String> httpHeaders, Proxy proxy) {
-		super(parent.id(), serverUris, httpHeaders, proxy);
+		super(name, serverUris, httpHeaders, proxy);
 		this.parent = parent;
 		this.onOpen = new OnOpen(parent);
 		this.onNotification = new OnNotification(parent);

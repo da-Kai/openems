@@ -13,10 +13,8 @@ import org.java_websocket.WebSocket;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft;
 import org.java_websocket.drafts.Draft_6455;
-import org.java_websocket.exceptions.InvalidDataException;
 import org.java_websocket.extensions.permessage_deflate.PerMessageDeflateExtension;
 import org.java_websocket.framing.CloseFrame;
-import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.handshake.ServerHandshake;
 import org.slf4j.Logger;
 
@@ -152,8 +150,9 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 
 				AbstractWebsocketClient.this.log.info("WebSocket [{}] closed. Code [{}] Reason [{}]", //
 						resUri, code, reason);
-				this.updateIsConnected();
-				AbstractWebsocketClient.this.reconnectorWorker.triggerNextRun();
+				if (this.updateIsConnected()) {
+					AbstractWebsocketClient.this.reconnectorWorker.triggerNextRun();
+				}
 			}
 
 			@Override
@@ -164,12 +163,14 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 						));
 			}
 
-			private void updateIsConnected() {
+			private boolean updateIsConnected() {
 				var isOpen = this.isOpen();
 				if (AbstractWebsocketClient.this.isConnected.compareAndSet(!isOpen, isOpen)) {
 					// Value has changed
 					AbstractWebsocketClient.this.onConnectedChange.accept(isOpen);
+					return true;
 				}
+				return false;
 			}
 		};
 
@@ -177,14 +178,13 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 		this.reconnectorWorker = new ClientReconnectorWorker(this, serverUri, reconnectorConfig);
 	}
 
-	/*package*/ WebSocketClient killConnection() {
+	/*package*/ void killConnection() {
 		final var websocket = this.ws.get();
 		if (websocket != null) {
 			websocket.close();
 		}
 		this.ws.set(null);
 		this.httpHeaders.remove("Host");
-		return websocket;
 	}
 
 	/*package*/ WebSocketClient initConnection(ResolvedURI uri) {

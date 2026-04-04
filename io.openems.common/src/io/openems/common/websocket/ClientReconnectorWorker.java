@@ -23,191 +23,77 @@ import io.openems.common.worker.AbstractWorker;
 
 public class ClientReconnectorWorker extends AbstractWorker {
 
-	public record Config(int connectTimeoutSeconds, int maxWaitSeconds, int minWaitSeconds, int cycleTime) {
+	public record Config(int connectTimeoutSeconds, int maxWaitSeconds, int minWaitSeconds) {
 	}
 
-	public static final ClientReconnectorWorker.Config DEFAULT_CONFIG = new Config(100, 100, 10,
-			2 * 60 * 1000 /* 2 minutes */);
+	public static final ClientReconnectorWorker.Config DEFAULT_CONFIG = new Config(100, 100, 10);
 
 	private final Logger log;
 	private final AbstractWebsocketClient<?> parent;
 	private final Config config;
-	private final long minWaitSecondsBetweenRetries;
 	private final URISet serverURIs;
 
-	private long lastTry;
 	private String debugLog = null;
+
+	private boolean isConnected = false;
 
 	public ClientReconnectorWorker(AbstractWebsocketClient<?> parent, URISet serverURIs, Config config) {
 		this.parent = parent;
 		this.config = config;
 		this.serverURIs = serverURIs;
-		this.minWaitSecondsBetweenRetries = ThreadLocalRandom.current() //
-				.nextInt(config.minWaitSeconds, config.maxWaitSeconds + 1);
-		this.lastTry = 0;
 
 		this.log = new LazyContextLogger(ClientReconnectorWorker.class, parent::getName);
-	}
-
-	public ClientReconnectorWorker(AbstractWebsocketClient<?> parent, URISet serverURIs) {
-		this(parent, serverURIs, ClientReconnectorWorker.DEFAULT_CONFIG);
 	}
 
 	@Override
 	protected void forever() throws Exception {
 		final var parentWs = this.parent.ws.get();
-		if (parentWs != null && parentWs.getReadyState() == ReadyState.OPEN) {
+		this.isConnected = parentWs != null && parentWs.getReadyState() == ReadyState.OPEN;
+		if (this.isConnected) {
 			return;
 		}
 
-		var start = System.nanoTime();
-		var waitedSeconds = TimeUnit.NANOSECONDS.toSeconds(start - this.lastTry);
-		if (waitedSeconds < this.minWaitSecondsBetweenRetries) {
-			this.debugLog = "Waiting till next WebSocket reconnect ["
-					+ (this.minWaitSecondsBetweenRetries - waitedSeconds) + "s]";
-			return;
-		}
-		this.lastTry = start;
+		final var start = System.currentTimeMillis();
+		final var retryURIs = serverURIs.resolve();
 
-		List<ResolvedURI> retryURIs = serverURIs.resolve();
-
-		var success = false;
+		this.log.info("Reconnecting Websocket...");
 
 		for (var uri : retryURIs) {
-			TimeUnit.SECONDS.sleep(2);
-
-			this.log.info("Connecting WebSocket to '{}' ...", uri);
-			final var ws = parent.initConnection(uri);
-
 			try {
-				this.log.info("# Connect Blocking... [{}s]", this.config.connectTimeoutSeconds());
-				success = ws.connectBlocking(this.config.connectTimeoutSeconds(), TimeUnit.SECONDS);
-				this.log.info("# Connect Blocking... done");
+				TimeUnit.SECONDS.sleep(1);
+				final var ws = parent.initConnection(uri);
 
+				this.log.info("# Connecting WebSocket to '{}'... Blocking[{}s]", uri, this.config.connectTimeoutSeconds());
+				this.isConnected = ws.connectBlocking(this.config.connectTimeoutSeconds(), TimeUnit.SECONDS);
 			} catch (IllegalStateException e) {
-				// Catch "WebSocketClient objects are not reuseable" thrown by
-				// WebSocketClient#connect(). Set WebSocketClient#connectReadThread to `null`.
-				this.log.warn("# Reset WebSocket Client after Exception... [{}]", e.getMessage());
-				resetWebSocketClient(ws, this.parent::createWsData, this.config.connectTimeoutSeconds());
-				this.log.warn("# Reset WebSocket Client after Exception... done");
+				this.log.warn("# Exception while connecting: {}", e.toString());
 			}
 
-			if(success) {
+			if(this.isConnected) {
+				this.log.warn("# Connecting WebSocket to '{}' successfully", uri);
 				break;
 			}
-			this.log.warn("Failed to connect to '{}': {}", uri, ws.getReadyState());
+			this.log.warn("# Connecting WebSocket to '{}' failed", uri);
 			parent.killConnection();
 		}
 
-		var end = System.nanoTime();
-		if (success) {
+		if (this.isConnected) {
+			final var connectionTime = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - start);
 			this.debugLog = null;
-			this.parent.logInfo(this.log,
-					"Connected successfully [" + TimeUnit.NANOSECONDS.toSeconds(end - start) + "s]");
+			this.log.info("Connected successfully [{}s]", connectionTime);
 		} else {
 			this.debugLog = "Connection failed";
 			this.log.error("Connection failed");
 		}
-
-		this.lastTry = end;
-	}
-
-	/**
-	 * This method is a copy of {@link WebSocketClient} reset()-method, because the
-	 * original one may block at the call of 'closeBlocking()' method. It also sets
-	 * the new attachment from the attachment supplier.
-	 * 
-	 * <p>
-	 * Waiting for https://github.com/TooTallNate/Java-WebSocket/pull/1251 to be
-	 * merged.
-	 * 
-	 * @param <T>                   the type of the attachment
-	 * @param ws                    the {@link WebSocketClient}
-	 * @param wsData                {@link Function} to provide a the new attachment
-	 * @param connectTimeoutSeconds the max wait time to close the websocket
-	 * @throws Exception on error
-	 */
-	protected static <T extends WsData> void resetWebSocketClient(WebSocketClient ws, Function<WebSocket, T> wsData,
-			int connectTimeoutSeconds) throws Exception {
-		/*
-		 * Get methods and fields via Reflection
-		 */
-		// WebSocketClient#writeThread
-		Field writeThreadField = WebSocketClient.class.getDeclaredField("writeThread");
-		writeThreadField.setAccessible(true);
-		final var writeThread = (Thread) writeThreadField.get(ws);
-		// WebSocketClient#connectReadThread
-		Field connectReadThreadField = WebSocketClient.class.getDeclaredField("connectReadThread");
-		connectReadThreadField.setAccessible(true);
-		final var connectReadThread = (Thread) connectReadThreadField.get(ws);
-		// WebSocketClient#draft
-		Field draftField = WebSocketClient.class.getDeclaredField("draft");
-		draftField.setAccessible(true);
-		final var draft = (Draft) draftField.get(ws);
-		// WebSocketClient#socket
-		Field socketField = WebSocketClient.class.getDeclaredField("socket");
-		socketField.setAccessible(true);
-		final var socket = (Socket) socketField.get(ws);
-		// WebSocketClient#connectLatch
-		Field connectLatchField = WebSocketClient.class.getDeclaredField("connectLatch");
-		connectLatchField.setAccessible(true);
-		// WebSocketClient#closeLatch
-		Field closeLatchField = WebSocketClient.class.getDeclaredField("closeLatch");
-		closeLatchField.setAccessible(true);
-		final var closeLatch = (CountDownLatch) closeLatchField.get(ws);
-		// WebSocketClient#closeLatch
-		Field engineField = WebSocketClient.class.getDeclaredField("engine");
-		engineField.setAccessible(true);
-		final var engine = (WebSocketImpl) engineField.get(ws);
-
-		/*
-		 * From here it's a copy of #reset()
-		 */
-		Thread current = Thread.currentThread();
-		if (current == writeThread || current == connectReadThread) {
-			throw new IllegalStateException(
-					"You cannot initialize a reconnect out of the websocket thread. Use reconnect in another thread to ensure a successful cleanup.");
-		}
-		try {
-			// closeBlocking(); -> to reflection
-			ws.close();
-			closeLatch.await(connectTimeoutSeconds, TimeUnit.SECONDS);
-			// closeBlocking() END
-			if (writeThread != null) {
-				writeThread.interrupt();
-				// writeThread = null; -> to reflection
-				writeThreadField.set(ws, null);
-			}
-			if (connectReadThread != null) {
-				connectReadThread.interrupt();
-				// this.connectReadThread = null; -> to reflection
-				connectReadThreadField.set(ws, null);
-			}
-			draft.reset();
-			if (socket != null) {
-				socket.close();
-				// this.socket = null; -> to reflection
-				socketField.set(ws, null);
-			}
-		} catch (Exception e) {
-			ws.onError(e);
-			engine.closeConnection(CloseFrame.ABNORMAL_CLOSE, e.getMessage());
-			return;
-		}
-		// connectLatch = new CountDownLatch(1); -> to reflection
-		connectLatchField.set(ws, new CountDownLatch(1));
-		// closeLatch = new CountDownLatch(1); -> to reflection
-		closeLatchField.set(ws, new CountDownLatch(1));
-		// this.engine = new WebSocketImpl(this, this.draft); -> to reflection
-		final var newEngine = new WebSocketImpl(ws, draft);
-		final var newAttachment = wsData.apply(ws);
-		newEngine.setAttachment(newAttachment);
-		engineField.set(ws, newEngine);
 	}
 
 	@Override
 	protected int getCycleTime() {
-		return this.config.cycleTime();
+		final var waitSeconds = ThreadLocalRandom.current().nextInt(config.minWaitSeconds, config.maxWaitSeconds + 1);
+		if (!this.isConnected) {
+			this.log.info("Schedule a reconnect in in {}s", waitSeconds);
+		}
+		return waitSeconds * 1000;
 	}
 
 	/**
