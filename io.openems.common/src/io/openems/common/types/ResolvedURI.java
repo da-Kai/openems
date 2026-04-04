@@ -31,7 +31,7 @@ public final class ResolvedURI {
 
 	/*package*/ ResolvedURI(URI uri, InetAddress ip, String host) throws URISyntaxException {
 		this.ip = ip;
-		this.host = ip.getHostAddress().equals(host) || host.contains(":") ? null : host;
+		this.host = host == null || ip.getHostAddress().equals(host) || host.contains(":") ? null : host;
 		this.uri = uriWithIp(uri, ip);
 	}
 

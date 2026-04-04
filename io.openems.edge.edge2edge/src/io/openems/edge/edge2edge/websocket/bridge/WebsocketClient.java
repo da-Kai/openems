@@ -1,7 +1,5 @@
 package io.openems.edge.edge2edge.websocket.bridge;
 
-import java.net.Proxy;
-import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -17,7 +15,6 @@ import com.google.gson.JsonElement;
 import io.openems.common.types.ChannelAddress;
 import io.openems.common.types.EdgeConfig;
 import io.openems.common.websocket.AbstractWebsocketClient;
-import io.openems.common.websocket.ClientReconnectorWorker;
 import io.openems.common.websocket.OnClose;
 import io.openems.common.websocket.WsData;
 
@@ -108,10 +105,6 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	@Override
 	protected void logError(Logger log, String message) {
 		log.error(message);
-	}
-
-	public boolean isConnected() {
-		return this.ws.get().isOpen();
 	}
 
 	@Override

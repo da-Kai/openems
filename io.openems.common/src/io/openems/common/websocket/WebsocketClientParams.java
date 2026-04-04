@@ -31,7 +31,7 @@ public record WebsocketClientParams(URISet serverUri, Draft draft, Map<String, S
 	/**
 	 * Default value for no custom HTTP headers.
 	 */
-	public static final Map<String, String> NO_HTTP_HEADERS = new HashMap<>();
+	public static final Map<String, String> NO_HTTP_HEADERS = Map.of();
 	/**
 	 * Default value for no proxy.
 	 */
