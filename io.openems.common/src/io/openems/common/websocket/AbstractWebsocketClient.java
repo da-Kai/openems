@@ -133,14 +133,6 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 		this.reconnectorWorker = new ClientReconnectorWorker(this, this.serverUris, params.reconnectorConfig());
 	}
 
-	/*package*/ void killConnection() {
-		final var websocket = this.ws.get();
-		if (websocket != null) {
-			websocket.close();
-		}
-		this.ws.set(null);
-	}
-
 	private Map<String, String> getHeaders(ResolvedURI uri) {
 		final var hostOpt = uri.host();
 		if (hostOpt.isEmpty()) {
@@ -169,6 +161,15 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 		return websocket;
 	}
 
+	/*package*/ void killConnection() {
+		this.ws.getAndUpdate(websocket -> {
+			if (websocket != null) {
+				websocket.close();
+			}
+			return null;
+		});
+	}
+
 	/**
 	 * Starts the websocket client.
 	 */
@@ -188,11 +189,14 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 		final var resolvedUris = this.serverUris.resolve();
 		if (resolvedUris.isEmpty()) {
 			this.log.error("Unable to resolve websocket server URI");
-		} else {
-			final var uri = resolvedUris.getFirst();
+		}
+		for (var uri : resolvedUris) {
 			this.log.info("Opening connection to websocket server [{}]", uri);
 			final var websocket = this.initConnection(uri);
-			websocket.connectBlocking();
+			if (websocket.connectBlocking()) {
+				break;
+			}
+			this.log.error("Unable to open connection");
 		}
 		this.reconnectorWorker.activate(this.getName());
 	}

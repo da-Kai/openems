@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ClientReconnectorWorker extends AbstractWorker {
 
@@ -23,7 +24,7 @@ public class ClientReconnectorWorker extends AbstractWorker {
 
 	private String debugLog = null;
 
-	private boolean isConnected = false;
+	private final AtomicBoolean isConnected = new AtomicBoolean(false);
 
 	public ClientReconnectorWorker(AbstractWebsocketClient<?> parent, URISet serverUris, Config config) {
 		this.parent = parent;
@@ -36,8 +37,8 @@ public class ClientReconnectorWorker extends AbstractWorker {
 	@Override
 	protected void forever() throws Exception {
 		final var parentWs = this.parent.ws.get();
-		this.isConnected = parentWs != null && parentWs.getReadyState() == ReadyState.OPEN;
-		if (this.isConnected) {
+		this.isConnected.set(parentWs != null && parentWs.getReadyState() == ReadyState.OPEN);
+		if (this.isConnected.get()) {
 			return;
 		}
 
@@ -48,24 +49,24 @@ public class ClientReconnectorWorker extends AbstractWorker {
 
 		for (var uri : retryUris) {
 			try {
-				TimeUnit.SECONDS.sleep(1);
 				final var ws = this.parent.initConnection(uri);
 
 				this.log.info("# Connecting WebSocket to '{}'... Blocking[{}s]", uri, this.config.connectTimeoutSeconds());
-				this.isConnected = ws.connectBlocking(this.config.connectTimeoutSeconds(), TimeUnit.SECONDS);
+				this.isConnected.set(ws.connectBlocking(this.config.connectTimeoutSeconds(), TimeUnit.SECONDS));
 			} catch (IllegalStateException e) {
 				this.log.warn("# Exception while connecting: {}", e.toString());
 			}
 
-			if (this.isConnected) {
+			if (this.isConnected.get()) {
 				this.log.info("# Connecting WebSocket to '{}' successfully", uri);
 				break;
 			}
 			this.log.warn("# Connecting WebSocket to '{}' failed", uri);
 			this.parent.killConnection();
+			TimeUnit.SECONDS.sleep(1);
 		}
 
-		if (this.isConnected) {
+		if (this.isConnected.get()) {
 			final var connectionTime = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - start);
 			this.debugLog = null;
 			this.log.info("Connected successfully [{}s]", connectionTime);
@@ -78,7 +79,7 @@ public class ClientReconnectorWorker extends AbstractWorker {
 	@Override
 	protected int getCycleTime() {
 		final var waitSeconds = ThreadLocalRandom.current().nextInt(this.config.minWaitSeconds, this.config.maxWaitSeconds + 1);
-		if (!this.isConnected) {
+		if (!this.isConnected.get()) {
 			this.log.info("Schedule a reconnect in {}s", waitSeconds);
 		}
 		return waitSeconds * 1000;
