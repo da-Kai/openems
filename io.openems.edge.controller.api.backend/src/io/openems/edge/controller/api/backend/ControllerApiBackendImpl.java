@@ -6,7 +6,10 @@ import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -243,18 +246,6 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 		return Optional.ofNullable(this.websocket) //
 				.map(WebsocketClient::isConnected) //
 				.orElse(false);
-	}
-
-	public boolean debugMode() {
-		return this.config.debugMode();
-	}
-
-	public PersistencePriority aggregationPriority() {
-		return this.config.aggregationPriority();
-	}
-
-	public PersistencePriority persistencePriority() {
-		return this.config.persistencePriority();
 	}
 
 	/**

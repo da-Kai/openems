@@ -103,6 +103,7 @@ public abstract class AbstractWorker {
 
 	/**
 	 * Gets the cycleTime of this worker in [ms].
+	 * 
 	 * <p>
 	 * Does not have to be deterministic. it is evaluated before every cycle.
 	 * <ul>

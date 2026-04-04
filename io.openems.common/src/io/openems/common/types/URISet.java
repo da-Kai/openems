@@ -3,11 +3,17 @@ package io.openems.common.types;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.*;
-import java.util.*;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Best-effort resolver for a fixed set of endpoint URIs.
+ *
  * <p>
  * The class stores a snapshot of input URIs and resolves each URI host to one
  * or more concrete IP-based targets when {@link #resolve()} is called.
@@ -19,6 +25,7 @@ import java.util.*;
  * </ul>
  * For DNS hosts, resolved addresses are shuffled per host to avoid relying on
  * a stable address order.
+ *
  * <p>
  * This class does not fail fast: resolution problems are logged and only the
  * affected URI/address is skipped. The returned list can therefore be empty
@@ -47,6 +54,7 @@ public class URISet {
 
 	/**
 	 * Resolves all configured URIs into concrete {@link ResolvedURI} entries.
+	 *
 	 * <p>
 	 * A single input URI can produce multiple output entries (e.g. multiple
 	 * A/AAAA records). The result order follows the input URI iteration order;
@@ -56,7 +64,7 @@ public class URISet {
 	 * @return resolved URIs; never {@code null}, possibly empty
 	 */
 	public List<ResolvedURI> resolve() {
-		final var resolvedURIs = new ArrayList<ResolvedURI>();
+		final var resolvedUris = new ArrayList<ResolvedURI>();
 
 		for (var uri : this.uris) {
 			final var host = uri.getHost();
@@ -64,7 +72,7 @@ public class URISet {
 			if (isHostIP(host)) {
 				try {
 					InetAddress ipAddr = InetAddress.getByName(host);
-					resolvedURIs.add(new ResolvedURI(uri, ipAddr));
+					resolvedUris.add(new ResolvedURI(uri, ipAddr));
 				} catch (Exception ex) {
 					log.error("Unable to cast {} to ip-address", host);
 				}
@@ -79,19 +87,19 @@ public class URISet {
 				continue;
 			}
 
-			final var updatedURIs = new ArrayList<ResolvedURI>();
+			final var updatedUris = new ArrayList<ResolvedURI>();
 			for (var ip : ips) {
 				try {
-					updatedURIs.add(new ResolvedURI(uri, ip, host));
+					updatedUris.add(new ResolvedURI(uri, ip, host));
 				} catch (URISyntaxException ex) {
 					log.error("Unable to resolve URI with ip '{}'", ip.getHostAddress());
 				}
 			}
-			Collections.shuffle(updatedURIs);
-			resolvedURIs.addAll(updatedURIs);
+			Collections.shuffle(updatedUris);
+			resolvedUris.addAll(updatedUris);
 		}
 
-		return resolvedURIs;
+		return resolvedUris;
 	}
 
 }

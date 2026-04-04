@@ -7,10 +7,12 @@ import java.util.Optional;
 
 /**
  * Immutable value object for a resolved endpoint URI.
+ *
  * <p>
  * The returned {@link #uri()} always has its host replaced by the resolved IP
  * address (see {@link #ip()}). If resolution started from a DNS hostname, the
  * original hostname can be obtained via {@link #host()}.
+ *
  * <p>
  * Important for clients: when connecting via TLS/SSL or using Layer-7 routing,
  * the original hostname must be manually re-applied where required (e.g. TLS
@@ -68,9 +70,9 @@ public final class ResolvedURI {
 
 	@Override
 	public String toString() {
-		if (host != null) {
-			return uri.toString() + "[" + host + "]";
+		if (this.host != null) {
+			return this.uri.toString() + "[" + this.host + "]";
 		}
-		return uri.toString();
+		return this.uri.toString();
 	}
 }

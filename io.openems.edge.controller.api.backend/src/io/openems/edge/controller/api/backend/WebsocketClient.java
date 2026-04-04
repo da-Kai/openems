@@ -93,6 +93,10 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 		this.parent.logError(log, message);
 	}
 
+	/**
+	 * Checks if the WebSocket connection is currently open.
+	 * @return true if connection is open
+	 */
 	public boolean isConnected() {
 		final var websocket = this.ws.get();
 		return websocket != null && websocket.isOpen();

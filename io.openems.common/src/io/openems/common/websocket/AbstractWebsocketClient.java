@@ -87,7 +87,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 
 	protected AbstractWebsocketClient(String name, URI serverUri, Draft draft, Map<String, String> httpHeaders,
 	                                  Proxy proxy, BooleanConsumer onConnectedChange, ClientReconnectorWorker.Config reconnectorConfig) {
-		this(name, new URISet(serverUri), draft, httpHeaders, proxy, onConnectedChange, ClientReconnectorWorker.DEFAULT_CONFIG);
+		this(name, new URISet(serverUri), draft, httpHeaders, proxy, onConnectedChange, reconnectorConfig);
 	}
 
 	protected AbstractWebsocketClient(String name, URISet serverUri, Draft draft, Map<String, String> httpHeaders,
@@ -184,12 +184,20 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 			websocket.close();
 		}
 		this.ws.set(null);
-		this.httpHeaders.remove("Host");
+	}
+
+	private Map<String, String> getHeaders(ResolvedURI uri) {
+		final var hostOpt = uri.host();
+		if (hostOpt.isEmpty()) {
+			return this.httpHeaders;
+		}
+		final var headers = new HashMap<>(this.httpHeaders);
+		headers.put("Host", hostOpt.get());
+		return headers;
 	}
 
 	/*package*/ WebSocketClient initConnection(ResolvedURI uri) {
-		uri.host().ifPresent(hostname -> this.httpHeaders.put("Host", hostname));
-		final var websocket = wsBuilder.apply(uri, this.draft, this.httpHeaders);
+		final var websocket = this.wsBuilder.apply(uri, this.draft, this.getHeaders(uri));
 
 		// https://github.com/TooTallNate/Java-WebSocket/wiki/Lost-connection-detection
 		websocket.setConnectionLostTimeout(100);
@@ -223,7 +231,10 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	 */
 	public void startBlocking() throws InterruptedException {
 		this.logInfo(this.log, "Opening connection to websocket server [" + this.serverUri + "]");
-		this.ws.get().connectBlocking();
+		final var websocket = this.ws.get();
+		if (websocket != null) {
+			websocket.connectBlocking();
+		}
 		this.reconnectorWorker.activate(this.getName());
 	}
 

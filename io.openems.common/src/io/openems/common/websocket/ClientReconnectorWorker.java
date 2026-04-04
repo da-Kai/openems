@@ -1,25 +1,13 @@
 package io.openems.common.websocket;
 
-import java.lang.reflect.Field;
-import java.net.Socket;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-
 import io.openems.common.logger.LazyContextLogger;
-import io.openems.common.types.ResolvedURI;
 import io.openems.common.types.URISet;
-import org.java_websocket.WebSocket;
-import org.java_websocket.WebSocketImpl;
-import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.drafts.Draft;
+import io.openems.common.worker.AbstractWorker;
 import org.java_websocket.enums.ReadyState;
-import org.java_websocket.framing.CloseFrame;
 import org.slf4j.Logger;
 
-import io.openems.common.worker.AbstractWorker;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 public class ClientReconnectorWorker extends AbstractWorker {
 
@@ -31,16 +19,16 @@ public class ClientReconnectorWorker extends AbstractWorker {
 	private final Logger log;
 	private final AbstractWebsocketClient<?> parent;
 	private final Config config;
-	private final URISet serverURIs;
+	private final URISet serverUris;
 
 	private String debugLog = null;
 
 	private boolean isConnected = false;
 
-	public ClientReconnectorWorker(AbstractWebsocketClient<?> parent, URISet serverURIs, Config config) {
+	public ClientReconnectorWorker(AbstractWebsocketClient<?> parent, URISet serverUris, Config config) {
 		this.parent = parent;
 		this.config = config;
-		this.serverURIs = serverURIs;
+		this.serverUris = serverUris;
 
 		this.log = new LazyContextLogger(ClientReconnectorWorker.class, parent::getName);
 	}
@@ -54,14 +42,14 @@ public class ClientReconnectorWorker extends AbstractWorker {
 		}
 
 		final var start = System.currentTimeMillis();
-		final var retryURIs = serverURIs.resolve();
+		final var retryUris = this.serverUris.resolve();
 
 		this.log.info("Reconnecting Websocket...");
 
-		for (var uri : retryURIs) {
+		for (var uri : retryUris) {
 			try {
 				TimeUnit.SECONDS.sleep(1);
-				final var ws = parent.initConnection(uri);
+				final var ws = this.parent.initConnection(uri);
 
 				this.log.info("# Connecting WebSocket to '{}'... Blocking[{}s]", uri, this.config.connectTimeoutSeconds());
 				this.isConnected = ws.connectBlocking(this.config.connectTimeoutSeconds(), TimeUnit.SECONDS);
@@ -69,12 +57,12 @@ public class ClientReconnectorWorker extends AbstractWorker {
 				this.log.warn("# Exception while connecting: {}", e.toString());
 			}
 
-			if(this.isConnected) {
+			if (this.isConnected) {
 				this.log.warn("# Connecting WebSocket to '{}' successfully", uri);
 				break;
 			}
 			this.log.warn("# Connecting WebSocket to '{}' failed", uri);
-			parent.killConnection();
+			this.parent.killConnection();
 		}
 
 		if (this.isConnected) {
@@ -89,9 +77,9 @@ public class ClientReconnectorWorker extends AbstractWorker {
 
 	@Override
 	protected int getCycleTime() {
-		final var waitSeconds = ThreadLocalRandom.current().nextInt(config.minWaitSeconds, config.maxWaitSeconds + 1);
+		final var waitSeconds = ThreadLocalRandom.current().nextInt(this.config.minWaitSeconds, this.config.maxWaitSeconds + 1);
 		if (!this.isConnected) {
-			this.log.info("Schedule a reconnect in in {}s", waitSeconds);
+			this.log.info("Schedule a reconnect in {}s", waitSeconds);
 		}
 		return waitSeconds * 1000;
 	}
