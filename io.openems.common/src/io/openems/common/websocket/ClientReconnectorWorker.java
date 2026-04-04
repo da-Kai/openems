@@ -81,8 +81,9 @@ public class ClientReconnectorWorker extends AbstractWorker {
 		final var waitSeconds = ThreadLocalRandom.current().nextInt(this.config.minWaitSeconds, this.config.maxWaitSeconds + 1);
 		if (!this.isConnected.get()) {
 			this.log.info("Schedule a reconnect in {}s", waitSeconds);
+			return waitSeconds * 1_000;
 		}
-		return waitSeconds * 1000;
+		return 60_000; // check connection every minute
 	}
 
 	/**

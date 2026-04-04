@@ -162,12 +162,10 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	}
 
 	/*package*/ void killConnection() {
-		this.ws.getAndUpdate(websocket -> {
-			if (websocket != null) {
-				websocket.close();
-			}
-			return null;
-		});
+		final var websocket = this.ws.getAndSet(null);
+		if (websocket != null) {
+			websocket.close();
+		}
 	}
 
 	/**
@@ -194,6 +192,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 			this.log.info("Opening connection to websocket server [{}]", uri);
 			final var websocket = this.initConnection(uri);
 			if (websocket.connectBlocking()) {
+				this.ws.set(websocket);
 				break;
 			}
 			this.log.error("Unable to open connection");
@@ -210,11 +209,10 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 		// shutdown reconnector
 		this.reconnectorWorker.deactivate();
 		// close websocket
-		final var websocket = this.ws.get();
+		final var websocket = this.ws.getAndSet(null);
 		if (websocket != null) {
 			websocket.close(CloseFrame.NORMAL, "Closing connection [" + this.getName() + "]");
 		}
-		this.ws.set(null);
 	}
 
 	/**

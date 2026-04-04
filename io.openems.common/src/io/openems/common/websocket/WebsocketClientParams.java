@@ -9,6 +9,9 @@ import org.java_websocket.extensions.permessage_deflate.PerMessageDeflateExtensi
 
 import java.net.Proxy;
 import java.net.URI;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -83,7 +86,7 @@ public record WebsocketClientParams(URISet serverUri, Draft draft, Map<String, S
 		 * @return this builder
 		 */
 		public Builder draft(Draft draft) {
-			this.draft = draft;
+			this.draft = draft == null ? DEFAULT_DRAFT : draft;
 			return this;
 		}
 
@@ -94,7 +97,7 @@ public record WebsocketClientParams(URISet serverUri, Draft draft, Map<String, S
 		 * @return this builder
 		 */
 		public Builder httpHeaders(Map<String, String> httpHeaders) {
-			this.httpHeaders = httpHeaders;
+			this.httpHeaders = httpHeaders == null ? NO_HTTP_HEADERS : Collections.unmodifiableMap(httpHeaders);
 			return this;
 		}
 
@@ -105,7 +108,7 @@ public record WebsocketClientParams(URISet serverUri, Draft draft, Map<String, S
 		 * @return this builder
 		 */
 		public Builder proxy(Proxy proxy) {
-			this.proxy = proxy;
+			this.proxy = proxy == null ? NO_PROXY : proxy;
 			return this;
 		}
 
@@ -116,7 +119,7 @@ public record WebsocketClientParams(URISet serverUri, Draft draft, Map<String, S
 		 * @return this builder
 		 */
 		public Builder onConnectedChange(BooleanConsumer onConnectedChange) {
-			this.onConnectedChange = onConnectedChange;
+			this.onConnectedChange = onConnectedChange == null ? FunctionUtils::doNothing : onConnectedChange;
 			return this;
 		}
 
@@ -127,7 +130,7 @@ public record WebsocketClientParams(URISet serverUri, Draft draft, Map<String, S
 		 * @return this builder
 		 */
 		public Builder reconnectorConfig(ClientReconnectorWorker.Config reconnectorConfig) {
-			this.reconnectorConfig = reconnectorConfig;
+			this.reconnectorConfig = reconnectorConfig == null ? ClientReconnectorWorker.DEFAULT_CONFIG : reconnectorConfig;
 			return this;
 		}
 
@@ -141,7 +144,7 @@ public record WebsocketClientParams(URISet serverUri, Draft draft, Map<String, S
 			return new WebsocketClientParams(//
 					this.serverUri, //
 					this.draft, //
-					Map.copyOf(this.httpHeaders), //
+					this.httpHeaders, //
 					this.proxy, //
 					this.onConnectedChange, //
 					this.reconnectorConfig);
