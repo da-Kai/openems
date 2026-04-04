@@ -111,6 +111,11 @@ public class MyConfig extends AbstractComponentConfig implements Config {
 	}
 
 	@Override
+	public String[] fallbackUris() {
+		return new String[0];
+	}
+
+	@Override
 	public String proxyAddress() {
 		return this.builder.proxyAddress;
 	}
