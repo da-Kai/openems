@@ -143,7 +143,15 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 		return headers;
 	}
 
-	/*package*/ WebSocketClient initConnection(ResolvedURI uri) {
+	/**
+	 * Creates and configures a {@link WebSocketClient} for the given resolved URI,
+	 * attaches the corresponding {@link WsData}, stores it as the current websocket,
+	 * and returns it.
+	 *
+	 * @param uri the resolved websocket server URI to connect to
+	 * @return the configured websocket client instance
+	 */
+	/*package*/ WebSocketClient setupWebsocket(ResolvedURI uri) {
 		final var websocket = this.wsBuilder.apply(uri, this.draft, this.getHeaders(uri));
 
 		// https://github.com/TooTallNate/Java-WebSocket/wiki/Lost-connection-detection
@@ -161,7 +169,13 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 		return websocket;
 	}
 
-	/*package*/ void killConnection() {
+	/**
+	 * Clears the currently tracked websocket and closes it if one is present.
+	 *
+	 * <p>
+	 * This is used to reset connection state before the next reconnect attempt.
+	 */
+	/*package*/ void resetWebsocket() {
 		final var websocket = this.ws.getAndSet(null);
 		if (websocket != null) {
 			websocket.close();
@@ -190,9 +204,8 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 		}
 		for (var uri : resolvedUris) {
 			this.log.info("Opening connection to websocket server [{}]", uri);
-			final var websocket = this.initConnection(uri);
+			final var websocket = this.setupWebsocket(uri);
 			if (websocket.connectBlocking()) {
-				this.ws.set(websocket);
 				break;
 			}
 			this.log.error("Unable to open connection");

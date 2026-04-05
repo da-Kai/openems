@@ -49,7 +49,7 @@ public class ClientReconnectorWorker extends AbstractWorker {
 
 		for (var uri : retryUris) {
 			try {
-				final var ws = this.parent.initConnection(uri);
+				final var ws = this.parent.setupWebsocket(uri);
 
 				this.log.info("# Connecting WebSocket to '{}'... Blocking[{}s]", uri, this.config.connectTimeoutSeconds());
 				this.isConnected.set(ws.connectBlocking(this.config.connectTimeoutSeconds(), TimeUnit.SECONDS));
@@ -62,7 +62,7 @@ public class ClientReconnectorWorker extends AbstractWorker {
 				break;
 			}
 			this.log.warn("# Connecting WebSocket to '{}' failed", uri);
-			this.parent.killConnection();
+			this.parent.resetWebsocket();
 			TimeUnit.SECONDS.sleep(1);
 		}
 
