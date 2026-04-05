@@ -3,6 +3,8 @@ package io.openems.common.types;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -33,6 +35,10 @@ import java.util.List;
  */
 public class URISet {
 
+	public enum ResolveStrategy {
+		ANY, IPv4_ONLY, IPv6_ONLY, IPv4_PREFERRED, IPv6_PREFERRED
+	}
+
 	private static final Logger log = LoggerFactory.getLogger(URISet.class);
 
 	private final List<URI> uris;
@@ -46,17 +52,49 @@ public class URISet {
 	}
 
 	/**
-	 * Resolves all configured URIs into concrete {@link ResolvedURI} entries.
+	 * Resolves all configured URIs into concrete {@link ResolvedURI} entries,
+	 * without filtering or ordering.
 	 *
 	 * <p>
-	 * A single input URI can produce multiple output entries (e.g. multiple
-	 * A/AAAA records). The result order follows the input URI iteration order;
-	 * for each DNS host, the resolved addresses are added in shuffled order.
-	 * Unresolvable hosts or invalid transformed URIs are logged and omitted.
+	 * This method does not fail fast: URIs with missing hosts, unresolvable DNS
+	 * names, or addresses that cannot be embedded into a valid URI are logged and
+	 * skipped. The returned list can therefore be empty even if input URIs were
+	 * provided.
 	 *
 	 * @return resolved URIs; never {@code null}, possibly empty
 	 */
 	public List<ResolvedURI> resolve() {
+		return this.resolve(ResolveStrategy.ANY);
+	}
+
+	/**
+	 * Resolves all configured URIs into concrete {@link ResolvedURI} entries,
+	 * filtering and ordering them according to the given {@code strategy}.
+	 *
+	 * <p>
+	 * A single input URI can produce multiple output entries (e.g. when a DNS name
+	 * has several A/AAAA records). The result order follows the input URI iteration
+	 * order. Within each URI, the strategy controls which addresses appear:
+	 *
+	 * <ul>
+	 * <li>{@link ResolveStrategy#ANY} – all resolved addresses.</li>
+	 * <li>{@link ResolveStrategy#IPv4_ONLY} – only IPv4 addresses.</li>
+	 * <li>{@link ResolveStrategy#IPv6_ONLY} – only IPv6 addresses.</li>
+	 * <li>{@link ResolveStrategy#IPv4_PREFERRED} – IPv4 addresses first, then IPv6 addresses.</li>
+	 * <li>{@link ResolveStrategy#IPv6_PREFERRED} – IPv6 addresses first, then IPv4 addresses.</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * This method does not fail fast: URIs with missing hosts, unresolvable DNS
+	 * names, or addresses that cannot be embedded into a valid URI are logged and
+	 * skipped. The returned list can therefore be empty even if input URIs were
+	 * provided.
+	 *
+	 * @param strategy the address-family filter / ordering strategy; must not be
+	 *                 {@code null}
+	 * @return resolved URIs; never {@code null}, possibly empty
+	 */
+	public List<ResolvedURI> resolve(ResolveStrategy strategy) {
 		final var resolvedUris = new ArrayList<ResolvedURI>();
 
 		for (var uri : this.uris) {
@@ -74,16 +112,39 @@ public class URISet {
 				continue;
 			}
 
-			final var updatedUris = new ArrayList<ResolvedURI>();
+			final var primaryUris = new ArrayList<ResolvedURI>(ips.length);
+			final var secondaryUris = new ArrayList<ResolvedURI>(ips.length);
 			for (var ip : ips) {
+				final var isIpv4 = ip instanceof Inet4Address;
+				final var isIpv6 = ip instanceof Inet6Address;
+
+				if (strategy == ResolveStrategy.IPv4_ONLY && !isIpv4) {
+					continue;
+				}
+				if (strategy == ResolveStrategy.IPv6_ONLY && !isIpv6) {
+					continue;
+				}
+
+				final ResolvedURI resolved;
 				try {
-					updatedUris.add(new ResolvedURI(uri, ip, host));
+					resolved = new ResolvedURI(uri, ip, host);
 				} catch (URISyntaxException ex) {
 					log.error("Unable to resolve URI with ip '{}'", ip.getHostAddress());
+					continue;
+				}
+
+				if (strategy == ResolveStrategy.ANY //
+						|| (strategy == ResolveStrategy.IPv4_PREFERRED && isIpv4) //
+						|| (strategy == ResolveStrategy.IPv6_PREFERRED && isIpv6)) {
+					primaryUris.add(resolved);
+				} else {
+					secondaryUris.add(resolved);
 				}
 			}
-			Collections.shuffle(updatedUris);
-			resolvedUris.addAll(updatedUris);
+			Collections.shuffle(primaryUris);
+			resolvedUris.addAll(primaryUris);
+			Collections.shuffle(secondaryUris);
+			resolvedUris.addAll(secondaryUris);
 		}
 
 		return resolvedUris;
