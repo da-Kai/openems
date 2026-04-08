@@ -1,30 +1,25 @@
 package io.openems.common.websocket;
 
+import java.net.ConnectException;
+import java.net.Proxy;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.java_websocket.WebSocket;
+import org.java_websocket.drafts.Draft;
+import org.java_websocket.framing.CloseFrame;
+import org.java_websocket.handshake.ServerHandshake;
+import org.slf4j.Logger;
+
 import io.openems.common.function.BooleanConsumer;
-import io.openems.common.function.TriFunction;
 import io.openems.common.jsonrpc.base.JsonrpcMessage;
 import io.openems.common.jsonrpc.base.JsonrpcRequest;
 import io.openems.common.jsonrpc.base.JsonrpcResponseSuccess;
 import io.openems.common.logger.ContextLogger;
 import io.openems.common.types.ResolvedURI;
 import io.openems.common.types.URISet;
-import org.java_websocket.WebSocket;
-import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.drafts.Draft;
-import org.java_websocket.framing.CloseFrame;
-import org.java_websocket.handshake.ServerHandshake;
-import org.slf4j.Logger;
-
-import javax.net.ssl.SNIHostName;
-import javax.net.ssl.SSLParameters;
-import java.net.ConnectException;
-import java.net.Proxy;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A Websocket Client implementation that automatically tries to reconnect a
@@ -34,7 +29,6 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public abstract class AbstractWebsocketClient<T extends WsData> extends AbstractWebsocket<T> {
 
-	protected final TriFunction<ResolvedURI, Draft, Map<String, String>, WebSocketClient> wsBuilder;
 	protected final AtomicReference<WebSocketClient> ws = new AtomicReference<>();
 
 	private final Logger log;
@@ -54,7 +48,13 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 		this.draft = params.draft();
 		this.httpHeaders = params.httpHeaders();
 		this.onConnectedChange = params.onConnectedChange();
-		this.wsBuilder = (resUri, dr, headers) -> new WebSocketClient(resUri.uri(), dr, headers) {
+
+		// Initialize reconnector
+		this.reconnectorWorker = new ClientReconnectorWorker(this, this.serverUris, params.reconnectorConfig());
+	}
+
+	private WebSocketClient createWsClient(ResolvedURI uri) {
+		return new WebSocketClient(uri, this.draft, this.httpHeaders) {
 
 			@Override
 			public void onOpen(ServerHandshake handshake) {
@@ -103,24 +103,16 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 					return;
 				}
 
-				AbstractWebsocketClient.this.log.info("WebSocket [{}] closed. Code [{}] Reason [{}]", //
-						resUri, code, reason);
+				AbstractWebsocketClient.this.log.info("WebSocket [{}] closed. Code [{}] Reason [{}]", uri, code,
+						reason);
 				if (this.updateIsConnected()) {
 					AbstractWebsocketClient.this.reconnectorWorker.triggerNextRun();
 				}
 			}
 
-			@Override
-			protected void onSetSSLParameters(SSLParameters sslParameters) {
-				resUri.host().ifPresent(hostname ->
-						sslParameters.setServerNames(
-								List.of(new SNIHostName(hostname))
-						));
-			}
-
 			private boolean updateIsConnected() {
 				var isOpen = this.isOpen();
-				if (AbstractWebsocketClient.this.isConnected.compareAndSet(!isOpen, isOpen)) {
+				if (AbstractWebsocketClient.this.isConnected.getAndSet(isOpen) != isOpen) {
 					// Value has changed
 					AbstractWebsocketClient.this.onConnectedChange.accept(isOpen);
 					return true;
@@ -128,31 +120,18 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 				return false;
 			}
 		};
-
-		// Initialize reconnector
-		this.reconnectorWorker = new ClientReconnectorWorker(this, this.serverUris, params.reconnectorConfig());
-	}
-
-	private Map<String, String> getHeaders(ResolvedURI uri) {
-		final var hostOpt = uri.host();
-		if (hostOpt.isEmpty()) {
-			return this.httpHeaders;
-		}
-		final var headers = new HashMap<>(this.httpHeaders);
-		headers.put("Host", hostOpt.get());
-		return headers;
 	}
 
 	/**
 	 * Creates and configures a {@link WebSocketClient} for the given resolved URI,
-	 * attaches the corresponding {@link WsData}, stores it as the current websocket,
-	 * and returns it.
+	 * attaches the corresponding {@link WsData}, stores it as the current
+	 * websocket, and returns it.
 	 *
 	 * @param uri the resolved websocket server URI to connect to
 	 * @return the configured websocket client instance
 	 */
-	/*package*/ WebSocketClient setupWebsocket(ResolvedURI uri) {
-		final var websocket = this.wsBuilder.apply(uri, this.draft, this.getHeaders(uri));
+	/* package */ WebSocketClient setupWebsocket(ResolvedURI uri) {
+		final var websocket = this.createWsClient(uri);
 
 		// https://github.com/TooTallNate/Java-WebSocket/wiki/Lost-connection-detection
 		websocket.setConnectionLostTimeout(100);
@@ -175,11 +154,12 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	 * <p>
 	 * This is used to reset connection state before the next reconnect attempt.
 	 */
-	/*package*/ void resetWebsocket() {
+	/* package */ void resetWebsocket() {
 		final var websocket = this.ws.getAndSet(null);
 		if (websocket != null) {
 			websocket.close();
 		}
+		this.isConnected.set(false);
 	}
 
 	/**
@@ -241,13 +221,8 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 
 	@Override
 	protected OnInternalError getOnInternalError() {
-		return (t, wsDataString) -> {
-			this.logError(this.log, new StringBuilder() //
-					.append("OnInternalError for ").append(wsDataString).append(". ") //
-					.append(t.getClass()).append(": ").append(t.getMessage()) //
-					.toString());
-			this.log.error(t.getMessage(), t);
-		};
+		return (t, wsData) -> this.log.error("OnInternalError for {}. {}: {}", //
+				wsData, t.getClass(), t.getMessage(), t);
 	}
 
 	/**

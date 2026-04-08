@@ -6,6 +6,7 @@ import io.openems.common.worker.AbstractWorker;
 import org.java_websocket.enums.ReadyState;
 import org.slf4j.Logger;
 
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,6 +28,8 @@ public class ClientReconnectorWorker extends AbstractWorker {
 	private final AtomicBoolean isConnected = new AtomicBoolean(false);
 
 	public ClientReconnectorWorker(AbstractWebsocketClient<?> parent, URISet serverUris, Config config) {
+		super(DelayReferencePoint.END_TIME);
+
 		this.parent = parent;
 		this.config = config;
 		this.serverUris = serverUris;
@@ -93,9 +96,7 @@ public class ClientReconnectorWorker extends AbstractWorker {
 	 */
 	public String debugLog() {
 		var message = this.debugLog;
-		return message == null //
-				? "" //
-				: message;
+		return message == null ? "" : message;
 	}
 
 }

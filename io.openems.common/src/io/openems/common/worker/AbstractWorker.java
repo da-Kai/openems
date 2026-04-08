@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Defines a generic Worker Thread.
@@ -26,6 +27,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public abstract class AbstractWorker {
 
+	/**
+	 * Defines the reference point for the delay of the next execution of the
+	 * forever() method.
+	 *
+	 * <ul>
+	 * <li>{@code START_TIME}: The delay is calculated from the start time of the
+	 * previous execution of forever().</li>
+	 * <li>{@code END_TIME}: The delay is calculated from the end time of the
+	 * previous execution of forever().</li>
+	 * </ul>
+	 */
+	public enum DelayReferencePoint {
+		START_TIME, END_TIME
+	}
+
 	public static final int ALWAYS_WAIT_FOR_TRIGGER_NEXT_RUN = -1;
 	public static final int DO_NOT_WAIT = 0;
 
@@ -33,6 +49,17 @@ public abstract class AbstractWorker {
 
 	private final AtomicBoolean isStopped = new AtomicBoolean(false);
 	private final Mutex cycleMutex = new Mutex(false);
+
+	private final AtomicReference<DelayReferencePoint> delayReferencePoint = //
+			new AtomicReference<>(DelayReferencePoint.START_TIME);
+
+	public AbstractWorker() {
+		this(DelayReferencePoint.START_TIME);
+	}
+
+	public AbstractWorker(DelayReferencePoint drp) {
+		this.delayReferencePoint.set(drp);
+	}
 
 	/**
 	 * Initializes the worker and starts the worker thread.
@@ -137,7 +164,10 @@ public abstract class AbstractWorker {
 					// no wait
 				} else if (cycleTime > 0) {
 					// wait remaining cycleTime
-					var sleep = cycleTime - (System.currentTimeMillis() - cycleStart);
+					final int sleep = switch (this.delayReferencePoint.get()) {
+					case START_TIME -> cycleTime - (int) (System.currentTimeMillis() - cycleStart);
+					case END_TIME -> cycleTime;
+					};
 					if (sleep > 0) {
 						AbstractWorker.this.cycleMutex.awaitOrTimeout(sleep, TimeUnit.MILLISECONDS);
 					}
