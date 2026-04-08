@@ -152,10 +152,13 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 			proxy = new Proxy(config.proxyType(), new InetSocketAddress(config.proxyAddress(), config.proxyPort()));
 		}
 
+		final var headers = new HashMap<String, String>();
+		headers.put("apikey", config.apikey());
+
 		// Create Websocket instance
 		this.websocket = new WebsocketClient(this, name, new WebsocketClientParams.Builder(uris) //
 				.proxy(proxy) //
-				.httpHeaders(Map.of("apikey", config.apikey())) //
+				.httpHeaders(headers) //
 				.reconnectorConfig(ClientReconnectorWorker.DEFAULT_CONFIG.withEventHandler(this::onReconnectEvent)) //
 				.build());
 		this.websocket.start();

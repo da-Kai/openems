@@ -1,5 +1,6 @@
 package io.openems.common.worker;
 
+import com.google.common.base.Stopwatch;
 import io.openems.common.utils.Mutex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -152,8 +153,8 @@ public abstract class AbstractWorker {
 	}
 
 	protected final Thread thread = new Thread(() -> {
+		final var cycleStopWatch = Stopwatch.createStarted();
 		var onWorkerExceptionSleep = 1L; // seconds
-		var cycleStart = System.currentTimeMillis();
 		while (!AbstractWorker.this.isStopped.get()) {
 			try {
 				/*
@@ -164,8 +165,8 @@ public abstract class AbstractWorker {
 					// no wait
 				} else if (cycleTime > 0) {
 					// wait remaining cycleTime
-					final int sleep = switch (this.delayReferencePoint.get()) {
-					case START_TIME -> cycleTime - (int) (System.currentTimeMillis() - cycleStart);
+					final var sleep = switch (this.delayReferencePoint.get()) {
+					case START_TIME -> cycleTime - cycleStopWatch.elapsed(TimeUnit.MILLISECONDS);
 					case END_TIME -> cycleTime;
 					};
 					if (sleep > 0) {
@@ -177,7 +178,7 @@ public abstract class AbstractWorker {
 				}
 
 				// store start time
-				cycleStart = System.currentTimeMillis();
+				cycleStopWatch.reset().start();
 
 				/*
 				 * Call forever() forever.
