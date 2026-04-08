@@ -168,7 +168,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	@Override
 	public void start() {
 		this.logInfo(this.log, "Opening connection to websocket server [" + this.getName() + "]");
-		this.reconnectorWorker.activate(this.getName());
+		this.reconnectorWorker.activate(this.getName() + "::Reconnector");
 		this.reconnectorWorker.triggerNextRun();
 	}
 
@@ -190,7 +190,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 			}
 			this.log.error("Unable to open connection");
 		}
-		this.reconnectorWorker.activate(this.getName());
+		this.reconnectorWorker.activate(this.getName() + "::Reconnector");
 	}
 
 	/**
@@ -246,14 +246,11 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	 * @return the debug log output or null
 	 */
 	public String debugLog() {
-		var b = new StringBuilder(64) //
-				.append("[").append(this.getName()).append("] [monitor] ");
 		final var websocket = this.ws.get();
 		if (websocket != null && websocket.isOpen()) {
-			b.append("Connected ");
+			return "Connected";
 		} else {
-			b.append("NOT CONNECTED. ").append(this.reconnectorWorker.debugLog());
+			return "NOT CONNECTED. " + this.reconnectorWorker.debugLog();
 		}
-		return b.toString();
 	}
 }

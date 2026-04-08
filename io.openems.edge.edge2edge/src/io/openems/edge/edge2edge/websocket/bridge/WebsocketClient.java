@@ -14,6 +14,7 @@ import com.google.gson.JsonElement;
 
 import io.openems.common.types.ChannelAddress;
 import io.openems.common.types.EdgeConfig;
+import io.openems.common.utils.FunctionUtils;
 import io.openems.common.websocket.AbstractWebsocketClient;
 import io.openems.common.websocket.OnClose;
 import io.openems.common.websocket.WsData;

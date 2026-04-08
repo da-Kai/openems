@@ -1,12 +1,16 @@
 package io.openems.edge.controller.api.backend;
 
+import org.java_websocket.WebSocket;
+import org.slf4j.Logger;
+
 import io.openems.common.websocket.AbstractWebsocketClient;
+import io.openems.common.websocket.ClientReconnectorWorker;
 import io.openems.common.websocket.OnClose;
 import io.openems.common.websocket.WebsocketClientParams;
 import io.openems.common.websocket.WsData;
+import io.openems.edge.common.channel.ChannelUtils;
 import io.openems.edge.common.component.OpenemsComponent;
-import org.java_websocket.WebSocket;
-import org.slf4j.Logger;
+import io.openems.edge.controller.api.backend.api.ControllerApiBackend;
 
 public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 
@@ -39,6 +43,13 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 					.log();
 			this.parent.getUnableToSendChannel().setNextValue(true);
 		};
+	}
+
+	private static void onReconnectEvent(ControllerApiBackendImpl parent,
+			ClientReconnectorWorker.WebsocketReconnectorEvent event) {
+		if (event == ClientReconnectorWorker.WebsocketReconnectorEvent.CLOSE_FAILED) {
+			ChannelUtils.setValue(parent, ControllerApiBackend.ChannelId.CONNECTION_CLOSE_FAILURE, true);
+		}
 	}
 
 	@Override
