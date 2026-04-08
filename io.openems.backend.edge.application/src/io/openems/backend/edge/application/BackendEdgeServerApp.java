@@ -5,6 +5,7 @@ import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import io.openems.common.utils.FunctionUtils;
 import io.openems.common.websocket.ClientReconnectorWorker;
 import io.openems.common.websocket.WebsocketClientParams;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -58,7 +59,7 @@ public class BackendEdgeServerApp {
 		var wsParams = new WebsocketClientParams.Builder(new URI(config.uri()))
 				.httpHeaders(Map.of("id", config.id()))
 				.onConnectedChange(this::evaluateServerStart)
-				.reconnectorConfig(new ClientReconnectorWorker.Config(100, 30, 2))
+				.reconnectorConfig(new ClientReconnectorWorker.Config(100, 30, 2, FunctionUtils::doNothing))
 				.build();
 		this.client = new WebsocketClient("Backend.Edge.Client", wsParams,
 				config.clientPoolSize(), //

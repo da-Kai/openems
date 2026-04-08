@@ -2,6 +2,7 @@ package io.openems.edge.controller.api.backend.api;
 
 import java.util.concurrent.CompletableFuture;
 
+import io.openems.edge.common.channel.BooleanReadChannel;
 import org.osgi.service.event.EventHandler;
 
 import io.openems.common.channel.Level;
@@ -78,6 +79,15 @@ public interface ControllerApiBackend extends Controller, OpenemsComponent, Even
 	 */
 	public default LongReadChannel getLastSuccessFulResendChannel() {
 		return this.channel(ChannelId.LAST_SUCCESSFUL_RESEND);
+	}
+
+	/**
+	 * Gets the Channel for {@link ChannelId#CONNECTION_CLOSE_FAILURE}.
+	 *
+	 * @return the Channel
+	 */
+	public default BooleanReadChannel getConnectionCloseFailureChannel() {
+		return this.channel(ChannelId.CONNECTION_CLOSE_FAILURE);
 	}
 
 	/**

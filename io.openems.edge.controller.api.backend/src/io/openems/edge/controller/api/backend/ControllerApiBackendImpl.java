@@ -10,7 +10,9 @@ import io.openems.common.types.EdgeConfig;
 import io.openems.common.types.URISet;
 import io.openems.common.utils.ThreadPoolUtils;
 import io.openems.common.websocket.AbstractWebsocketClient;
+import io.openems.common.websocket.ClientReconnectorWorker;
 import io.openems.common.websocket.WebsocketClientParams;
+import io.openems.edge.common.channel.ChannelUtils;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -61,7 +63,8 @@ import static io.openems.common.utils.StringUtils.definedOrElse;
 		EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE, //
 		EdgeEventConstants.TOPIC_CONFIG_UPDATE //
 })
-public class ControllerApiBackendImpl extends AbstractOpenemsComponent implements ControllerApiBackend, Controller, OpenemsComponent, EventHandler {
+public class ControllerApiBackendImpl extends AbstractOpenemsComponent
+		implements ControllerApiBackend, Controller, OpenemsComponent, EventHandler {
 
 	protected static final String COMPONENT_NAME = "Controller.Api.Backend";
 
@@ -117,7 +120,8 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent implement
 
 		// initialize Executor
 		var name = COMPONENT_NAME + ":" + this.id();
-		this.executor = Executors.newScheduledThreadPool(10, new ThreadFactoryBuilder().setNameFormat(name + "-%d").build());
+		this.executor = Executors.newScheduledThreadPool(10,
+				new ThreadFactoryBuilder().setNameFormat(name + "-%d").build());
 
 		// initialize ApiWorker
 		this.apiWorker.setTimeoutSeconds(config.apiTimeout());
@@ -140,24 +144,20 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent implement
 			}
 		}
 
-		final var wsConfBuilder = new WebsocketClientParams.Builder(uris);
-
 		// Get Proxy configuration
-		Proxy proxy;
+		final Proxy proxy;
 		if (config.proxyAddress().trim().isBlank() || config.proxyPort() == 0) {
 			proxy = WebsocketClientParams.NO_PROXY;
 		} else {
 			proxy = new Proxy(config.proxyType(), new InetSocketAddress(config.proxyAddress(), config.proxyPort()));
 		}
-		wsConfBuilder.proxy(proxy);
-
-		// create http headers
-		Map<String, String> httpHeaders = new HashMap<>();
-		httpHeaders.put("apikey", config.apikey());
-		wsConfBuilder.httpHeaders(httpHeaders);
 
 		// Create Websocket instance
-		this.websocket = new WebsocketClient(this, name, wsConfBuilder.build());
+		this.websocket = new WebsocketClient(this, name, new WebsocketClientParams.Builder(uris) //
+				.proxy(proxy) //
+				.httpHeaders(Map.of("apikey", config.apikey())) //
+				.reconnectorConfig(ClientReconnectorWorker.DEFAULT_CONFIG.withEventHandler(this::onReconnectEvent)) //
+				.build());
 		this.websocket.start();
 
 		this.resendHistoricDataWorker = this.resendHistoricDataWorkerFactory.get();
@@ -176,6 +176,12 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent implement
 			call.put(EdgeKeys.IS_FROM_BACKEND_KEY, true);
 		});
 		this.requestHandler.setDebug(config.debugMode());
+	}
+
+	private void onReconnectEvent(ClientReconnectorWorker.WebsocketReconnectorEvent event) {
+		if (event == ClientReconnectorWorker.WebsocketReconnectorEvent.CLOSE_FAILED) {
+			this.getConnectionCloseFailureChannel().setNextValue(true);
+		}
 	}
 
 	@Override
@@ -218,23 +224,23 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent implement
 				return;
 			}
 			switch (event.getTopic()) {
-				case EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE:
-					this.sendChannelValuesWorker.collectData();
-					break;
+			case EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE:
+				this.sendChannelValuesWorker.collectData();
+				break;
 
-				case EdgeEventConstants.TOPIC_CONFIG_UPDATE:
-					// Send new EdgeConfig
-					var config = (EdgeConfig) event.getProperty(EdgeEventConstants.TOPIC_CONFIG_UPDATE_KEY);
-					var message = new EdgeConfigNotification(config);
-					var ws = this.websocket;
-					if (ws == null) {
-						return;
-					}
-					ws.sendMessage(message);
+			case EdgeEventConstants.TOPIC_CONFIG_UPDATE:
+				// Send new EdgeConfig
+				var config = (EdgeConfig) event.getProperty(EdgeEventConstants.TOPIC_CONFIG_UPDATE_KEY);
+				var message = new EdgeConfigNotification(config);
+				var ws = this.websocket;
+				if (ws == null) {
+					return;
+				}
+				ws.sendMessage(message);
 
-					// Trigger sending of all channel values, because a Component might have
-					// disappeared
-					this.sendChannelValuesWorker.sendValuesOfAllChannelsOnce();
+				// Trigger sending of all channel values, because a Component might have
+				// disappeared
+				this.sendChannelValuesWorker.sendValuesOfAllChannelsOnce();
 			}
 		} catch (Exception e) {
 			this.log.error(e.toString(), e);
