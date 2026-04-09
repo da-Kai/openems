@@ -175,20 +175,28 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	/**
 	 * Starts the {@link WebSocketClient}; waiting till it started.
 	 *
-	 * @throws InterruptedException on waiting error
+	 * @throws IllegalStateException on waiting error
 	 */
-	public void startBlocking() throws InterruptedException {
+	public void startBlocking() throws IllegalStateException {
 		final var resolvedUris = this.serverUris.resolve();
 		if (resolvedUris.isEmpty()) {
 			this.log.error("Unable to resolve websocket server URI");
 		}
 		for (var uri : resolvedUris) {
-			this.log.info("Opening connection to websocket server [{}]", uri);
-			final var websocket = this.setupWebsocket(uri);
-			if (websocket.connectBlocking()) {
-				break;
+			try {
+				this.log.info("Opening connection to websocket server [{}]", uri);
+				final var websocket = this.setupWebsocket(uri);
+				if (websocket.connectBlocking()) {
+					break;
+				}
+				this.log.error("Unable to open connection");
+				websocket.reset(5_000);
+			} catch (Exception e) {
+				this.log.error("Unable to open connection", e);
 			}
-			this.log.error("Unable to open connection");
+		}
+		if (!this.isConnected.get()) {
+			throw new IllegalStateException("Unable to open connection");
 		}
 		this.reconnectorWorker.activate(this.getName() + "::Reconnector");
 	}
