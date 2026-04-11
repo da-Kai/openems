@@ -70,6 +70,8 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 					ClientHandshake request) throws InvalidDataException {
 				var error = AbstractWebsocketServer.this.getOnHandshake().apply(request);
 				if (error != null) {
+					AbstractWebsocketServer.this.logWarn(AbstractWebsocketServer.this.log,
+							"Handshake rejected for [" + conn.getRemoteSocketAddress() + "]: " + error);
 					throw new InvalidDataException(CloseFrame.POLICY_VALIDATION, error);
 				}
 				return super.onWebsocketHandshakeReceivedAsServer(conn, draft, request);
