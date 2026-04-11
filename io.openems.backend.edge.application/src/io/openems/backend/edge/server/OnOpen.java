@@ -32,8 +32,9 @@ public class OnOpen implements io.openems.common.websocket.OnOpen {
 		final var apikey = getAsString(handshakedata, "apikey");
 		final WsData wsData = ws.getAttachment();
 
-		// authenticate apikey to resolve Edge-ID
-		var edgeId = apikey != null ? this.authenticateApikey.apply(apikey) : null;
+		// authenticate apikey to resolve Edge-ID; should always succeed since
+		// the handshake phase already validated the apikey
+		var edgeId = this.authenticateApikey.apply(apikey);
 		if (edgeId == null) {
 			// Should not happen because apikey was already validated during handshake
 			return OpenemsError.COMMON_AUTHENTICATION_FAILED;

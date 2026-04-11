@@ -36,7 +36,7 @@ public class WebsocketServer extends AbstractWebsocketServer<WsData> {
 		this.onHandshake = (handshake) -> {
 			var apikey = getAsString(handshake, "apikey");
 			if (apikey == null || authenticateApikey.apply(apikey) == null) {
-				return "Connection to backend failed. Apikey [" + apikey + "]. "
+				return "Connection to backend failed. "
 						+ "Error: " + OpenemsError.COMMON_AUTHENTICATION_FAILED.name();
 			}
 			return null; // Handshake accepted
