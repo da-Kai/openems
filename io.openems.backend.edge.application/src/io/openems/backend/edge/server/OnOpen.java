@@ -1,8 +1,6 @@
 package io.openems.backend.edge.server;
 
 import static io.openems.common.websocket.WebsocketUtils.getAsString;
-import static io.openems.common.websocket.WebsocketUtils.parseRemoteIdentifier;
-import static org.java_websocket.framing.CloseFrame.REFUSE;
 
 import java.util.function.Function;
 
@@ -29,32 +27,15 @@ public class OnOpen implements io.openems.common.websocket.OnOpen {
 
 	@Override
 	public OpenemsError apply(WebSocket ws, Handshakedata handshakedata) {
-		// get apikey from handshake
+		// Apikey was already validated during the handshake phase (see
+		// WebsocketServer.getOnHandshake). Resolve the Edge-ID and set up WsData.
 		final var apikey = getAsString(handshakedata, "apikey");
-
-		var error = this._apply(ws, apikey);
-		if (error != null) {
-			ws.closeConnection(REFUSE, new StringBuilder() //
-					.append("Connection to backend failed. Apikey [") //
-					.append(apikey).append("]. Remote [") //
-					.append(parseRemoteIdentifier(ws, handshakedata)) //
-					.append("] Error: ").append(error.name()) //
-					.toString());
-		}
-		return error;
-	}
-
-	private OpenemsError _apply(WebSocket ws, String apikey) {
-		// get websocket attachment
 		final WsData wsData = ws.getAttachment();
 
-		if (apikey == null) {
-			return OpenemsError.COMMON_AUTHENTICATION_FAILED;
-		}
-
-		// authenticate apikey
-		var edgeId = this.authenticateApikey.apply(apikey);
+		// authenticate apikey to resolve Edge-ID
+		var edgeId = apikey != null ? this.authenticateApikey.apply(apikey) : null;
 		if (edgeId == null) {
+			// Should not happen because apikey was already validated during handshake
 			return OpenemsError.COMMON_AUTHENTICATION_FAILED;
 		}
 

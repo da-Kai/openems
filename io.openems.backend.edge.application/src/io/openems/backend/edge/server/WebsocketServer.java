@@ -1,5 +1,7 @@
 package io.openems.backend.edge.server;
 
+import static io.openems.common.websocket.WebsocketUtils.getAsString;
+
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
@@ -14,9 +16,11 @@ import io.openems.common.jsonrpc.base.JsonrpcNotification;
 import io.openems.common.jsonrpc.base.JsonrpcRequest;
 import io.openems.common.jsonrpc.base.JsonrpcResponseSuccess;
 import io.openems.common.websocket.AbstractWebsocketServer;
+import io.openems.common.websocket.OnHandshake;
 
 public class WebsocketServer extends AbstractWebsocketServer<WsData> {
 
+	private final OnHandshake onHandshake;
 	private final OnOpen onOpen;
 	private final OnRequest onRequest;
 	private final OnNotification onNotification;
@@ -29,6 +33,14 @@ public class WebsocketServer extends AbstractWebsocketServer<WsData> {
 			Function<String, String> authenticateApikey, //
 			Runnable connectedEdgesChanged) {
 		super(name, port, poolSize);
+		this.onHandshake = (handshake) -> {
+			var apikey = getAsString(handshake, "apikey");
+			if (apikey == null || authenticateApikey.apply(apikey) == null) {
+				return "Connection to backend failed. Apikey [" + apikey + "]. "
+						+ "Error: " + OpenemsError.COMMON_AUTHENTICATION_FAILED.name();
+			}
+			return null; // Handshake accepted
+		};
 		this.onOpen = new OnOpen(//
 				authenticateApikey, //
 				connectedEdgesChanged);
@@ -89,6 +101,11 @@ public class WebsocketServer extends AbstractWebsocketServer<WsData> {
 	@Override
 	protected WsData createWsData(WebSocket ws) {
 		return new WsData(ws);
+	}
+
+	@Override
+	protected OnHandshake getOnHandshake() {
+		return this.onHandshake;
 	}
 
 	@Override

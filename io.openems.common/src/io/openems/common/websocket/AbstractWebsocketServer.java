@@ -15,7 +15,11 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Predicate;
 
 import org.java_websocket.WebSocket;
+import org.java_websocket.drafts.Draft;
+import org.java_websocket.exceptions.InvalidDataException;
+import org.java_websocket.framing.CloseFrame;
 import org.java_websocket.handshake.ClientHandshake;
+import org.java_websocket.handshake.ServerHandshakeBuilder;
 import org.java_websocket.server.WebSocketServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +63,16 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 
 			@Override
 			public void onStart() {
+			}
+
+			@Override
+			public ServerHandshakeBuilder onWebsocketHandshakeReceivedAsServer(WebSocket conn, Draft draft,
+					ClientHandshake request) throws InvalidDataException {
+				var error = AbstractWebsocketServer.this.getOnHandshake().apply(request);
+				if (error != null) {
+					throw new InvalidDataException(CloseFrame.POLICY_VALIDATION, error);
+				}
+				return super.onWebsocketHandshakeReceivedAsServer(conn, draft, request);
 			}
 
 			@Override
@@ -181,6 +195,16 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 			}
 			this.log.error(t.getMessage(), t);
 		};
+	}
+
+	/**
+	 * Gets the {@link OnHandshake} callback. Override to validate incoming
+	 * connections during the WebSocket handshake phase.
+	 *
+	 * @return the {@link OnHandshake} callback; default is {@link OnHandshake#NO_OP}
+	 */
+	protected OnHandshake getOnHandshake() {
+		return OnHandshake.NO_OP;
 	}
 
 	public Collection<WebSocket> getConnections() {
