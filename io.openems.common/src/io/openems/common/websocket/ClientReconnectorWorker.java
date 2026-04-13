@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Stopwatch;
 
 import io.openems.common.utils.FunctionUtils;
+import io.openems.common.websocket.adapter.WebsocketConnectionAdapter;
 import io.openems.common.worker.AbstractWorker;
 
 public class ClientReconnectorWorker extends AbstractWorker {
@@ -92,7 +93,8 @@ public class ClientReconnectorWorker extends AbstractWorker {
 		if (ws.getReadyState() != ReadyState.NOT_YET_CONNECTED) {
 			// Copy of WebSocketClient#reconnectBlocking.
 			// Do not 'reset' if WebSocket has never been connected before.
-			this.resetWebSocketClient(ws, this.parent::createWsData, this.config.connectTimeoutSeconds());
+			this.resetWebSocketClient(ws, rawWs -> this.parent.createWsData(new WebsocketConnectionAdapter(rawWs)),
+					this.config.connectTimeoutSeconds());
 		}
 
 		var success = false;
@@ -106,7 +108,8 @@ public class ClientReconnectorWorker extends AbstractWorker {
 			// Catch "WebSocketClient objects are not reuseable" thrown by
 			// WebSocketClient#connect(). Set WebSocketClient#connectReadThread to `null`.
 			this.logAndSetDebugInfo("# Reset WebSocket Client after Exception... " + e.getMessage());
-			this.resetWebSocketClient(ws, this.parent::createWsData, this.config.connectTimeoutSeconds());
+			this.resetWebSocketClient(ws, rawWs -> this.parent.createWsData(new WebsocketConnectionAdapter(rawWs)),
+					this.config.connectTimeoutSeconds());
 			this.logAndSetDebugInfo("# Reset WebSocket Client after Exception... done");
 		}
 

@@ -1,6 +1,5 @@
 package io.openems.common.websocket;
 
-import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
 
 public class DummyWebsocketServer extends AbstractWebsocketServer<WsData> implements AutoCloseable {
@@ -92,7 +91,7 @@ public class DummyWebsocketServer extends AbstractWebsocketServer<WsData> implem
 	}
 
 	@Override
-	protected WsData createWsData(WebSocket ws) {
+	protected WsData createWsData(WebsocketConnection ws) {
 		return new WsData(ws);
 	}
 

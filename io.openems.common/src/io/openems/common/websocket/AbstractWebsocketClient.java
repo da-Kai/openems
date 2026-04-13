@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.java_websocket.WebSocket;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft;
 import org.java_websocket.drafts.Draft_6455;
@@ -23,6 +22,8 @@ import io.openems.common.jsonrpc.base.JsonrpcMessage;
 import io.openems.common.jsonrpc.base.JsonrpcRequest;
 import io.openems.common.jsonrpc.base.JsonrpcResponseSuccess;
 import io.openems.common.utils.FunctionUtils;
+import io.openems.common.websocket.adapter.HandshakeDataAdapter;
+import io.openems.common.websocket.adapter.WebsocketConnectionAdapter;
 
 /**
  * A Websocket Client implementation that automatically tries to reconnect a
@@ -37,6 +38,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	public static final Draft DEFAULT_DRAFT = new Draft_6455(new PerMessageDeflateExtension());
 
 	protected final WebSocketClient ws;
+	private final WebsocketConnection wsConnection;
 
 	private final Logger log = LoggerFactory.getLogger(AbstractWebsocketClient.class);
 	private final URI serverUri;
@@ -89,7 +91,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 			@Override
 			public void onOpen(ServerHandshake handshake) {
 				AbstractWebsocketClient.this.execute(new OnOpenHandler(//
-						AbstractWebsocketClient.this.ws, handshake, //
+						AbstractWebsocketClient.this.wsConnection, new HandshakeDataAdapter(handshake), //
 						AbstractWebsocketClient.this.getOnOpen(), //
 						AbstractWebsocketClient.this::logWarn, //
 						AbstractWebsocketClient.this::handleInternalError));
@@ -99,7 +101,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 			@Override
 			public void onMessage(String message) {
 				AbstractWebsocketClient.this.execute(new OnMessageHandler(//
-						AbstractWebsocketClient.this.ws, message, //
+						AbstractWebsocketClient.this.wsConnection, message, //
 						AbstractWebsocketClient.this.getOnRequest(), //
 						AbstractWebsocketClient.this.getOnNotification(), //
 						AbstractWebsocketClient.this::sendMessage, //
@@ -116,7 +118,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 				}
 
 				AbstractWebsocketClient.this.execute(new OnErrorHandler(//
-						AbstractWebsocketClient.this.ws, ex, //
+						AbstractWebsocketClient.this.wsConnection, ex, //
 						AbstractWebsocketClient.this.getOnError(), //
 						AbstractWebsocketClient.this::handleInternalError));
 			}
@@ -124,7 +126,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 			@Override
 			public void onClose(int code, String reason, boolean remote) {
 				AbstractWebsocketClient.this.execute(new OnCloseHandler(//
-						AbstractWebsocketClient.this.ws, code, reason, remote, //
+						AbstractWebsocketClient.this.wsConnection, code, reason, remote, //
 						AbstractWebsocketClient.this.getOnClose(), //
 						AbstractWebsocketClient.this::handleInternalError));
 
@@ -153,8 +155,11 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 		// https://github.com/TooTallNate/Java-WebSocket/wiki/Lost-connection-detection
 		this.ws.setConnectionLostTimeout(100);
 
+		// Create adapter wrapping the raw WebSocketClient
+		this.wsConnection = new WebsocketConnectionAdapter(this.ws);
+
 		// initialize WsData
-		var wsData = AbstractWebsocketClient.this.createWsData(this.ws);
+		var wsData = AbstractWebsocketClient.this.createWsData(this.wsConnection);
 		this.ws.setAttachment(wsData);
 
 		// Initialize reconnector
@@ -199,14 +204,14 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	}
 
 	/**
-	 * Sends a {@link JsonrpcMessage} to the {@link WebSocket}. Returns true if
-	 * sending was successful, otherwise false. Also logs a warning in that case.
+	 * Sends a {@link JsonrpcMessage} to the WebSocket. Returns true if sending was
+	 * successful, otherwise false. Also logs a warning in that case.
 	 *
 	 * @param message the {@link JsonrpcMessage}
 	 * @return true if sending was successful
 	 */
 	public boolean sendMessage(JsonrpcMessage message) {
-		return this.sendMessage(this.ws, message);
+		return this.sendMessage(this.wsConnection, message);
 	}
 
 	@Override

@@ -1,23 +1,20 @@
 package io.openems.common.websocket;
 
-import org.java_websocket.WebSocket;
-import org.java_websocket.handshake.Handshakedata;
-
 public class WebsocketUtils {
 
 	/**
-	 * Gets a String value from a {@link Handshakedata}.
+	 * Gets a String value from a {@link HandshakeData}.
 	 * 
 	 * <p>
 	 * NOTE: Per <a href=
 	 * "https://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2">specification</a>
 	 * "Field names are case-insensitive".
 	 *
-	 * @param handshakedata the {@link Handshakedata}
+	 * @param handshakedata the {@link HandshakeData}
 	 * @param fieldName     the name of the field
 	 * @return the field value; or null
 	 */
-	public static String getAsString(Handshakedata handshakedata, String fieldName) {
+	public static String getAsString(HandshakeData handshakedata, String fieldName) {
 		for (var iter = handshakedata.iterateHttpFields(); iter.hasNext();) {
 			var field = iter.next();
 			if (fieldName.equalsIgnoreCase(field)) {
@@ -31,17 +28,17 @@ public class WebsocketUtils {
 			"Forwarded", "X-Forwarded-For", "X-Real-IP" };
 
 	/**
-	 * Parses a identifier for the Remote from the {@link Handshakedata}.
+	 * Parses a identifier for the Remote from the {@link HandshakeData}.
 	 * 
 	 * <p>
 	 * Tries to use the headers "Forwarded", "X-Forwarded-For" or "X-Real-IP". Falls
 	 * back to `ws.getRemoteSocketAddress()`. See https://serverfault.com/a/920060
 	 * 
-	 * @param ws            the {@link WebSocket}
-	 * @param handshakedata the {@link Handshakedata}
+	 * @param ws            the {@link WebsocketConnection}
+	 * @param handshakedata the {@link HandshakeData}
 	 * @return an identifier String
 	 */
-	public static String parseRemoteIdentifier(WebSocket ws, Handshakedata handshakedata) {
+	public static String parseRemoteIdentifier(WebsocketConnection ws, HandshakeData handshakedata) {
 		for (var key : REMOTE_IDENTIFICATION_HEADERS) {
 			var value = getAsString(handshakedata, key);
 			if (value != null) {
@@ -53,13 +50,13 @@ public class WebsocketUtils {
 	}
 
 	/**
-	 * Gets the toLogString() content of the WsData attachment of the WebSocket; or
-	 * empty string if not available.
+	 * Gets the toLogString() content of the WsData attachment of the
+	 * WebsocketConnection; or empty string if not available.
 	 *
-	 * @param ws the WebSocket
+	 * @param ws the {@link WebsocketConnection}
 	 * @return the {@link WsData#toLogString()} content
 	 */
-	public static String generateWsDataString(WebSocket ws) {
+	public static String generateWsDataString(WebsocketConnection ws) {
 		if (ws == null) {
 			return "";
 		}

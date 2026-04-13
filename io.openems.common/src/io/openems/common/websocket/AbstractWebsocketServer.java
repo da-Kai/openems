@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
@@ -24,6 +25,8 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import io.openems.common.jsonrpc.base.JsonrpcMessage;
 import io.openems.common.utils.ThreadPoolUtils;
+import io.openems.common.websocket.adapter.HandshakeDataAdapter;
+import io.openems.common.websocket.adapter.WebsocketConnectionAdapter;
 
 public abstract class AbstractWebsocketServer<T extends WsData> extends AbstractWebsocket<T> {
 
@@ -63,10 +66,11 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 
 			@Override
 			public void onOpen(WebSocket ws, ClientHandshake handshake) {
-				T wsData = AbstractWebsocketServer.this.createWsData(ws);
+				var wsConnection = new WebsocketConnectionAdapter(ws);
+				T wsData = AbstractWebsocketServer.this.createWsData(wsConnection);
 				ws.setAttachment(wsData);
 				AbstractWebsocketServer.this.execute(new OnOpenHandler(//
-						ws, handshake, //
+						wsConnection, new HandshakeDataAdapter(handshake), //
 						AbstractWebsocketServer.this.getOnOpen(), //
 						AbstractWebsocketServer.this::logWarn, //
 						AbstractWebsocketServer.this::handleInternalError));
@@ -74,8 +78,9 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 
 			@Override
 			public void onMessage(WebSocket ws, String message) {
+				var wsConnection = new WebsocketConnectionAdapter(ws);
 				AbstractWebsocketServer.this.execute(new OnMessageHandler(//
-						ws, message, //
+						wsConnection, message, //
 						AbstractWebsocketServer.this.getOnRequest(), //
 						AbstractWebsocketServer.this.getOnNotification(), //
 						AbstractWebsocketServer.this::sendMessage, //
@@ -85,16 +90,18 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 
 			@Override
 			public void onError(WebSocket ws, Exception ex) {
+				var wsConnection = ws != null ? new WebsocketConnectionAdapter(ws) : null;
 				AbstractWebsocketServer.this.execute(new OnErrorHandler(//
-						ws, ex, //
+						wsConnection, ex, //
 						AbstractWebsocketServer.this.getOnError(), //
 						AbstractWebsocketServer.this::handleInternalError));
 			}
 
 			@Override
 			public void onClose(WebSocket ws, int code, String reason, boolean remote) {
+				var wsConnection = new WebsocketConnectionAdapter(ws);
 				AbstractWebsocketServer.this.execute(new OnCloseHandler(//
-						ws, code, reason, remote, //
+						wsConnection, code, reason, remote, //
 						AbstractWebsocketServer.this.getOnClose(), //
 						AbstractWebsocketServer.this::handleInternalError));
 			}
@@ -183,8 +190,15 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 		};
 	}
 
-	public Collection<WebSocket> getConnections() {
-		return this.ws.getConnections();
+	/**
+	 * Gets all current connections as {@link WebsocketConnection} instances.
+	 *
+	 * @return the collection of {@link WebsocketConnection}s
+	 */
+	public Collection<WebsocketConnection> getConnections() {
+		return this.ws.getConnections().stream() //
+				.map(WebsocketConnectionAdapter::new) //
+				.collect(Collectors.toUnmodifiableList());
 	}
 
 	/**
