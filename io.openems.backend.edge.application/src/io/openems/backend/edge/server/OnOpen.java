@@ -14,7 +14,7 @@ import io.openems.common.exceptions.OpenemsError;
 
 public class OnOpen implements io.openems.common.websocket.OnOpen {
 
-	private static final int CLOSE_REFUSE = 1008; // RFC 6455 Policy Violation
+	private static final int CLOSE_POLICY_VIOLATION = 1008; // RFC 6455 Policy Violation
 
 	private final Logger log = LoggerFactory.getLogger(OnOpen.class);
 
@@ -35,7 +35,7 @@ public class OnOpen implements io.openems.common.websocket.OnOpen {
 
 		var error = this._apply(ws, apikey);
 		if (error != null) {
-			ws.close(CLOSE_REFUSE, new StringBuilder() //
+			ws.close(CLOSE_POLICY_VIOLATION, new StringBuilder() //
 					.append("Connection to backend failed. Apikey [") //
 					.append(apikey).append("]. Remote [") //
 					.append(parseRemoteIdentifier(ws, handshakedata)) //
