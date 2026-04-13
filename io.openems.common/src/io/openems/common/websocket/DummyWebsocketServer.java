@@ -2,6 +2,8 @@ package io.openems.common.websocket;
 
 import org.slf4j.Logger;
 
+import io.openems.common.websocket.adapter.AbstractWebsocketServer;
+
 public class DummyWebsocketServer extends AbstractWebsocketServer<WsData> implements AutoCloseable {
 
 	public static class Builder {

@@ -2,10 +2,10 @@ package io.openems.backend.edge.manager;
 
 import java.util.Objects;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 import org.slf4j.Logger;
 
-import io.openems.common.websocket.AbstractWebsocketServer;
+import io.openems.common.websocket.adapter.AbstractWebsocketServer;
 
 public class WebsocketServer extends AbstractWebsocketServer<WsData> {
 
@@ -47,7 +47,7 @@ public class WebsocketServer extends AbstractWebsocketServer<WsData> {
 	}
 
 	@Override
-	protected WsData createWsData(WebSocket ws) {
+	protected WsData createWsData(WebsocketConnection ws) {
 		return new WsData(ws);
 	}
 

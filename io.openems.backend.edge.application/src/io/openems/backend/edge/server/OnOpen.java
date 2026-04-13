@@ -2,18 +2,19 @@ package io.openems.backend.edge.server;
 
 import static io.openems.common.websocket.WebsocketUtils.getAsString;
 import static io.openems.common.websocket.WebsocketUtils.parseRemoteIdentifier;
-import static org.java_websocket.framing.CloseFrame.REFUSE;
 
 import java.util.function.Function;
 
-import org.java_websocket.WebSocket;
-import org.java_websocket.handshake.Handshakedata;
+import io.openems.common.websocket.WebsocketConnection;
+import io.openems.common.websocket.HandshakeData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError;
 
 public class OnOpen implements io.openems.common.websocket.OnOpen {
+
+	private static final int CLOSE_REFUSE = 1008; // RFC 6455 Policy Violation
 
 	private final Logger log = LoggerFactory.getLogger(OnOpen.class);
 
@@ -28,13 +29,13 @@ public class OnOpen implements io.openems.common.websocket.OnOpen {
 	}
 
 	@Override
-	public OpenemsError apply(WebSocket ws, Handshakedata handshakedata) {
+	public OpenemsError apply(WebsocketConnection ws, HandshakeData handshakedata) {
 		// get apikey from handshake
 		final var apikey = getAsString(handshakedata, "apikey");
 
 		var error = this._apply(ws, apikey);
 		if (error != null) {
-			ws.closeConnection(REFUSE, new StringBuilder() //
+			ws.close(CLOSE_REFUSE, new StringBuilder() //
 					.append("Connection to backend failed. Apikey [") //
 					.append(apikey).append("]. Remote [") //
 					.append(parseRemoteIdentifier(ws, handshakedata)) //
@@ -44,7 +45,7 @@ public class OnOpen implements io.openems.common.websocket.OnOpen {
 		return error;
 	}
 
-	private OpenemsError _apply(WebSocket ws, String apikey) {
+	private OpenemsError _apply(WebsocketConnection ws, String apikey) {
 		// get websocket attachment
 		final WsData wsData = ws.getAttachment();
 

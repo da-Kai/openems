@@ -12,7 +12,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,8 +30,8 @@ import io.openems.common.jsonrpc.base.JsonrpcResponseSuccess;
 import io.openems.common.jsonrpc.notification.EdgeRpcNotification;
 import io.openems.common.jsonrpc.request.EdgeRpcRequest;
 import io.openems.common.utils.FunctionUtils;
-import io.openems.common.websocket.AbstractWebsocketClient;
-import io.openems.common.websocket.ClientReconnectorWorker;
+import io.openems.common.websocket.adapter.AbstractWebsocketClient;
+import io.openems.common.websocket.adapter.ClientReconnectorWorker;
 import io.openems.common.websocket.OnClose;
 import io.openems.common.websocket.OnOpen;
 import io.openems.common.websocket.WsData;
@@ -158,7 +158,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	}
 
 	@Override
-	protected WsData createWsData(WebSocket ws) {
+	protected WsData createWsData(WebsocketConnection ws) {
 		return new WsData(ws);
 	}
 

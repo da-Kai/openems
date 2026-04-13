@@ -1,4 +1,18 @@
-package io.openems.common.websocket;
+package io.openems.common.websocket.adapter;
+
+import io.openems.common.websocket.AbstractWebsocket;
+import io.openems.common.websocket.OnClose;
+import io.openems.common.websocket.OnCloseHandler;
+import io.openems.common.websocket.OnError;
+import io.openems.common.websocket.OnErrorHandler;
+import io.openems.common.websocket.OnInternalError;
+import io.openems.common.websocket.OnMessageHandler;
+import io.openems.common.websocket.OnNotification;
+import io.openems.common.websocket.OnOpen;
+import io.openems.common.websocket.OnOpenHandler;
+import io.openems.common.websocket.OnRequest;
+import io.openems.common.websocket.WebsocketConnection;
+import io.openems.common.websocket.WsData;
 
 import java.net.ConnectException;
 import java.net.Proxy;
@@ -22,8 +36,6 @@ import io.openems.common.jsonrpc.base.JsonrpcMessage;
 import io.openems.common.jsonrpc.base.JsonrpcRequest;
 import io.openems.common.jsonrpc.base.JsonrpcResponseSuccess;
 import io.openems.common.utils.FunctionUtils;
-import io.openems.common.websocket.adapter.HandshakeDataAdapter;
-import io.openems.common.websocket.adapter.WebsocketConnectionAdapter;
 
 /**
  * A Websocket Client implementation that automatically tries to reconnect a

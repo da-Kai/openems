@@ -1,6 +1,6 @@
 package io.openems.backend.uiwebsocket.impl;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +19,7 @@ public class OnNotification implements io.openems.common.websocket.OnNotificatio
 	}
 
 	@Override
-	public void accept(WebSocket ws, JsonrpcNotification notification) throws OpenemsNamedException {
+	public void accept(WebsocketConnection ws, JsonrpcNotification notification) throws OpenemsNamedException {
 		WsData wsData = ws.getAttachment();
 		if (!wsData.checkLimiter(notification.getMethod())) {
 			this.log.debug("Too Many Requests! Notification [{}] discarded by Rate-Limiter.", notification.getMethod());

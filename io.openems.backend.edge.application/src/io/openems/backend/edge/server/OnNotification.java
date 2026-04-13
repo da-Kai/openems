@@ -6,7 +6,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.util.function.BiConsumer;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +28,7 @@ public class OnNotification implements io.openems.common.websocket.OnNotificatio
 	}
 
 	@Override
-	public void accept(WebSocket ws, JsonrpcNotification notification) {
+	public void accept(WebsocketConnection ws, JsonrpcNotification notification) {
 		try (final var timer = PrometheusMetrics.WEBSOCKET_REQUEST
 				.labelValues(this.name, notification.getFullyQualifiedMethod()).startTimer()) {
 			WsData wsData = ws.getAttachment();

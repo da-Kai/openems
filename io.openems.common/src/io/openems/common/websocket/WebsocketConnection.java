@@ -52,4 +52,11 @@ public interface WebsocketConnection {
 	 */
 	public void close(int code, String reason);
 
+	/**
+	 * Closes this WebSocket connection normally.
+	 */
+	public default void close() {
+		this.close(1000, "");
+	}
+
 }

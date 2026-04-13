@@ -3,7 +3,7 @@ package io.openems.edge.controller.api.backend;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -67,7 +67,7 @@ public class BackendOnRequest implements OnRequest {
 
 	@Override
 	public CompletableFuture<? extends JsonrpcResponseSuccess> apply(//
-			final WebSocket ws, //
+			final WebsocketConnection ws, //
 			final JsonrpcRequest request //
 	) throws OpenemsNamedException {
 		return this.apiBinder.handleRequest(request, this.onCall);

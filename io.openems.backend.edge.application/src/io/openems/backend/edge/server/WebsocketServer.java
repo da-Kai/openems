@@ -6,14 +6,14 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 import org.slf4j.Logger;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.jsonrpc.base.JsonrpcNotification;
 import io.openems.common.jsonrpc.base.JsonrpcRequest;
 import io.openems.common.jsonrpc.base.JsonrpcResponseSuccess;
-import io.openems.common.websocket.AbstractWebsocketServer;
+import io.openems.common.websocket.adapter.AbstractWebsocketServer;
 
 public class WebsocketServer extends AbstractWebsocketServer<WsData> {
 
@@ -87,7 +87,7 @@ public class WebsocketServer extends AbstractWebsocketServer<WsData> {
 	}
 
 	@Override
-	protected WsData createWsData(WebSocket ws) {
+	protected WsData createWsData(WebsocketConnection ws) {
 		return new WsData(ws);
 	}
 

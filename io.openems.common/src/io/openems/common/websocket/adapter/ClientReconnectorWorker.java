@@ -1,4 +1,6 @@
-package io.openems.common.websocket;
+package io.openems.common.websocket.adapter;
+
+import io.openems.common.websocket.WsData;
 
 import java.lang.reflect.Field;
 import java.net.Socket;
@@ -25,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Stopwatch;
 
 import io.openems.common.utils.FunctionUtils;
-import io.openems.common.websocket.adapter.WebsocketConnectionAdapter;
 import io.openems.common.worker.AbstractWorker;
 
 public class ClientReconnectorWorker extends AbstractWorker {

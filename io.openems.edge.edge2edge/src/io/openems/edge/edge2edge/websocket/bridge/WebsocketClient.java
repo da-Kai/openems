@@ -7,7 +7,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,8 +16,8 @@ import com.google.gson.JsonElement;
 import io.openems.common.types.ChannelAddress;
 import io.openems.common.types.EdgeConfig;
 import io.openems.common.utils.FunctionUtils;
-import io.openems.common.websocket.AbstractWebsocketClient;
-import io.openems.common.websocket.ClientReconnectorWorker;
+import io.openems.common.websocket.adapter.AbstractWebsocketClient;
+import io.openems.common.websocket.adapter.ClientReconnectorWorker;
 import io.openems.common.websocket.OnClose;
 import io.openems.common.websocket.WsData;
 

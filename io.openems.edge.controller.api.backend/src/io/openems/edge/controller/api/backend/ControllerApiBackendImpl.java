@@ -37,7 +37,7 @@ import io.openems.common.jsonrpc.notification.EdgeConfigNotification;
 import io.openems.common.oem.OpenemsEdgeOem;
 import io.openems.common.types.EdgeConfig;
 import io.openems.common.utils.ThreadPoolUtils;
-import io.openems.common.websocket.AbstractWebsocketClient;
+import io.openems.common.websocket.adapter.AbstractWebsocketClient;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;

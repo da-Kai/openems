@@ -6,7 +6,7 @@ import static java.util.stream.Collectors.toMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +45,7 @@ public class OnNotification implements io.openems.common.websocket.OnNotificatio
 	}
 
 	@Override
-	public void accept(WebSocket ws, JsonrpcNotification notification) throws OpenemsException {
+	public void accept(WebsocketConnection ws, JsonrpcNotification notification) throws OpenemsException {
 		try {
 			final var n = GenericJsonrpcNotification.from(notification.getParams().get("payload").getAsJsonObject());
 			switch (n.getMethod()) {

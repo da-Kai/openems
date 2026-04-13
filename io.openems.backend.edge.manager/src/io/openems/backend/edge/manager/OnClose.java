@@ -4,7 +4,7 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +24,7 @@ public class OnClose implements io.openems.common.websocket.OnClose {
 	}
 
 	@Override
-	public void accept(WebSocket ws, int code, String reason, boolean remote) {
+	public void accept(WebsocketConnection ws, int code, String reason, boolean remote) {
 		WsData wsData = ws.getAttachment();
 
 		var edgeIds = wsData.onClose();
