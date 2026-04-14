@@ -97,6 +97,7 @@
 	io.openems.backend.timedata.influx;version=snapshot,\
 	io.openems.backend.uiwebsocket;version=snapshot,\
 	io.openems.common;version=snapshot,\
+	io.openems.common.websocket;version=snapshot,\
 	io.openems.common.bridge.http;version=snapshot,\
 	io.openems.core.logger;version=snapshot;startlevel=16,\
 	io.openems.core.referencetarget;version=snapshot,\
