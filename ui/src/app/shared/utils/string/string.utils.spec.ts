@@ -69,6 +69,39 @@ describe("StringUtils", () => {
         });
     });
 
+    describe("+isIpv6Address", () => {
+        it("should accept valid full IPv6 addresses", () => {
+            expect(StringUtils.isIpv6Address("2001:0db8:85a3:0000:0000:8a2e:0370:7334")).toBeTrue();
+            expect(StringUtils.isIpv6Address("ABCD:EF01:2345:6789:ABCD:EF01:2345:6789")).toBeTrue();
+            expect(StringUtils.isIpv6Address("1:2:3:4:5:6:7:8")).toBeTrue();
+        });
+
+        it("should accept valid compressed IPv6 addresses", () => {
+            expect(StringUtils.isIpv6Address("::")).toBeTrue();
+            expect(StringUtils.isIpv6Address("::1")).toBeTrue();
+            expect(StringUtils.isIpv6Address("2001:db8::1")).toBeTrue();
+            expect(StringUtils.isIpv6Address("2001:db8:85a3::8a2e:370:7334")).toBeTrue();
+            expect(StringUtils.isIpv6Address("fe80::1")).toBeTrue();
+            expect(StringUtils.isIpv6Address("1::8")).toBeTrue();
+            expect(StringUtils.isIpv6Address("1:2:3:4:5::8")).toBeTrue();
+            expect(StringUtils.isIpv6Address("1:2:3:4:5:6::8")).toBeTrue();
+            expect(StringUtils.isIpv6Address("1:2:3:4:5:6:7::")).toBeTrue();
+            expect(StringUtils.isIpv6Address("::ffff:0:0")).toBeTrue();
+        });
+
+        it("should reject invalid IPv6 addresses", () => {
+            expect(StringUtils.isIpv6Address("")).toBeFalse();
+            expect(StringUtils.isIpv6Address("1:2:3:4:5:6:7:8:9")).toBeFalse();
+            expect(StringUtils.isIpv6Address("1::2::3")).toBeFalse();
+            expect(StringUtils.isIpv6Address("1:2:3:4:5:6:7")).toBeFalse();
+            expect(StringUtils.isIpv6Address("gggg::1")).toBeFalse();
+            expect(StringUtils.isIpv6Address("12345::1")).toBeFalse();
+            expect(StringUtils.isIpv6Address("192.168.0.1")).toBeFalse();
+            expect(StringUtils.isIpv6Address("localhost")).toBeFalse();
+            expect(StringUtils.isIpv6Address(":::")).toBeFalse();
+        });
+    });
+
     describe("+trailingNumber", () => {
         it("valid trailing number", () => {
             expect(StringUtils.getTrailingNumber("abcd1234")).toEqual(1234);

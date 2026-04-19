@@ -103,6 +103,42 @@ export namespace StringUtils {
         return /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(value);
     }
 
+    /**
+     * Checks if the given string is a valid IPv6 address.
+     *
+     * Supports full, abbreviated, and compressed (`::`) notation.
+     * Does **not** accept IPv4-mapped IPv6 addresses (e.g. `::ffff:192.168.0.1`).
+     *
+     * @param value The string to validate.
+     * @returns true if the string is a valid IPv6 address, false otherwise.
+     *
+     * @example
+     * ```typescript
+     * isIpv6Address("2001:0db8:85a3:0000:0000:8a2e:0370:7334"); // true
+     * isIpv6Address("::1");                                       // true
+     * isIpv6Address("::");                                        // true
+     * isIpv6Address("1::2::3");                                   // false
+     * isIpv6Address("192.168.0.1");                               // false
+     * ```
+     */
+    export function isIpv6Address(value: string): boolean {
+        const h = "[0-9a-fA-F]{1,4}";
+        return new RegExp(
+            "^("
+            + `(${h}:){7}${h}`                   // 1:2:3:4:5:6:7:8       (full)
+            + `|(${h}:){1,7}:`                    // 1::  …  1:2:3:4:5:6:7::
+            + `|:((:${h}){1,7})`                  // ::2  …  ::2:3:4:5:6:7:8
+            + "|::"                                // ::
+            + `|(${h}:){1}(:${h}){1,6}`           // 1::3  …  1::3:4:5:6:7:8
+            + `|(${h}:){2}(:${h}){1,5}`           // 1:2::4  …  1:2::4:5:6:7:8
+            + `|(${h}:){3}(:${h}){1,4}`           // 1:2:3::5  …  1:2:3::5:6:7:8
+            + `|(${h}:){4}(:${h}){1,3}`           // 1:2:3:4::6  …  1:2:3:4::6:7:8
+            + `|(${h}:){5}(:${h}){1,2}`           // 1:2:3:4:5::7  …  1:2:3:4:5::7:8
+            + `|(${h}:){6}:${h}`                  // 1:2:3:4:5:6::8
+            + ")$",
+        ).test(value);
+    }
+
     export function splitByGetIndexSafely(value: string | null, key: string, index: number): null | string {
         const arr = StringUtils.splitBy(value, key);
         if (arr == null || arr.length == 0) {
