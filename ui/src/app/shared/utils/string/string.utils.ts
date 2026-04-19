@@ -83,6 +83,26 @@ export namespace StringUtils {
         return null;
     }
 
+    /**
+     * Checks if the given string is a valid IPv4 address.
+     *
+     * Each octet must be a number between 0 and 255 (leading zeros are allowed).
+     *
+     * @param value The string to validate.
+     * @returns true if the string is a valid IPv4 address, false otherwise.
+     *
+     * @example
+     * ```typescript
+     * isIpv4Address("192.168.0.1");    // true
+     * isIpv4Address("001.001.001.001"); // true
+     * isIpv4Address("1.1.1.256");       // false
+     * isIpv4Address("localhost");       // false
+     * ```
+     */
+    export function isIpv4Address(value: string): boolean {
+        return /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(value);
+    }
+
     export function splitByGetIndexSafely(value: string | null, key: string, index: number): null | string {
         const arr = StringUtils.splitBy(value, key);
         if (arr == null || arr.length == 0) {

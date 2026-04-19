@@ -46,6 +46,29 @@ describe("StringUtils", () => {
         });
     });
 
+    describe("+isIpv4Address", () => {
+        it("should accept valid IPv4 addresses", () => {
+            expect(StringUtils.isIpv4Address("001.001.001.001")).toBeTrue();
+            expect(StringUtils.isIpv4Address("255.255.255.255")).toBeTrue();
+            expect(StringUtils.isIpv4Address("1.1.1.1")).toBeTrue();
+            expect(StringUtils.isIpv4Address("0.0.0.0")).toBeTrue();
+            expect(StringUtils.isIpv4Address("1.2.20.200")).toBeTrue();
+            expect(StringUtils.isIpv4Address("192.168.0.1")).toBeTrue();
+            expect(StringUtils.isIpv4Address("10.0.0.1")).toBeTrue();
+        });
+
+        it("should reject invalid IPv4 addresses", () => {
+            expect(StringUtils.isIpv4Address("1.1.1.1.1")).toBeFalse();
+            expect(StringUtils.isIpv4Address("1.1.1.256")).toBeFalse();
+            expect(StringUtils.isIpv4Address("1.1.1")).toBeFalse();
+            expect(StringUtils.isIpv4Address("999.999.999.999")).toBeFalse();
+            expect(StringUtils.isIpv4Address("1.1.1.1.1111")).toBeFalse();
+            expect(StringUtils.isIpv4Address("localhost")).toBeFalse();
+            expect(StringUtils.isIpv4Address("")).toBeFalse();
+            expect(StringUtils.isIpv4Address("abc.def.ghi.jkl")).toBeFalse();
+        });
+    });
+
     describe("+trailingNumber", () => {
         it("valid trailing number", () => {
             expect(StringUtils.getTrailingNumber("abcd1234")).toEqual(1234);
