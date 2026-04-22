@@ -62,7 +62,7 @@ public class Inet4AddressWithSubnetmask {
 		@Override
 		public Inet4Address parse(String value) {
 			try {
-				return InetAddressUtils.parseOrError(value);
+				return InetAddressUtils.parseIPv4OrError(value);
 			} catch (OpenemsException e) {
 				throw new OpenemsRuntimeException(e);
 			}
@@ -72,7 +72,7 @@ public class Inet4AddressWithSubnetmask {
 		public ExampleValues<Inet4Address> getExample() {
 			try {
 				final var address = "255.255.255.0";
-				return new ExampleValues<>(address, InetAddressUtils.parseOrError(address));
+				return new ExampleValues<>(address, InetAddressUtils.parseIPv4OrError(address));
 			} catch (OpenemsException e) {
 				throw new OpenemsRuntimeException(e);
 			}
@@ -85,7 +85,7 @@ public class Inet4AddressWithSubnetmask {
 		@Override
 		public Integer parse(String value) {
 			try {
-				return getCidrFromSubnetmask(InetAddressUtils.parseOrError(value));
+				return getCidrFromSubnetmask(InetAddressUtils.parseIPv4OrError(value));
 			} catch (OpenemsException e) {
 				throw new OpenemsRuntimeException(e);
 			}
@@ -122,7 +122,7 @@ public class Inet4AddressWithSubnetmask {
 		var arr = value.split("/");
 		try {
 			return new Inet4AddressWithSubnetmask(label, //
-					InetAddressUtils.parseOrError(arr[0]), //
+					InetAddressUtils.parseIPv4OrError(arr[0]), //
 					Integer.parseInt(arr[1]));
 		} catch (NumberFormatException | IndexOutOfBoundsException e) {
 			throw new OpenemsException(

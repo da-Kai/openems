@@ -2,7 +2,6 @@ package io.openems.edge.core.host;
 
 import static io.openems.common.jsonrpc.serialization.JsonSerializerUtil.jsonObjectSerializer;
 import static io.openems.common.utils.FunctionUtils.doNothing;
-import static io.openems.common.utils.InetAddressUtils.parseOrNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -185,7 +184,7 @@ public class OperatingSystemDebianSystemd implements OperatingSystem {
 	 */
 	private static void onMatchInet4Address(Pattern pattern, String line,
 			ThrowingConsumer<Inet4Address, OpenemsNamedException> callback) throws OpenemsNamedException {
-		onMatchString(pattern, line, property -> callback.accept(InetAddressUtils.parseOrError(property)));
+		onMatchString(pattern, line, property -> callback.accept(InetAddressUtils.parseIPv4OrError(property)));
 	}
 
 	/**
@@ -563,7 +562,8 @@ public class OperatingSystemDebianSystemd implements OperatingSystem {
 				.map(SystemdInterface.serializer()::deserialize) //
 				.map(t -> new NetworkInfoWrapper(t.ifname(), t.addressInfos.stream() //
 						.map(address -> new NetworkInfoAddress(//
-								new Inet4AddressWithSubnetmask(address.label(), parseOrNull(address.local()),
+								new Inet4AddressWithSubnetmask(address.label(),
+										InetAddressUtils.parseIPv4(address.local()).orElse(null),
 										address.prefixlen),
 								address.dynamic)) //
 						.toList())) //

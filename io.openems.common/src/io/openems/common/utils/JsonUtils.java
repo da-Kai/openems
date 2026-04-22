@@ -1358,11 +1358,9 @@ public final class JsonUtils {
 	 * @throws OpenemsNamedException on error
 	 */
 	public static Inet4Address getAsInet4Address(JsonElement jElement) throws OpenemsNamedException {
-		var value = InetAddressUtils.parseOrNull(toString(toPrimitive(jElement)));
-		if (value != null) {
-			return value;
-		}
-		throw OpenemsError.JSON_NO_INET4ADDRESS.exception(jElement.toString().replace("%", "%%"));
+		return InetAddressUtils.parseIPv4(toString(toPrimitive(jElement))) //
+				.orElseThrow(() -> OpenemsError.JSON_NO_INET4ADDRESS //
+						.exception(jElement.toString().replace("%", "%%")));
 	}
 
 	/**
@@ -1374,11 +1372,9 @@ public final class JsonUtils {
 	 * @throws OpenemsNamedException on error
 	 */
 	public static Inet4Address getAsInet4Address(JsonElement jElement, String memberName) throws OpenemsNamedException {
-		var value = InetAddressUtils.parseOrNull(toString(toPrimitive(toSubElement(jElement, memberName))));
-		if (value != null) {
-			return value;
-		}
-		throw OpenemsError.JSON_NO_INET4ADDRESS_MEMBER.exception(memberName, jElement.toString().replace("%", "%%"));
+		return InetAddressUtils.parseIPv4(toString(toPrimitive(toSubElement(jElement, memberName)))) //
+				.orElseThrow(() -> OpenemsError.JSON_NO_INET4ADDRESS_MEMBER //
+						.exception(memberName, jElement.toString().replace("%", "%%")));
 	}
 
 	/**
@@ -1388,7 +1384,7 @@ public final class JsonUtils {
 	 * @return the {@link Optional} {@link Inet4Address} value
 	 */
 	public static Optional<Inet4Address> getAsOptionalInet4Address(JsonElement jElement) {
-		return Optional.ofNullable(InetAddressUtils.parseOrNull(toString(toPrimitive(jElement))));
+		return InetAddressUtils.parseIPv4(toString(toPrimitive(jElement)));
 	}
 
 	/**
@@ -1400,8 +1396,7 @@ public final class JsonUtils {
 	 * @return the {@link Optional} {@link Inet4Address} value
 	 */
 	public static Optional<Inet4Address> getAsOptionalInet4Address(JsonElement jElement, String memberName) {
-		return Optional.ofNullable(//
-				InetAddressUtils.parseOrNull(toString(toPrimitive(toSubElement(jElement, memberName)))));
+		return InetAddressUtils.parseIPv4(toString(toPrimitive(toSubElement(jElement, memberName))));
 	}
 
 	/**
