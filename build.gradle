@@ -200,6 +200,28 @@ tasks.register('testEdge') {
 	}
 }
 
+tasks.register('jacocoEdgeReport', JacocoReport) {
+	group = 'OpenEMS-Test'
+	description = 'Generate aggregated JaCoCo coverage report for all Edge bundles'
+
+	subprojects.findAll { it.hasProperty('isEdge') && it.plugins.hasPlugin('java') && it.plugins.hasPlugin('jacoco') }.each { proj ->
+		proj.tasks.withType(Test).each { testTask ->
+			dependsOn testTask
+			executionData testTask
+		}
+		sourceDirectories.from(proj.sourceSets.main.allSource.srcDirs)
+		classDirectories.from(proj.sourceSets.main.output.classesDirs.collect { dir ->
+			fileTree(dir: dir, excludes: ['**/com/dalsemi/onewire/**'])
+		})
+	}
+
+	reports {
+		xml.required = true
+		html.required = true
+		csv.required = false
+	}
+}
+
 tasks.register('testBackend') {
 	group = 'OpenEMS-Test'
 	description = 'Run JUnit tests for all Backend-Bundles'
