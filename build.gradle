@@ -211,6 +211,40 @@ tasks.register('testBackend') {
 	}
 }
 
+def registerJacocoReport = { String taskName, String taskDescription, String propertyName, String testTaskName ->
+	tasks.register(taskName, JacocoReport) {
+		group = 'OpenEMS-Test'
+		description = taskDescription
+
+		dependsOn tasks.named(testTaskName)
+
+		subprojects.findAll { it.hasProperty(propertyName) }.each { proj ->
+			if (proj.tasks.findByName('test')) {
+				executionData(proj.tasks.test)
+			}
+			if (proj.extensions.findByName('sourceSets') != null) {
+				sourceDirectories.from(proj.sourceSets.main.allSource.srcDirs)
+				classDirectories.from(proj.sourceSets.main.output.classesDirs)
+			}
+		}
+
+		afterEvaluate {
+			classDirectories.setFrom(files(classDirectories.files.collect {
+				fileTree(dir: it, excludes: ['**/com/dalsemi/onewire/**'])
+			}))
+		}
+
+		reports {
+			xml.required = true
+			csv.required = false
+			html.required = true
+		}
+	}
+}
+
+registerJacocoReport('jacocoEdgeReport', 'Generate aggregated JaCoCo coverage report for Edge bundles', 'isEdge', 'testEdge')
+registerJacocoReport('jacocoBackendReport', 'Generate aggregated JaCoCo coverage report for Backend bundles', 'isBackend', 'testBackend')
+
 tasks.register('cleanEdge') {
 	group = 'OpenEMS-Build'
 	description = 'Clean all Edge-Bundles'
