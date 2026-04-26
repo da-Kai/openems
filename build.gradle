@@ -76,7 +76,6 @@ subprojects {
 			}
 		}
 
-
 		if (isCI) {
 			testLogging {
 				events = ["failed"]
@@ -85,29 +84,37 @@ subprojects {
 				showStackTraces = true
 				showCauses = true
 			}
-			afterSuite { desc, result ->
-				if (!desc.parent) {
-					def shortName = path.takeRight(36)
-					def padded = String.format("%36s", shortName)
-					def icon = switch(result.resultType) {
-						case org.gradle.api.tasks.testing.TestResult.ResultType.SUCCESS -> "✅"
-						case org.gradle.api.tasks.testing.TestResult.ResultType.FAILURE -> "❌"
-						case org.gradle.api.tasks.testing.TestResult.ResultType.SKIPPED -> "ℹ️"
-						default -> ""
+
+			addTestListener(new TestListener() {
+				@Override
+				void beforeSuite(TestDescriptor suite) {}
+
+				@Override
+				void afterSuite(TestDescriptor suite, TestResult result) {
+					if (suite.parent == null) { // Root suite
+						def icon = switch(result.resultType) {
+							case TestResult.ResultType.SUCCESS -> "✅"
+							case TestResult.ResultType.FAILURE -> "❌"
+							case TestResult.ResultType.SKIPPED -> "ℹ️"
+							default -> ""
+						}
+
+						println "> Test summary: ${result.resultType} ${icon} " +
+								"(${result.testCount} tests, ${result.successfulTestCount} passed, " +
+								"${result.failedTestCount} failed, ${result.skippedTestCount} skipped)"
 					}
-					println "> [${padded}] Test summary: ${result.resultType} ${icon} " +
-							"(${result.testCount} tests, " +
-							"${result.successfulTestCount} passed, " +
-							"${result.failedTestCount} failed, " +
-							"${result.skippedTestCount} skipped)"
 				}
-			}
-			afterTest { descriptor, result ->
-				if (result.failedTestCount > 0) {
-					println "\n${descriptor.className}.${descriptor.name} FAILED"
-					result.exception?.printStackTrace(System.out)
+
+				@Override
+				void beforeTest(TestDescriptor testDescriptor) {}
+
+				@Override
+				void afterTest(TestDescriptor testDescriptor, TestResult result) {
+					if (result.resultType.name() == 'FAILURE') {
+						println "\n${testDescriptor.className}.${testDescriptor.name} FAILED"
+					}
 				}
-			}
+			})
 		}
 	}
 
@@ -155,10 +162,10 @@ tasks.register('checkstyleEdge') {
 	description = 'Checkstyle Edge bundles'
 
 	subprojects.findAll { it.hasProperty('isEdge') }.each { proj ->
-		if (proj.tasks.findByName('checkstyleMain')) {
+		if (proj.tasks.named('checkstyleMain')) {
 			dependsOn(proj.checkstyleMain)
 		}
-		if (proj.tasks.findByName('checkstyleTest')) {
+		if (proj.tasks.named('checkstyleTest')) {
 			dependsOn(proj.checkstyleTest)
 		}
 	}
@@ -169,10 +176,10 @@ tasks.register('checkstyleBackend') {
 	description = 'Checkstyle Backend bundles'
 
 	subprojects.findAll { it.hasProperty('isBackend') }.each { proj ->
-		if (proj.tasks.findByName('checkstyleMain')) {
+		if (proj.tasks.named('checkstyleMain')) {
 			dependsOn(proj.checkstyleMain)
 		}
-		if (proj.tasks.findByName('checkstyleTest')) {
+		if (proj.tasks.named('checkstyleTest')) {
 			dependsOn(proj.checkstyleTest)
 		}
 	}
@@ -194,7 +201,7 @@ tasks.register('testEdge') {
 	description = 'Run JUnit tests for all Edge-Bundles'
 
 	subprojects.findAll { it.hasProperty('isEdge') }.each { proj ->
-		if (proj.tasks.findByName('test')) {
+		if (proj.tasks.named('test')) {
 			dependsOn(proj.test)
 		}
 	}
@@ -205,7 +212,7 @@ tasks.register('testBackend') {
 	description = 'Run JUnit tests for all Backend-Bundles'
 
 	subprojects.findAll { it.hasProperty('isBackend') }.each { proj ->
-		if (proj.tasks.findByName('test')) {
+		if (proj.tasks.named('test')) {
 			dependsOn(proj.test)
 		}
 	}
@@ -216,7 +223,7 @@ tasks.register('cleanEdge') {
 	description = 'Clean all Edge-Bundles'
 
 	subprojects.findAll { it.hasProperty('isEdge') }.each { proj ->
-		if (proj.tasks.findByName('clean')) {
+		if (proj.tasks.named('clean')) {
 			dependsOn(proj.clean)
 		}
 	}
@@ -227,7 +234,7 @@ tasks.register('cleanBackend') {
 	description = 'Clean all Backend-Bundles'
 
 	subprojects.findAll { it.hasProperty('isBackend') }.each { proj ->
-		if (proj.tasks.findByName('clean')) {
+		if (proj.tasks.named('clean')) {
 			dependsOn(proj.clean)
 		}
 	}
@@ -238,7 +245,7 @@ tasks.register('assembleEdge') {
 	description = 'Assemble all Edge-Bundles'
 
 	subprojects.findAll { it.hasProperty('isEdge') }.each { proj ->
-		if (proj.tasks.findByName('assemble')) {
+		if (proj.tasks.named('assemble')) {
 			dependsOn(proj.assemble)
 		}
 	}
@@ -249,7 +256,7 @@ tasks.register('assembleBackend') {
 	description = 'Assemble all Backend-Bundles'
 
 	subprojects.findAll { it.hasProperty('isBackend') }.each { proj ->
-		if (proj.tasks.findByName('assemble')) {
+		if (proj.tasks.named('assemble')) {
 			dependsOn(proj.assemble)
 		}
 	}
@@ -259,13 +266,11 @@ tasks.register('assembleBackend') {
  * Build OpenEMS Edge and Backend Components
  */
 tasks.register('buildComponents') {
-	subprojects.each { proj ->
-		if (proj.tasks.findAll { it.name == 'compileJava' }) {
-			dependsOn(proj.compileJava)
-			proj.test {
-				testLogging {
-					events "passed", "skipped", "failed", "standardOut", "standardError"
-				}
+	subprojects.configureEach { proj ->
+		dependsOn(proj.tasks.matching { it.name == 'compileJava' })
+		proj.tasks.withType(Test).configureEach {
+			testLogging {
+				events "passed", "skipped", "failed", "standardOut", "standardError"
 			}
 		}
 	}
@@ -388,10 +393,10 @@ tasks.register('buildBackendEdge') {
 tasks.register('buildAggregatedJavadocs', Javadoc) {
 	description = 'Generate javadocs from all child projects as if it was a single project'
 	group = 'Documentation'
-	destinationDir = file("$buildDir/www/javadoc")
+	destinationDir = layout.buildDirectory.dir("www/javadoc").get().asFile
 	title = "OpenEMS Javadoc"
 	subprojects.each { proj ->
-		proj.tasks.withType(Javadoc).each { javadocTask ->
+		proj.tasks.withType(Javadoc).configureEach { javadocTask ->
 			javadocTask.options.encoding = 'UTF-8'
 			options.addStringOption('Xdoclint:none', '-quiet')
 			source += javadocTask.source
@@ -435,7 +440,7 @@ tasks.register('copyBundleReadmes') {
 			proj.file(".").listFiles().each { sourceFile ->
 				// find the 'readme.adoc' file
 				if(sourceFile.getName().equalsIgnoreCase("readme.adoc")) {
-					def title // parse title from first line
+					def title = ""// parse title from first line
 					file(sourceFile).withReader { r ->
 						title = r.readLine().replaceFirst(/^= /, "")
 					}
@@ -534,24 +539,21 @@ tasks.register('copyBundleReadmes') {
 /*
  * Build Antora docs
  */
-tasks.register('buildAntoraDocs') {
+tasks.register('buildAntoraDocs', Copy) {
 	group = 'Documentation'
 	dependsOn ":doc:buildAntoraDocs"
 	dependsOn ":copyBundleReadmes"
 
 	mustRunAfter ":copyBundleReadmes"
 
-	def source = file("doc/build/www")
-	def output = file("${buildDir}/www")
+	def sourceDir = layout.projectDirectory.dir("doc/build/www")
+	def outputDir = layout.buildDirectory.dir("www")
+
+	from sourceDir
+	into outputDir
 
 	doLast {
-		output.deleteDir()
-		copy {
-			from source
-			into output
-		}
-		source.deleteDir()
-
-		println("Built ${output}!")
+		delete(sourceDir)
+		println "Built ${outputDir.get().asFile}!"
 	}
 }
