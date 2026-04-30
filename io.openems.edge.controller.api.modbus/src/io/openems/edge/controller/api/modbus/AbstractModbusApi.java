@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -55,6 +57,7 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 	protected static final int MAX_IDLE_SECONDS = 60;
 
 	private static final int PROCESS_IMAGE_RESET_TIME = 60;
+	private static final int SLAVE_CLOSE_TIMEOUT_SECONDS = 10;
 
 	/**
 	 * Holds the link between Modbus start address of a Component and the
@@ -71,6 +74,7 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 	private final AtomicInteger accessCounter = new AtomicInteger();
 	/** Counts every Write to a Register. */
 	private final AtomicInteger writeCounter = new AtomicInteger();
+	private volatile CountDownLatch modbusSlaveCloseLatch = new CountDownLatch(0);
 
 	protected Instant lastModbusProcessImageErrorInstant = Instant.MIN;
 	protected Clock clock;
@@ -135,25 +139,26 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 	protected void deactivate() {
 		this.startApiWorker.deactivate();
 		super.deactivate();
+		this.awaitSlaveClosed();
+	}
 
-		// wait until modbus slave was completely closed
+	private void awaitSlaveClosed() {
 		try {
-			Thread.sleep(10000);
+			if (!this.modbusSlaveCloseLatch.await(SLAVE_CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+				this.log.warn("Timeout while waiting for Modbus slave to close after {} seconds.", //
+						SLAVE_CLOSE_TIMEOUT_SECONDS);
+			}
 		} catch (InterruptedException e) {
-			this.log.warn(e.getMessage());
+			Thread.currentThread().interrupt();
+			this.log.warn("Interrupted while waiting for Modbus slave to close.");
 		}
 	}
 
 	@Override
 	public final String debugLog() {
 		return switch (this.config.logVerbosity()) {
-		case NONE //
-			-> null;
-		case DEBUG_LOG //
-			-> new StringBuilder() //
-					.append("Access:").append(this.accessCounter.get()) //
-					.append("|Write:").append(this.writeCounter.get()) //
-					.toString();
+		case NONE -> null;
+		case DEBUG_LOG -> "Access:" + this.accessCounter.get() + "|Write:" + this.writeCounter.get();
 		};
 	}
 
@@ -191,6 +196,7 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 				try {
 					// start new server
 					this.currentConfig = AbstractModbusApi.this.config;
+					AbstractModbusApi.this.modbusSlaveCloseLatch = new CountDownLatch(1);
 					this.slave = AbstractModbusApi.this.createSlave();
 					this.slave.addProcessImage(DEFAULT_UNIT_ID, AbstractModbusApi.this.processImage);
 					this.slave.open();
@@ -199,7 +205,7 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 						AbstractModbusApi.this._setUnableToStart(false);
 					}
 				} catch (ModbusException e) {
-					ModbusSlaveFactory.close(this.slave);
+					this.stopSlave();
 					AbstractModbusApi.this.logError(this.log, "Unable to start Modbus-Api: " + e.getMessage());
 					AbstractModbusApi.this._setUnableToStart(true);
 				}
@@ -220,6 +226,13 @@ public abstract class AbstractModbusApi extends AbstractOpenemsComponent
 		private void stopSlave() {
 			ModbusSlaveFactory.close(this.slave);
 			this.slave = null;
+			AbstractModbusApi.this.modbusSlaveCloseLatch.countDown();
+		}
+
+		@Override
+		public void deactivate() {
+			this.stopSlave();
+			super.deactivate();
 		}
 
 		@Override
