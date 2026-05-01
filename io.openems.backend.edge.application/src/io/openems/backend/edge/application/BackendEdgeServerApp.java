@@ -126,6 +126,7 @@ public class BackendEdgeServerApp {
 
 	private synchronized WebsocketServer createServer() {
 		return new WebsocketServer("Backend.Edge.Server", this.config.port(), this.config.serverPoolSize(),
+				this.config.maxConnections(), //
 				this.client::sendRequestToEdgeManager, //
 				this.client::sendNotificationToEdgeManager, //
 				this.cache::authenticateApikey, //

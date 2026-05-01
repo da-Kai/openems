@@ -16,8 +16,8 @@ public class WebsocketServer extends AbstractWebsocketServer<WsData> {
 	private final OnError onError;
 	private final OnClose onClose;
 
-	public WebsocketServer(EdgeManagerImpl parent, String name, int port, int poolSize) {
-		super(name, port, poolSize);
+	public WebsocketServer(EdgeManagerImpl parent, String name, int port, int poolSize, int maxConnections) {
+		super(name, port, poolSize, maxConnections);
 		this.parent = parent;
 		this.onOpen = new OnOpen(//
 				parent.metadata::generateUpdateMetadataCacheNotification, //

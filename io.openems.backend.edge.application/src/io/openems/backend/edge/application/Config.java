@@ -27,5 +27,8 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 	@AttributeDefinition(name = "Number of Server-Threads", description = "Pool-Size: the number of threads dedicated to handle the Server tasks")
 	int serverPoolSize() default 10;
 
+	@AttributeDefinition(name = "Max Connections", description = "Maximum number of concurrent WebSocket connections from Edge devices. 0 disables the limit.")
+	int maxConnections() default 10000;
+
 	String webconsole_configurationFactory_nameHint() default "Backend Edge Application";
 }

@@ -23,12 +23,12 @@ public class WebsocketServer extends AbstractWebsocketServer<WsData> {
 	private final OnError onError;
 	private final OnClose onClose;
 
-	public WebsocketServer(String name, int port, int poolSize, //
+	public WebsocketServer(String name, int port, int poolSize, int maxConnections, //
 			BiFunction<String, JsonrpcRequest, CompletableFuture<? extends JsonrpcResponseSuccess>> sendRequestToEdgeManager, //
 			BiConsumer<String, JsonrpcNotification> sendNotificationToEdgeManager, //
 			Function<String, String> authenticateApikey, //
 			Runnable connectedEdgesChanged) {
-		super(name, port, poolSize);
+		super(name, port, poolSize, maxConnections);
 		this.onOpen = new OnOpen(//
 				authenticateApikey, //
 				connectedEdgesChanged);

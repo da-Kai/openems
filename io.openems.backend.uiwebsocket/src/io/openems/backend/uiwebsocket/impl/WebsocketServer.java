@@ -16,8 +16,9 @@ public class WebsocketServer extends AbstractWebsocketServer<WsData> {
 	private final OnClose onClose = new io.openems.backend.uiwebsocket.impl.OnClose();
 	private final int requestLimit;
 
-	public WebsocketServer(UiWebsocketImpl parent, String name, int port, int poolSize, int requestLimit) {
-		super(name, port, poolSize);
+	public WebsocketServer(UiWebsocketImpl parent, String name, int port, int poolSize, int requestLimit,
+			int maxConnections) {
+		super(name, port, poolSize, maxConnections);
 		this.parent = parent;
 		this.onRequest = new OnRequest(parent);
 		this.onNotification = new OnNotification(parent);

@@ -15,6 +15,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Predicate;
 
 import org.java_websocket.WebSocket;
+import org.java_websocket.framing.CloseFrame;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 import org.slf4j.Logger;
@@ -34,6 +35,7 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 
 	private final Logger log = LoggerFactory.getLogger(AbstractWebsocketServer.class);
 	private final int port;
+	private final int maxConnections;
 	private final WebSocketServer ws;
 	private final Collection<WebSocket> connections = ConcurrentHashMap.newKeySet();
 
@@ -47,7 +49,21 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 	 * @param poolSize number of threads dedicated to handle the tasks
 	 */
 	protected AbstractWebsocketServer(String name, int port, int poolSize) {
+		this(name, port, poolSize, 0);
+	}
+
+	/**
+	 * Construct an {@link AbstractWebsocketServer}.
+	 *
+	 * @param name           to identify this server
+	 * @param port           to listen on
+	 * @param poolSize       number of threads dedicated to handle the tasks
+	 * @param maxConnections maximum number of concurrent WebSocket connections; 0
+	 *                       disables the limit
+	 */
+	protected AbstractWebsocketServer(String name, int port, int poolSize, int maxConnections) {
 		super(name);
+		this.maxConnections = maxConnections;
 		this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(poolSize,
 				new ThreadFactoryBuilder().setNameFormat(name + "-%d").build());
 
@@ -63,6 +79,17 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 
 			@Override
 			public void onOpen(WebSocket ws, ClientHandshake handshake) {
+				// Reject connection if the server is at maximum capacity, before allocating any
+				// resources for the new connection.
+				if (AbstractWebsocketServer.this.maxConnections > 0
+						&& AbstractWebsocketServer.this.connections.size() > AbstractWebsocketServer.this.maxConnections) {
+					AbstractWebsocketServer.this.logWarn(AbstractWebsocketServer.this.log,
+							"Rejecting connection from [" + ws.getRemoteSocketAddress()
+									+ "]: max connections limit of " + AbstractWebsocketServer.this.maxConnections
+									+ " reached");
+					ws.close(CloseFrame.TRY_AGAIN_LATER, "Server is at maximum capacity");
+					return;
+				}
 				T wsData = AbstractWebsocketServer.this.createWsData(ws);
 				ws.setAttachment(wsData);
 				AbstractWebsocketServer.this.execute(new OnOpenHandler(//
