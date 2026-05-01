@@ -81,6 +81,9 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 			public void onOpen(WebSocket ws, ClientHandshake handshake) {
 				// Reject connection if the server is at maximum capacity, before allocating any
 				// resources for the new connection.
+				// Note: by the time onOpen fires, addConnection() has already added this ws to
+				// the connections set, so connections.size() includes the new connection. Using
+				// '>' (not '>=') correctly allows exactly maxConnections simultaneous sessions.
 				if (AbstractWebsocketServer.this.maxConnections > 0
 						&& AbstractWebsocketServer.this.connections.size() > AbstractWebsocketServer.this.maxConnections) {
 					AbstractWebsocketServer.this.logWarn(AbstractWebsocketServer.this.log,
