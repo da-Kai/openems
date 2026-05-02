@@ -18,11 +18,24 @@ Protocol (matching ControllerApiBackendImpl / WebsocketClient):
   - JSON-RPC 2.0 notification "timestampedData"   – sent every --interval seconds
 
 Usage examples:
-  # Single edge
+  # Single edge (inline key)
   python3 simulate-edge.py --apikey MY_KEY --url ws://localhost:8081
 
-  # 1 000 edges, 10-second send interval, WARNING-level logging
+  # 1000 edges with the same key, 10-second send interval
   python3 simulate-edge.py -k MY_KEY -n 1000 -i 10 --log-level WARNING
+
+  # Load edge-ids + apikeys from a CSV file
+  python3 simulate-edge.py --csv edges.csv --url ws://localhost:8081
+
+  CSV format (header row required):
+    edge_id,apikey[,url]
+
+  The optional "url" column overrides --url on a per-row basis.
+  Example CSV:
+    edge_id,apikey,url
+    edge0001,secret-key-1,ws://backend1:8081
+    edge0002,secret-key-2
+    edge0003,secret-key-3
 
 Requirements:
   pip install websockets
@@ -30,6 +43,7 @@ Requirements:
 
 import argparse
 import asyncio
+import csv
 import json
 import logging
 import math
@@ -158,21 +172,21 @@ class EdgeSimulator:
     # Nominal grid voltage [V]
     _NOMINAL_VOLTAGE_V: float = 230.0
 
-    def __init__(self, index: int, apikey: str, url: str, interval: float) -> None:
-        self.index = index
+    def __init__(self, edge_id: str, apikey: str, url: str, interval: float) -> None:
+        self.edge_id = edge_id
         self.apikey = apikey
         self.url = url
         self.interval = interval
         self.instance_id: str = str(uuid.uuid4())
 
-        # Randomise starting state so 1 000 edges don't all look identical
+        # Randomise starting state so 1000 edges don't all look identical
         self._soc: float = random.uniform(15.0, 85.0)
         # Random phase shift so PV curves don't all peak at the same moment
         self._day_phase_offset: float = random.uniform(-0.5, 0.5)  # hours
         # Slow drift seed for consumption baseline
         self._consumption_drift: float = random.uniform(800.0, 2500.0)
 
-        self.log = logging.getLogger(f"edge[{index:04d}]")
+        self.log = logging.getLogger(f"edge[{edge_id}]")
 
     # ------------------------------------------------------------------
     # Value generation
@@ -403,17 +417,85 @@ class EdgeSimulator:
 
 
 # ---------------------------------------------------------------------------
+# CSV loader
+# ---------------------------------------------------------------------------
+
+def _load_csv(path: str, default_url: str) -> list[tuple[str, str, str]]:
+    """
+    Parse a CSV file that maps edge IDs to API keys (and optionally URLs).
+
+    Expected header row (case-insensitive): ``edge_id,apikey[,url]``
+
+    Returns a list of ``(edge_id, apikey, url)`` tuples.
+    The ``url`` value falls back to *default_url* when the column is absent or
+    the cell is empty.
+
+    Raises ``SystemExit`` on file / format errors so the error is reported
+    cleanly before asyncio starts.
+    """
+    try:
+        with open(path, newline="", encoding="utf-8") as fh:
+            reader = csv.DictReader(fh)
+            # Normalise header names to lower-case for lenient parsing
+            if reader.fieldnames is None:
+                raise SystemExit(f"CSV file is empty: {path}")
+            fieldnames_lower = [f.strip().lower() for f in reader.fieldnames]
+            if "edge_id" not in fieldnames_lower or "apikey" not in fieldnames_lower:
+                raise SystemExit(
+                    f"CSV file must contain 'edge_id' and 'apikey' columns. "
+                    f"Found: {reader.fieldnames!r}"
+                )
+            has_url_col = "url" in fieldnames_lower
+
+            rows: list[tuple[str, str, str]] = []
+            for lineno, raw_row in enumerate(reader, start=2):
+                # Re-index row by lower-cased keys; skip None keys produced by
+                # blank header columns that csv.DictReader may emit.
+                row = {k.strip().lower(): v.strip() for k, v in raw_row.items() if k is not None}
+                edge_id = row.get("edge_id", "")
+                apikey = row.get("apikey", "")
+                if not edge_id or not apikey:
+                    raise SystemExit(
+                        f"CSV line {lineno}: 'edge_id' and 'apikey' must not be empty."
+                    )
+                url = (row.get("url", "") if has_url_col else "") or default_url
+                rows.append((edge_id, apikey, url))
+
+            if not rows:
+                raise SystemExit(f"CSV file contains no data rows: {path}")
+            return rows
+    except OSError as exc:
+        raise SystemExit(f"Cannot open CSV file '{path}': {exc}") from exc
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
 async def _run_all(args: argparse.Namespace) -> None:
     log = logging.getLogger("simulator")
-    log.info(
-        "Starting %d Edge simulator(s) → %s  (interval=%.1f s)",
-        args.count,
-        args.url,
-        args.interval,
-    )
+
+    # Build the list of (edge_id, apikey, url) entries from either source
+    if args.csv:
+        entries = _load_csv(args.csv, args.url)
+        log.info(
+            "Loaded %d edge(s) from '%s' → sending to %s  (interval=%.1f s)",
+            len(entries),
+            args.csv,
+            args.url,
+            args.interval,
+        )
+    else:
+        entries = [
+            (f"edge{i:04d}", args.apikey, args.url)
+            for i in range(args.count)
+        ]
+        log.info(
+            "Starting %d Edge simulator(s) → %s  (interval=%.1f s)",
+            len(entries),
+            args.url,
+            args.interval,
+        )
 
     stop = asyncio.Event()
 
@@ -427,8 +509,8 @@ async def _run_all(args: argparse.Namespace) -> None:
             pass
 
     simulators = [
-        EdgeSimulator(i, args.apikey, args.url, args.interval)
-        for i in range(args.count)
+        EdgeSimulator(edge_id, apikey, url, args.interval)
+        for edge_id, apikey, url in entries
     ]
 
     tasks = [asyncio.create_task(sim.run(stop)) for sim in simulators]
@@ -452,22 +534,7 @@ def main() -> None:
     parser.add_argument(
         "--url",
         default="ws://localhost:8081",
-        help="Backend WebSocket URL (e.g. ws://backend-host:8081)",
-    )
-    parser.add_argument(
-        "--apikey",
-        "-k",
-        required=True,
-        metavar="KEY",
-        help="API key used in the 'Apikey' HTTP header for authentication",
-    )
-    parser.add_argument(
-        "--count",
-        "-n",
-        type=int,
-        default=1,
-        metavar="N",
-        help="Number of Edge instances to simulate concurrently",
+        help="Backend WebSocket URL; used as the default when not overridden per row in the CSV",
     )
     parser.add_argument(
         "--interval",
@@ -482,6 +549,37 @@ def main() -> None:
         default="INFO",
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         help="Python logging level",
+    )
+
+    # Two mutually exclusive ways to specify edges
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument(
+        "--csv",
+        "-c",
+        metavar="FILE",
+        help=(
+            "Path to a CSV file with columns 'edge_id,apikey[,url]'. "
+            "Each row spawns one Edge simulator. "
+            "An optional 'url' column overrides --url on a per-row basis."
+        ),
+    )
+    source.add_argument(
+        "--apikey",
+        "-k",
+        metavar="KEY",
+        help=(
+            "API key shared by all simulated edges. "
+            "Use --count/-n to control how many edges are started."
+        ),
+    )
+
+    parser.add_argument(
+        "--count",
+        "-n",
+        type=int,
+        default=1,
+        metavar="N",
+        help="Number of Edge instances to simulate (only used with --apikey)",
     )
     args = parser.parse_args()
 
