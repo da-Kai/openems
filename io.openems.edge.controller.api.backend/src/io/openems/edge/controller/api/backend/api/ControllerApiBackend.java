@@ -1,5 +1,7 @@
 package io.openems.edge.controller.api.backend.api;
 
+import static io.openems.common.types.OpenemsType.BOOLEAN;
+
 import java.util.concurrent.CompletableFuture;
 
 import io.openems.edge.common.channel.BooleanReadChannel;
@@ -18,8 +20,6 @@ import io.openems.edge.common.channel.StringReadChannel;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.user.User;
 import io.openems.edge.controller.api.Controller;
-
-import static io.openems.common.types.OpenemsType.BOOLEAN;
 
 public interface ControllerApiBackend extends Controller, OpenemsComponent, EventHandler {
 
