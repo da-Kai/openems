@@ -1,10 +1,11 @@
 #!/usr/bin/with-contenv bash
 # shellcheck shell=bash
 
-OPTS = ""
+OPTS=""
 
-if [[ "$OPENEMS_IPV4_ONLY" =~ ^(true|1|yes|y)$ ]]; then
-    OPTS = "$OPTS -java.net.preferIPv4Stack=true"
+if [[ "${OPENEMS_IPV4_ONLY^^}" =~ ^(TRUE|1|YES|Y)$ ]]; then
+    echo "Run OpenEMS IPv4-Only"
+    OPTS="${OPTS} -java.net.preferIPv4Stack=true"
 fi
 
 exec \
@@ -13,11 +14,11 @@ exec \
              /usr/bin/java \
                 -Dosgi.clean=true \
                 -Dorg.apache.felix.eventadmin.Timeout=0 \
-                -Dorg.apache.felix.http.host="::" \
+                -Dorg.apache.felix.http.host="0.0.0.0" \
                 -Dorg.apache.felix.http.port=8079 \
                 -Dfelix.cm.dir=/var/opt/openems/config \
                 -Dopenems.data.dir=/var/opt/openems/data \
                 -XX:+ExitOnOutOfMemoryError \
                 -XX:+UseZGC -XX:+ZGenerational \
-                $OPTS \
+                ${OPTS} \
                 -jar /opt/openems/openems-backend.jar
