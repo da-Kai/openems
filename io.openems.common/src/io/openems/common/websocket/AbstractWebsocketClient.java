@@ -9,7 +9,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.java_websocket.WebSocket;
 import org.java_websocket.drafts.Draft;
+import org.java_websocket.exceptions.InvalidDataException;
 import org.java_websocket.framing.CloseFrame;
+import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.handshake.ServerHandshake;
 import org.slf4j.Logger;
 
@@ -55,6 +57,13 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 
 	private WebSocketClient createWsClient(ResolvedURI uri) {
 		return new WebSocketClient(uri, this.draft, this.httpHeaders) {
+
+			@Override
+			public void onWebsocketHandshakeSentAsClient(WebSocket conn, ClientHandshake request)
+					throws InvalidDataException {
+				AbstractWebsocketClient.this.onWebsocketHandshakeSent(request);
+				super.onWebsocketHandshakeSentAsClient(conn, request);
+			}
 
 			@Override
 			public void onOpen(ServerHandshake handshake) {
@@ -103,6 +112,10 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 					return;
 				}
 
+				if (code == CloseFrame.PROTOCOL_ERROR) {
+					AbstractWebsocketClient.this.reconnectorWorker.notifyHandshakeFailed(reason);
+				}
+
 				AbstractWebsocketClient.this.log.info("WebSocket [{}] closed. Code [{}] Reason [{}]", uri, code,
 						reason);
 				if (this.updateIsConnected()) {
@@ -146,6 +159,10 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 
 		this.ws.set(websocket);
 		return websocket;
+	}
+
+	protected void onWebsocketHandshakeSent(ClientHandshake request) {
+		// nothing
 	}
 
 	/**

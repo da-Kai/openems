@@ -73,6 +73,7 @@ public class ClientReconnectorWorker extends AbstractWorker {
         final var timer = Stopwatch.createStarted();
         final var retryUris = this.serverUris.resolve();
 
+
         this.debugLog = "Reconnecting...";
         this.log.info("Reconnecting Websocket...");
 
@@ -100,19 +101,12 @@ public class ClientReconnectorWorker extends AbstractWorker {
         if (this.isConnected.get()) {
             final var connectionTime = timer.elapsed(TimeUnit.SECONDS);
             this.callEvent(WebsocketReconnectorEvent.CONNECTED);
-            this.debugLog = null;
-            this.logAndSetDebugInfo(
-                    "Connected successfully [" + connectionTime + "s]");
+            this.debugLog = "Connected successfully [" + connectionTime + "s]";
             this.log.info("Connected successfully [{}s]", connectionTime);
         } else {
             this.debugLog = "Connection failed";
             this.log.error("Connection failed");
         }
-    }
-
-    private void logAndSetDebugInfo(String message) {
-        this.debugLog = message;
-        this.log.info(message);
     }
 
     private void callEvent(WebsocketReconnectorEvent event) {
@@ -167,8 +161,21 @@ public class ClientReconnectorWorker extends AbstractWorker {
                 .collect(Collectors.joining(", "));
     }
 
+    /**
+     * Handles a failed WebSocket handshake by updating the debug log and emitting
+     * the corresponding to reconnect event.
+     *
+     * @param reason a short description of why the handshake failed
+     */
+    public void notifyHandshakeFailed(String reason) {
+        this.log.warn(reason);
+        this.debugLog = reason;
+        this.callEvent(WebsocketReconnectorEvent.HANDSHAKE_FAILED);
+    }
+
+
     public enum WebsocketReconnectorEvent {
-        RESET_WEBSOCKET_CLIENT, CLOSE_FAILED, CONNECTED
+        RESET_WEBSOCKET_CLIENT, CLOSE_FAILED, CONNECTED, HANDSHAKE_FAILED
     }
 
 }

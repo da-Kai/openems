@@ -11,6 +11,7 @@ import io.openems.common.types.URISet;
 import io.openems.common.utils.ThreadPoolUtils;
 import io.openems.common.websocket.AbstractWebsocketClient;
 import io.openems.common.websocket.ClientReconnectorWorker;
+import io.openems.common.websocket.CommonHttpHeader;
 import io.openems.common.websocket.WebsocketClientParams;
 import io.openems.edge.common.channel.ChannelUtils;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
@@ -45,6 +46,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -74,6 +76,7 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 	protected final ApiWorker apiWorker = new ApiWorker(this);
 
 	private final Logger log = OpenemsComponent.getComponentLogger(this);
+	private final String instanceId = UUID.randomUUID().toString();
 
 	@Reference
 	private OpenemsEdgeOem oem;
@@ -152,13 +155,22 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 			proxy = new Proxy(config.proxyType(), new InetSocketAddress(config.proxyAddress(), config.proxyPort()));
 		}
 
-		final var headers = new HashMap<String, String>();
-		headers.put("apikey", config.apikey());
+		final var httpHeaders = new HashMap<String, String>();
+		httpHeaders.put(CommonHttpHeader.APIKEY.asString(), config.apikey());
+		httpHeaders.put(CommonHttpHeader.INSTANCE_ID.asString(), this.instanceId);
+
+		final var uriScheme = uris.getFirst().getScheme();
+		if (!("https".equalsIgnoreCase(uriScheme) || "wss".equalsIgnoreCase(uriScheme))) {
+			this.log.warn("Insecure or missing URI scheme detected: [{}]. " //
+							+ "This may lead to credential exposure. " //
+							+ "Do not use this configuration in production!", //
+					uriScheme == null ? "N/A" : uriScheme);
+		}
 
 		// Create Websocket instance
 		this.websocket = new WebsocketClient(this, name, new WebsocketClientParams.Builder(uris) //
 				.proxy(proxy) //
-				.httpHeaders(headers) //
+				.httpHeaders(httpHeaders) //
 				.reconnectorConfig(ClientReconnectorWorker.DEFAULT_CONFIG.withEventHandler(this::onReconnectEvent)) //
 				.build());
 		this.websocket.start();

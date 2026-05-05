@@ -1,6 +1,9 @@
 package io.openems.edge.controller.api.backend;
 
+import io.openems.common.websocket.CommonHttpHeader;
+import io.openems.common.websocket.WebsocketUtils;
 import org.java_websocket.WebSocket;
+import org.java_websocket.handshake.ClientHandshake;
 import org.slf4j.Logger;
 
 import io.openems.common.websocket.AbstractWebsocketClient;
@@ -50,6 +53,14 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 		if (event == ClientReconnectorWorker.WebsocketReconnectorEvent.CLOSE_FAILED) {
 			ChannelUtils.setValue(parent, ControllerApiBackend.ChannelId.CONNECTION_CLOSE_FAILURE, true);
 		}
+	}
+
+	@Override
+	protected void onWebsocketHandshakeSent(ClientHandshake request) {
+		final String systemId = WebsocketUtils //
+				.getAsOptionalString(request, CommonHttpHeader.INSTANCE_ID) //
+				.orElse("N/A");
+		this.log.info("Initiating handshake with OpenEMS Backend [InstanceID={}]", systemId);
 	}
 
 	@Override
