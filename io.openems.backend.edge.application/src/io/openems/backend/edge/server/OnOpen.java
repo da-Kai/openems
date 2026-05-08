@@ -1,12 +1,13 @@
 package io.openems.backend.edge.server;
 
-import static io.openems.common.websocket.WebsocketUtils.getAsString;
+import static io.openems.common.websocket.WebsocketUtils.getAsOptionalString;
 import static io.openems.common.websocket.WebsocketUtils.parseRemoteIdentifier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.common.websocket.CommonHttpHeader;
 import io.openems.common.websocket.HandshakeData;
 import io.openems.common.websocket.WebsocketConnection;
 
@@ -24,7 +25,7 @@ public class OnOpen implements io.openems.common.websocket.OnOpen {
 	@Override
 	public OpenemsError apply(WebsocketConnection ws, HandshakeData handshakedata) {
 		// get apikey from handshake
-		final var apikey = getAsString(handshakedata, "apikey");
+		final var apikey = getAsOptionalString(handshakedata, CommonHttpHeader.APIKEY).orElse(null);
 
 		var error = this._apply(ws, apikey);
 		if (error != null) {
