@@ -10,6 +10,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import io.openems.common.websocket.CommonHttpHeader;
 import org.java_websocket.WebSocket;
 import org.java_websocket.drafts.Draft;
 import org.java_websocket.exceptions.InvalidDataException;
@@ -22,9 +23,9 @@ import io.openems.common.jsonrpc.base.JsonrpcNotification;
 import io.openems.common.jsonrpc.base.JsonrpcRequest;
 import io.openems.common.jsonrpc.base.JsonrpcResponseSuccess;
 import io.openems.common.logger.ContextLogger;
-import io.openems.common.websocket.CommonHttpHeader;
 import io.openems.common.websocket.WebsocketConnection;
 import io.openems.common.websocket.adapter.AbstractWebsocketServer;
+import io.openems.common.websocket.adapter.HandshakeDataAdapter;
 
 public final class WebsocketServer extends AbstractWebsocketServer<WsData> {
 
@@ -61,8 +62,9 @@ public final class WebsocketServer extends AbstractWebsocketServer<WsData> {
 
 	@Override
 	protected WsData onHandshake(WebSocket ws, Draft draft, ClientHandshake request) throws InvalidDataException {
-		final var apikey = getAsOptionalString(request, CommonHttpHeader.APIKEY).orElse(null);
-		final var instanceId = getAsOptionalUuid(request, CommonHttpHeader.INSTANCE_ID).map(UUID::toString).orElse("N/A");
+		final var handshake = new HandshakeDataAdapter(request);
+		final var apikey = getAsOptionalString(handshake, CommonHttpHeader.APIKEY).orElse(null);
+		final var instanceId = getAsOptionalUuid(handshake, CommonHttpHeader.INSTANCE_ID).map(UUID::toString).orElse("N/A");
 		final var edgeId = this.authenticateApikey.apply(apikey);
 		if (edgeId == null) {
 			this.log.error("Handshake rejected. Invalid Apikey [InstanceID={}]", instanceId);

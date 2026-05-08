@@ -7,20 +7,21 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import io.openems.common.websocket.WebsocketConnection;
+import io.openems.common.websocket.adapter.AbstractWebsocketClient;
+import io.openems.common.websocket.adapter.ClientReconnectorWorker;
+import io.openems.common.websocket.adapter.HandshakeDataAdapter;
+import io.openems.edge.common.channel.ChannelUtils;
+import io.openems.edge.controller.api.backend.api.ControllerApiBackend;
 import org.java_websocket.framing.CloseFrame;
 import org.java_websocket.handshake.ClientHandshake;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.openems.common.websocket.WebsocketConnection;
 import io.openems.common.websocket.CommonHttpHeader;
 import io.openems.common.websocket.OnClose;
 import io.openems.common.websocket.WebsocketUtils;
 import io.openems.common.websocket.WsData;
-import io.openems.common.websocket.adapter.AbstractWebsocketClient;
-import io.openems.common.websocket.adapter.ClientReconnectorWorker;
-import io.openems.edge.common.channel.ChannelUtils;
-import io.openems.edge.controller.api.backend.api.ControllerApiBackend;
 
 public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 
@@ -66,7 +67,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	@Override
 	protected void onWebsocketHandshakeSent(ClientHandshake request) {
 		final String systemId = WebsocketUtils //
-				.getAsOptionalString(request, CommonHttpHeader.INSTANCE_ID) //
+				.getAsOptionalString(new HandshakeDataAdapter(request), CommonHttpHeader.INSTANCE_ID) //
 				.orElse("N/A");
 		this.log.info("Initiating handshake with OpenEMS Backend [InstanceID={}]", systemId);
 	}
