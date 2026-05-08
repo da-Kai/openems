@@ -28,129 +28,136 @@ import io.openems.common.websocket.adapter.AbstractWebsocketServer;
 
 public final class WebsocketServer extends AbstractWebsocketServer<WsData> {
 
-private final OnOpen onOpen;
-private final OnRequest onRequest;
-private final OnNotification onNotification;
-private final OnError onError;
-private final OnClose onClose;
-private final Function<String, String> authenticateApikey;
+	private final OnOpen onOpen;
+	private final OnRequest onRequest;
+	private final OnNotification onNotification;
+	private final OnError onError;
+	private final OnClose onClose;
+	private final Function<String, String> authenticateApikey;
 
-private final Logger log;
+	private final Logger log;
 
-public WebsocketServer(String name, int port, int poolSize, //
-ction<String, JsonrpcRequest, CompletableFuture<? extends JsonrpcResponseSuccess>> sendRequestToEdgeManager, //
-sumer<String, JsonrpcNotification> sendNotificationToEdgeManager, //
-ction<String, String> authenticateApikey, //
-nable connectedEdgesChanged) {
-ame, port, poolSize);
-ew ContextLogger(WebsocketServer.class, name);
-ticateApikey = authenticateApikey;
-Open = new OnOpen(//
-nectedEdgesChanged);
-Request = new OnRequest(//
-ame, //
-dRequestToEdgeManager);
-Notification = new OnNotification(//
-ame, //
-dNotificationToEdgeManager);
-Error = new OnError(//
-Close = new OnClose(//
-nectedEdgesChanged);
-}
+	public WebsocketServer(String name, int port, int poolSize, //
+			BiFunction<String, JsonrpcRequest, CompletableFuture<? extends JsonrpcResponseSuccess>> sendRequestToEdgeManager, //
+			BiConsumer<String, JsonrpcNotification> sendNotificationToEdgeManager, //
+			Function<String, String> authenticateApikey, //
+			Runnable connectedEdgesChanged) {
+		super(name, port, poolSize);
+		this.log = new ContextLogger(WebsocketServer.class, name);
+		this.authenticateApikey = authenticateApikey;
+		this.onOpen = new OnOpen(//
+				connectedEdgesChanged);
+		this.onRequest = new OnRequest(//
+				name, //
+				sendRequestToEdgeManager);
+		this.onNotification = new OnNotification(//
+				name, //
+				sendNotificationToEdgeManager);
+		this.onError = new OnError(//
+				this::logError);
+		this.onClose = new OnClose(//
+				connectedEdgesChanged);
+	}
 
-@Override
-protected WsData onHandshake(WebSocket ws, Draft draft, ClientHandshake request) throws InvalidDataException {
-al var apikey = getAsOptionalString(request, CommonHttpHeader.APIKEY).orElse(null);
-al var instanceId = getAsOptionalUuid(request, CommonHttpHeader.INSTANCE_ID).map(UUID::toString).orElse("N/A");
-al var edgeId = this.authenticateApikey.apply(apikey);
-ull) {
-dshake rejected. Invalid Apikey [InstanceID={}]", instanceId);
-ew InvalidDataException(CloseFrame.POLICY_VALIDATION, "Handshake rejected. Invalid Apikey");
-dshake accepted [InstanceID={}, EdgeID={}]", instanceId, edgeId);
-al var wsData = this.createWsData(ws);
- wsData;
-}
+	@Override
+	protected WsData onHandshake(WebSocket ws, Draft draft, ClientHandshake request) throws InvalidDataException {
+		final var apikey = getAsOptionalString(request, CommonHttpHeader.APIKEY).orElse(null);
+		final var instanceId = getAsOptionalUuid(request, CommonHttpHeader.INSTANCE_ID).map(UUID::toString).orElse("N/A");
+		final var edgeId = this.authenticateApikey.apply(apikey);
+		if (edgeId == null) {
+			this.log.error("Handshake rejected. Invalid Apikey [InstanceID={}]", instanceId);
+			throw new InvalidDataException(CloseFrame.POLICY_VALIDATION, "Handshake rejected. Invalid Apikey");
+		}
+		this.log.debug("Handshake accepted [InstanceID={}, EdgeID={}]", instanceId, edgeId);
+		final var wsData = this.createWsData(ws);
+		wsData.setEdgeId(edgeId);
+		return wsData;
+	}
 
-/**
- * Sends a {@link JsonrpcRequest} to an Edge.
- * 
- * @param edgeId  the Edge-ID
- * @param request the {@link JsonrpcRequest}
- * @return a promise for a successful JSON-RPC Response
- */
-public CompletableFuture<JsonrpcResponseSuccess> sendRequestToEdge(String edgeId, JsonrpcRequest request) {
-(wsData == null) {
- CompletableFuture.failedFuture(OpenemsError.JSONRPC_SEND_FAILED.exception());
- wsData.send(request);
-}
+	/**
+	 * Sends a {@link JsonrpcRequest} to an Edge.
+	 * 
+	 * @param edgeId  the Edge-ID
+	 * @param request the {@link JsonrpcRequest}
+	 * @return a promise for a successful JSON-RPC Response
+	 */
+	public CompletableFuture<JsonrpcResponseSuccess> sendRequestToEdge(String edgeId, JsonrpcRequest request) {
+		var wsData = this.getWsDataForEdgeId(edgeId);
+		if (wsData == null) {
+			return CompletableFuture.failedFuture(OpenemsError.JSONRPC_SEND_FAILED.exception());
+		}
+		return wsData.send(request);
+	}
 
-/**
- * Sends a {@link JsonrpcNotification} to an Edge.
- * 
- * @param edgeId       the Edge-ID
- * @param notification the {@link JsonrpcNotification}
- */
-public void sendNotificationToEdge(String edgeId, JsonrpcNotification notification) {
-(wsData == null) {
-; // No connection for this Edge. Ignore.
-d(notification);
-}
+	/**
+	 * Sends a {@link JsonrpcNotification} to an Edge.
+	 * 
+	 * @param edgeId       the Edge-ID
+	 * @param notification the {@link JsonrpcNotification}
+	 */
+	public void sendNotificationToEdge(String edgeId, JsonrpcNotification notification) {
+		var wsData = this.getWsDataForEdgeId(edgeId);
+		if (wsData == null) {
+			return; // No connection for this Edge. Ignore.
+		}
+		wsData.send(notification);
+	}
 
-/**
- * Gets the {@link WsData} for the given Edge-ID.
- * 
- * @param edgeId the Edge-ID
- * @return {@link WsData} or null
- */
-private WsData getWsDataForEdgeId(String edgeId) {
- this.getConnections().stream() //
-t()) //
-uals(w.getEdgeId(), edgeId)) //
-dFirst().orElse(null);
-}
+	/**
+	 * Gets the {@link WsData} for the given Edge-ID.
+	 * 
+	 * @param edgeId the Edge-ID
+	 * @return {@link WsData} or null
+	 */
+	private WsData getWsDataForEdgeId(String edgeId) {
+		return this.getConnections().stream() //
+				.map(c -> (WsData) c.getAttachment()) //
+				.filter(w -> Objects.equals(w.getEdgeId(), edgeId)) //
+				.findFirst().orElse(null);
+	}
 
-@Override
-protected WsData createWsData(WebsocketConnection ws) {
- new WsData(ws);
-}
+	@Override
+	protected WsData createWsData(WebsocketConnection ws) {
+		return new WsData(ws);
+	}
 
-@Override
-protected OnOpen getOnOpen() {
- this.onOpen;
-}
+	@Override
+	protected OnOpen getOnOpen() {
+		return this.onOpen;
+	}
 
-@Override
-protected OnRequest getOnRequest() {
- this.onRequest;
-}
+	@Override
+	protected OnRequest getOnRequest() {
+		return this.onRequest;
+	}
 
-@Override
-public OnNotification getOnNotification() {
- this.onNotification;
-}
+	@Override
+	public OnNotification getOnNotification() {
+		return this.onNotification;
+	}
 
-@Override
-protected OnError getOnError() {
- this.onError;
-}
+	@Override
+	protected OnError getOnError() {
+		return this.onError;
+	}
 
-@Override
-protected OnClose getOnClose() {
- this.onClose;
-}
+	@Override
+	protected OnClose getOnClose() {
+		return this.onClose;
+	}
 
-@Override
-protected void logInfo(Logger log, String message) {
-fo("[" + this.getName() + "] " + message);
-}
+	@Override
+	protected void logInfo(Logger log, String message) {
+		log.info("[" + this.getName() + "] " + message);
+	}
 
-@Override
-protected void logWarn(Logger log, String message) {
-("[" + this.getName() + "] " + message);
-}
+	@Override
+	protected void logWarn(Logger log, String message) {
+		log.warn("[" + this.getName() + "] " + message);
+	}
 
-@Override
-protected void logError(Logger log, String message) {
-ame() + "] " + message);
-}
+	@Override
+	protected void logError(Logger log, String message) {
+		log.error("[" + this.getName() + "] " + message);
+	}
 }

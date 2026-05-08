@@ -12,42 +12,46 @@ import io.openems.common.websocket.WebsocketConnection;
 
 public class OnOpen implements io.openems.common.websocket.OnOpen {
 
-private static final int CLOSE_POLICY_VIOLATION = 1008; // RFC 6455 Policy Violation
+	private static final int CLOSE_POLICY_VIOLATION = 1008; // RFC 6455 Policy Violation
 
-private final Logger log = LoggerFactory.getLogger(OnOpen.class);
-private final Runnable connectedEdgesChanged;
+	private final Logger log = LoggerFactory.getLogger(OnOpen.class);
+	private final Runnable connectedEdgesChanged;
 
-public OnOpen(Runnable connectedEdgesChanged) {
-nectedEdgesChanged = connectedEdgesChanged;
-}
+	public OnOpen(Runnable connectedEdgesChanged) {
+		this.connectedEdgesChanged = connectedEdgesChanged;
+	}
 
-@Override
-public OpenemsError apply(WebsocketConnection ws, HandshakeData handshakedata) {
-from handshake
-al var apikey = getAsString(handshakedata, "apikey");
+	@Override
+	public OpenemsError apply(WebsocketConnection ws, HandshakeData handshakedata) {
+		// get apikey from handshake
+		final var apikey = getAsString(handshakedata, "apikey");
 
-(ws, apikey);
-ull) {
-, new StringBuilder() //
-d("Connection to backend failed. Apikey [") //
-d(apikey).append("]. Remote [") //
-d(parseRemoteIdentifier(ws, handshakedata)) //
-d("] Error: ").append(error.name()) //
-g());
- error;
-}
+		var error = this._apply(ws, apikey);
+		if (error != null) {
+			ws.close(CLOSE_POLICY_VIOLATION, new StringBuilder() //
+					.append("Connection to backend failed. Apikey [") //
+					.append(apikey).append("]. Remote [") //
+					.append(parseRemoteIdentifier(ws, handshakedata)) //
+					.append("] Error: ").append(error.name()) //
+					.toString());
+		}
+		return error;
+	}
 
-private OpenemsError _apply(WebsocketConnection ws, String apikey) {
-t
-t();
+	private OpenemsError _apply(WebsocketConnection ws, String apikey) {
+		// get websocket attachment
+		WsData wsData = ws.getAttachment();
 
-ticate apikey
-(edgeId == null) {
- OpenemsError.COMMON_AUTHENTICATION_FAILED;
- " + edgeId);
+		// authenticate apikey
+		var edgeId = wsData.getEdgeId();
+		if (edgeId == null) {
+			return OpenemsError.COMMON_AUTHENTICATION_FAILED;
+		}
 
-nectedEdgesChanged.run();
+		wsData.debugLog(this.log, () -> "OPEN " + edgeId);
 
- null; // No error
-}
+		this.connectedEdgesChanged.run();
+
+		return null; // No error
+	}
 }
