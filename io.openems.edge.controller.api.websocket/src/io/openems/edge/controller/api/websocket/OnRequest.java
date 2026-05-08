@@ -58,7 +58,7 @@ public class OnRequest implements io.openems.common.websocket.OnRequest {
 	}
 
 	public static final Key<WsData> WS_DATA_KEY = new Key<>("wsData", WsData.class);
-	public static final Key<WebSocket> WEBSOCKET_KEY = new Key<>("websocket", WebSocket.class);
+	public static final Key<WebsocketConnection> WEBSOCKET_KEY = new Key<>("websocket", WebsocketConnection.class);
 
 	private final SingleJsonApiBinder apiBinder = new SingleJsonApiBinder();
 	private Consumer<Call<JsonrpcRequest, JsonrpcResponse>> onCall = FunctionUtils::doNothing;
