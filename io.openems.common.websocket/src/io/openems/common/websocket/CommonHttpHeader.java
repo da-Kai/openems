@@ -13,11 +13,11 @@ public enum CommonHttpHeader {
 		this.header = header;
 	}
 
-    /**
-     * The HTTP header name as a {@link String}.
-     *
-     * @return header name
-     */
+	/**
+	 * The HTTP header name as a {@link String}.
+	 *
+	 * @return header name
+	 */
 	public String asString() {
 		return this.header;
 	}
