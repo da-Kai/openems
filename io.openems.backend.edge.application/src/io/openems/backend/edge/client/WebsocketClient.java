@@ -178,7 +178,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	}
 
 	public boolean isConnected() {
-		return this.ws.isOpen();
+		return super.isConnected();
 	}
 
 	@Override

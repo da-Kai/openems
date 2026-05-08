@@ -94,7 +94,7 @@ public class ClientReconnectorWorker extends AbstractWorker {
 		if (ws.getReadyState() != ReadyState.NOT_YET_CONNECTED) {
 			// Copy of WebSocketClient#reconnectBlocking.
 			// Do not 'reset' if WebSocket has never been connected before.
-			this.resetWebSocketClient(ws, rawWs -> this.parent.createWsData(new WebsocketConnectionAdapter(rawWs)),
+			this.resetWebSocketClient(ws, rawWs -> this.parent.createWsDataForReconnect(rawWs),
 					this.config.connectTimeoutSeconds());
 		}
 
@@ -111,7 +111,7 @@ public class ClientReconnectorWorker extends AbstractWorker {
 			// Catch "WebSocketClient objects are not reuseable" thrown by
 			// WebSocketClient#connect(). Set WebSocketClient#connectReadThread to `null`.
 			this.logAndSetDebugInfo("# Reset WebSocket Client after Exception... " + e.getMessage());
-			this.resetWebSocketClient(ws, rawWs -> this.parent.createWsData(new WebsocketConnectionAdapter(rawWs)),
+			this.resetWebSocketClient(ws, rawWs -> this.parent.createWsDataForReconnect(rawWs),
 					this.config.connectTimeoutSeconds());
 			this.logAndSetDebugInfo("# Reset WebSocket Client after Exception... done");
 		}
@@ -126,7 +126,7 @@ public class ClientReconnectorWorker extends AbstractWorker {
 
 	private void logAndSetDebugInfo(String message) {
 		this.debugLog = message;
-		this.parent.logInfo(this.log, message);
+		this.parent.logInfoForWorker(this.log, message);
 	}
 
 	private void callEvent(WebsocketReconnectorEvent event) {

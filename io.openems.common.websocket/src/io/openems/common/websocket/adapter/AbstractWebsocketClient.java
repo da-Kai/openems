@@ -1,6 +1,7 @@
 package io.openems.common.websocket.adapter;
 
 import io.openems.common.websocket.AbstractWebsocket;
+import io.openems.common.websocket.HandshakeData;
 import io.openems.common.websocket.OnClose;
 import io.openems.common.websocket.OnCloseHandler;
 import io.openems.common.websocket.OnError;
@@ -22,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.java_websocket.WebSocket;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft;
 import org.java_websocket.drafts.Draft_6455;
@@ -49,9 +51,9 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 
 	public static final Map<String, String> NO_HTTP_HEADERS = new HashMap<>();
 	public static final Proxy NO_PROXY = null;
-	public static final Draft DEFAULT_DRAFT = new Draft_6455(new PerMessageDeflateExtension());
+	static final Draft DEFAULT_DRAFT = new Draft_6455(new PerMessageDeflateExtension());
 
-	protected final WebSocketClient ws;
+	final WebSocketClient ws;
 	private final WebsocketConnection wsConnection;
 
 	private final Logger log = LoggerFactory.getLogger(AbstractWebsocketClient.class);
@@ -61,42 +63,37 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	private final ClientReconnectorWorker reconnectorWorker;
 
 	protected AbstractWebsocketClient(String name, URI serverUri) {
-		this(name, serverUri, AbstractWebsocketClient.DEFAULT_DRAFT, AbstractWebsocketClient.NO_HTTP_HEADERS,
-				AbstractWebsocketClient.NO_PROXY, null /* onConnectedChange */);
+		this(name, serverUri, AbstractWebsocketClient.NO_HTTP_HEADERS, AbstractWebsocketClient.NO_PROXY,
+				null /* onConnectedChange */, ClientReconnectorWorker.DEFAULT_CONFIG);
 	}
 
 	protected AbstractWebsocketClient(String name, URI serverUri, Map<String, String> httpHeaders) {
-		this(name, serverUri, AbstractWebsocketClient.DEFAULT_DRAFT, httpHeaders, AbstractWebsocketClient.NO_PROXY,
-				null /* onConnectedChange */);
+		this(name, serverUri, httpHeaders, AbstractWebsocketClient.NO_PROXY, null /* onConnectedChange */,
+				ClientReconnectorWorker.DEFAULT_CONFIG);
 	}
 
 	protected AbstractWebsocketClient(String name, URI serverUri, Map<String, String> httpHeaders,
 			BooleanConsumer onConnectedChange) {
-		this(name, serverUri, AbstractWebsocketClient.DEFAULT_DRAFT, httpHeaders, AbstractWebsocketClient.NO_PROXY,
-				onConnectedChange);
+		this(name, serverUri, httpHeaders, AbstractWebsocketClient.NO_PROXY, onConnectedChange,
+				ClientReconnectorWorker.DEFAULT_CONFIG);
 	}
 
 	protected AbstractWebsocketClient(String name, URI serverUri, Map<String, String> httpHeaders,
 			BooleanConsumer onConnectedChange, ClientReconnectorWorker.Config reconnectorConfig) {
-		this(name, serverUri, AbstractWebsocketClient.DEFAULT_DRAFT, httpHeaders, AbstractWebsocketClient.NO_PROXY,
-				onConnectedChange, reconnectorConfig);
+		this(name, serverUri, httpHeaders, AbstractWebsocketClient.NO_PROXY, onConnectedChange, reconnectorConfig);
 	}
 
 	protected AbstractWebsocketClient(String name, URI serverUri, Map<String, String> httpHeaders, Proxy proxy) {
-		this(name, serverUri, AbstractWebsocketClient.DEFAULT_DRAFT, httpHeaders, proxy, null /* onConnectedChange */);
+		this(name, serverUri, httpHeaders, proxy, null /* onConnectedChange */,
+				ClientReconnectorWorker.DEFAULT_CONFIG);
 	}
 
-	protected AbstractWebsocketClient(String name, URI serverUri, Draft draft, Map<String, String> httpHeaders,
-			Proxy proxy, BooleanConsumer onConnectedChange) {
-		this(name, serverUri, draft, httpHeaders, proxy, onConnectedChange, ClientReconnectorWorker.DEFAULT_CONFIG);
-	}
-
-	protected AbstractWebsocketClient(String name, URI serverUri, Draft draft, Map<String, String> httpHeaders,
-			Proxy proxy, BooleanConsumer onConnectedChange, ClientReconnectorWorker.Config reconnectorConfig) {
+	protected AbstractWebsocketClient(String name, URI serverUri, Map<String, String> httpHeaders, Proxy proxy,
+			BooleanConsumer onConnectedChange, ClientReconnectorWorker.Config reconnectorConfig) {
 		super(name);
 		this.serverUri = serverUri;
 		this.onConnectedChange = onConnectedChange == null ? FunctionUtils::doNothing : onConnectedChange;
-		this.ws = new WebSocketClient(serverUri, draft, httpHeaders) {
+		this.ws = new WebSocketClient(serverUri, DEFAULT_DRAFT, httpHeaders) {
 
 			private void logInfo(String message) {
 				AbstractWebsocketClient.this.logInfo(AbstractWebsocketClient.this.log, message);
@@ -105,7 +102,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 			@Override
 			public void onWebsocketHandshakeSentAsClient(WebSocket conn, ClientHandshake request)
 					throws InvalidDataException {
-				AbstractWebsocketClient.this.onWebsocketHandshakeSent(request);
+				AbstractWebsocketClient.this.onWebsocketHandshakeSent(new HandshakeDataAdapter(request));
 				super.onWebsocketHandshakeSentAsClient(conn, request);
 			}
 
@@ -198,8 +195,48 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 		}
 	}
 
-	protected void onWebsocketHandshakeSent(ClientHandshake request) {
+	/**
+	 * Called when the WebSocket handshake has been sent to the server.
+	 *
+	 * <p>
+	 * Override this method to inspect or log the outgoing handshake headers.
+	 *
+	 * @param handshake the outgoing {@link HandshakeData}
+	 */
+	protected void onWebsocketHandshakeSent(HandshakeData handshake) {
 		// nothing
+	}
+
+	/**
+	 * Package-visible bridge: creates {@link WsData} for the given raw
+	 * {@link WebSocket} for use by {@link ClientReconnectorWorker}.
+	 *
+	 * @param rawWs the raw {@link WebSocket}
+	 * @return the created {@link WsData}
+	 */
+	WsData createWsDataForReconnect(WebSocket rawWs) {
+		return this.createWsData(new WebsocketConnectionAdapter(rawWs));
+	}
+
+	/**
+	 * Package-visible bridge: delegates to
+	 * {@link #logInfo(Logger, String)} for use by
+	 * {@link ClientReconnectorWorker}.
+	 *
+	 * @param log     the {@link Logger}
+	 * @param message the message
+	 */
+	void logInfoForWorker(Logger log, String message) {
+		this.logInfo(log, message);
+	}
+
+	/**
+	 * Returns whether the WebSocket connection is currently open.
+	 *
+	 * @return true if the WebSocket is connected
+	 */
+	public boolean isConnected() {
+		return this.isConnected.get();
 	}
 
 	/**

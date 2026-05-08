@@ -10,12 +10,6 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import io.openems.common.websocket.CommonHttpHeader;
-import org.java_websocket.WebSocket;
-import org.java_websocket.drafts.Draft;
-import org.java_websocket.exceptions.InvalidDataException;
-import org.java_websocket.framing.CloseFrame;
-import org.java_websocket.handshake.ClientHandshake;
 import org.slf4j.Logger;
 
 import io.openems.common.exceptions.OpenemsError;
@@ -23,9 +17,10 @@ import io.openems.common.jsonrpc.base.JsonrpcNotification;
 import io.openems.common.jsonrpc.base.JsonrpcRequest;
 import io.openems.common.jsonrpc.base.JsonrpcResponseSuccess;
 import io.openems.common.logger.ContextLogger;
+import io.openems.common.websocket.CommonHttpHeader;
+import io.openems.common.websocket.HandshakeData;
 import io.openems.common.websocket.WebsocketConnection;
 import io.openems.common.websocket.adapter.AbstractWebsocketServer;
-import io.openems.common.websocket.adapter.HandshakeDataAdapter;
 
 public final class WebsocketServer extends AbstractWebsocketServer<WsData> {
 
@@ -61,14 +56,13 @@ public final class WebsocketServer extends AbstractWebsocketServer<WsData> {
 	}
 
 	@Override
-	protected WsData onHandshake(WebSocket ws, Draft draft, ClientHandshake request) throws InvalidDataException {
-		final var handshake = new HandshakeDataAdapter(request);
+	protected WsData onHandshake(WebsocketConnection ws, HandshakeData handshake) throws Exception {
 		final var apikey = getAsOptionalString(handshake, CommonHttpHeader.APIKEY).orElse(null);
 		final var instanceId = getAsOptionalUuid(handshake, CommonHttpHeader.INSTANCE_ID).map(UUID::toString).orElse("N/A");
 		final var edgeId = this.authenticateApikey.apply(apikey);
 		if (edgeId == null) {
 			this.log.error("Handshake rejected. Invalid Apikey [InstanceID={}]", instanceId);
-			throw new InvalidDataException(CloseFrame.POLICY_VALIDATION, "Handshake rejected. Invalid Apikey");
+			throw new Exception("Handshake rejected. Invalid Apikey");
 		}
 		this.log.debug("Handshake accepted [InstanceID={}, EdgeID={}]", instanceId, edgeId);
 		final var wsData = this.createWsData(ws);

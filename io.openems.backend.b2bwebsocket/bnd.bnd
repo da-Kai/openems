@@ -9,6 +9,7 @@ Bundle-Version: 1.0.0.${tstamp}
 	io.openems.backend.common,\
 	io.openems.common,\
 	io.openems.common.websocket,\
+	io.openems.wrapper.Java-WebSocket,\
 
 -testpath: \
 	${testpath}
