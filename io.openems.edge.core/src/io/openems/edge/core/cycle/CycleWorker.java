@@ -3,6 +3,7 @@ package io.openems.edge.core.cycle;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.HdrHistogram.Histogram;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,13 +24,29 @@ public class CycleWorker extends AbstractWorker {
 	private final Logger log = LoggerFactory.getLogger(CycleWorker.class);
 	private final CycleImpl parent;
 
+	private final Histogram histogramCycleTime;
+
 	public CycleWorker(CycleImpl parent) {
 		this.parent = parent;
+		final int maxTrackedValue = (int) (TimeUnit.SECONDS.toMillis(parent.getCycleTime()) * 10);
+		this.histogramCycleTime = new Histogram(Math.max(1000, maxTrackedValue), 3);
 	}
 
 	@Override
 	protected int getCycleTime() {
 		return this.parent.getCycleTime();
+	}
+
+	private void recordCycleTime(int cycleTimeMs) {
+		this.histogramCycleTime.recordValue(cycleTimeMs);
+	}
+
+	protected int p99() {
+		return (int) this.histogramCycleTime.getValueAtPercentile(99.0);
+	}
+
+	protected int p95() {
+		return (int) this.histogramCycleTime.getValueAtPercentile(95.0);
 	}
 
 	@Override
@@ -108,20 +125,25 @@ public class CycleWorker extends AbstractWorker {
 			 */
 			this.triggerEvent(verbosity, EdgeEventConstants.TOPIC_CYCLE_AFTER_WRITE);
 
-		} catch (Throwable t) {
-			this.parent.logWarn(this.log,
-					"Error in Scheduler. " + t.getClass().getSimpleName() + ": " + t.getMessage());
-			if (t instanceof ClassCastException || t instanceof NullPointerException) {
-				t.printStackTrace();
-			}
+		} catch (ClassCastException | NullPointerException e) {
+			this.parent.logWarn(this.log, "Error in Scheduler. " + e);
+			this.log.warn(e.toString(), e);
+
+		} catch (Exception e) {
+			this.parent.logWarn(this.log, "Error in Scheduler. " + e);
 		}
 
 		// Measure actual Cycle-Time
+		stopwatch.stop();
 		var totalMs = stopwatch.elapsed(TimeUnit.MILLISECONDS);
 		this.parent._setMeasuredCycleTime(totalMs);
 		if (verbosity.ordinal() >= CycleLogVerbosity.SUMMARY.ordinal()) {
-			this.log.info("_cycle [MeasuredCycleTime: " + totalMs + " ms]");
+			this.log.info("_cycle [MeasuredCycleTime: {} ms]", totalMs);
 		}
+
+		this.recordCycleTime((int) totalMs);
+		this.parent._setMeasuredCycleTimeP99(this.p99());
+		this.parent._setMeasuredCycleTimeP95(this.p95());
 	}
 
 	/**

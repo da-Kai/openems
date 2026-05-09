@@ -4,6 +4,7 @@ import io.openems.common.channel.Level;
 import io.openems.common.channel.Unit;
 import io.openems.common.types.OpenemsType;
 import io.openems.edge.common.channel.Doc;
+import io.openems.edge.common.channel.IntegerReadChannel;
 import io.openems.edge.common.channel.LongReadChannel;
 import io.openems.edge.common.channel.StateChannel;
 import io.openems.edge.common.channel.value.Value;
@@ -27,6 +28,7 @@ public interface Cycle extends OpenemsComponent {
 		 */
 		MEASURED_CYCLE_TIME(Doc.of(OpenemsType.LONG)//
 				.unit(Unit.MILLISECONDS)),
+
 		/**
 		 * A configured Controller is not executed because it is disabled.
 		 *
@@ -35,7 +37,31 @@ public interface Cycle extends OpenemsComponent {
 		 * <li>Type: State
 		 * </ul>
 		 */
-		IGNORE_DISABLED_CONTROLLER(Doc.of(Level.INFO));
+		IGNORE_DISABLED_CONTROLLER(Doc.of(Level.INFO)),
+
+		/**
+		 * The 95th percentile of the measured Cycle-Time in [ms]. This means that 95%
+		 * of all measured Cycle-Times are below this value.
+		 *
+		 * <ul>
+		 * <li>Interface: Cycle
+		 * <li>Type: Integer
+		 * </ul>
+		 */
+		MEASURED_CYCLE_TIME_P95(Doc.of(OpenemsType.INTEGER)//
+				.unit(Unit.MILLISECONDS)),
+
+		/**
+		 * The 99th percentile of the measured Cycle-Time in [ms]. This means that 99%
+		 * of all measured Cycle-Times are below this value.
+		 *
+		 * <ul>
+		 * <li>Interface: Cycle
+		 * <li>Type: Integer
+		 * </ul>
+		 */
+		MEASURED_CYCLE_TIME_P99(Doc.of(OpenemsType.INTEGER)//
+				.unit(Unit.MILLISECONDS));
 
 		private final Doc doc;
 
@@ -115,6 +141,64 @@ public interface Cycle extends OpenemsComponent {
 	 */
 	public default void _setIgnoreDisabledController(boolean value) {
 		this.getIgnoreDisabledControllerChannel().setNextValue(value);
+	}
+
+	/**
+	 * Gets the Channel for {@link ChannelId#MEASURED_CYCLE_TIME_P95}.
+	 *
+	 * @return the Channel
+	 */
+	public default IntegerReadChannel getMeasuredCycleTimeP95Channel() {
+		return this.channel(ChannelId.MEASURED_CYCLE_TIME_P95);
+	}
+
+	/**
+	 * Gets the Measured Cycle Time p95 in [ms]. See
+	 * {@link ChannelId#MEASURED_CYCLE_TIME_P95}.
+	 *
+	 * @return the Channel {@link Value}
+	 */
+	public default Value<Integer> getMeasuredCycleTimeP95() {
+		return this.getMeasuredCycleTimeP95Channel().value();
+	}
+
+	/**
+	 * Internal method to set the 'nextValue' on
+	 * {@link ChannelId#MEASURED_CYCLE_TIME_P95} Channel.
+	 *
+	 * @param value the next value
+	 */
+	public default void _setMeasuredCycleTimeP95(int value) {
+		this.getMeasuredCycleTimeP95Channel().setNextValue(value);
+	}
+
+	/**
+	 * Gets the Channel for {@link ChannelId#MEASURED_CYCLE_TIME_P99}.
+	 *
+	 * @return the Channel
+	 */
+	public default IntegerReadChannel getMeasuredCycleTimeP99Channel() {
+		return this.channel(ChannelId.MEASURED_CYCLE_TIME_P99);
+	}
+
+	/**
+	 * Gets the Measured Cycle Time p99 in [ms]. See
+	 * {@link ChannelId#MEASURED_CYCLE_TIME_P99}.
+	 *
+	 * @return the Channel {@link Value}
+	 */
+	public default Value<Integer> getMeasuredCycleTimeP99() {
+		return this.getMeasuredCycleTimeP99Channel().value();
+	}
+
+	/**
+	 * Internal method to set the 'nextValue' on
+	 * {@link ChannelId#MEASURED_CYCLE_TIME_P99} Channel.
+	 *
+	 * @param value the next value
+	 */
+	public default void _setMeasuredCycleTimeP99(int value) {
+		this.getMeasuredCycleTimeP99Channel().setNextValue(value);
 	}
 
 	/**

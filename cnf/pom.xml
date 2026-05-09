@@ -823,5 +823,10 @@
 			<artifactId>objenesis</artifactId>
 			<version>3.5</version>
 		</dependency>
+		<dependency>
+			<groupId>org.hdrhistogram</groupId>
+			<artifactId>HdrHistogram</artifactId>
+			<version>2.2.2</version>
+		</dependency>
 	</dependencies>
 </project>
