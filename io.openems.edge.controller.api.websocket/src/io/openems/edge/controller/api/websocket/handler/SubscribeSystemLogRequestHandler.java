@@ -35,7 +35,7 @@ public class SubscribeSystemLogRequestHandler implements JsonApi, PaxAppender {
 	private static final int LOG_BUFFER_SIZE = 64;
 
 	private final Set<WsData> subscribers = ConcurrentHashMap.newKeySet();
-	private final BlockingDeque<SystemLog> logBuffer = new LinkedBlockingDeque<>(LOG_BUFFER_SIZE*2);
+	private final BlockingDeque<SystemLog> logBuffer = new LinkedBlockingDeque<>(LOG_BUFFER_SIZE * 2);
 
 	private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
