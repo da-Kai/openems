@@ -20,6 +20,13 @@ jobs:
           java-version: '21'
           cache: gradle
 
+      - uses: actions/cache/restore@v5
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+              maven-${{ runner.os }}-
+
       - uses: kiancross/checkstyle-annotations-action@v1
 
       - name: Checkstyle
@@ -36,6 +43,12 @@ jobs:
 
       - name: Validate EdgeApp.bndrun
         run: git diff --exit-code io.openems.edge.application/EdgeApp.bndrun
+
+      - if: github.ref == 'refs/heads/develop'
+        uses: actions/cache/save@v5
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
 
       - name: Generate JaCoCo Code-coverage-report
         run: ./gradlew jacocoTestReport jacocoAggregatedReport
