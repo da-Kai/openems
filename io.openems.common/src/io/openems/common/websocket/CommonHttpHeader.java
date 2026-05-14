@@ -5,7 +5,8 @@ package io.openems.common.websocket;
  */
 public enum CommonHttpHeader {
     APIKEY("Apikey"),
-    INSTANCE_ID("Instance-Id");
+    INSTANCE_ID("Instance-Id"),
+    EDGE_MANAGER_SECRET("Edge-Manager-Secret");
 
     private final String header;
 
