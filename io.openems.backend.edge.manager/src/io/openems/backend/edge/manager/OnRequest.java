@@ -6,7 +6,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +53,7 @@ public class OnRequest implements io.openems.common.websocket.OnRequest {
 	}
 
 	@Override
-	public CompletableFuture<? extends JsonrpcResponseSuccess> apply(WebSocket ws, JsonrpcRequest request)
+	public CompletableFuture<? extends JsonrpcResponseSuccess> apply(WebsocketConnection ws, JsonrpcRequest request)
 			throws OpenemsNamedException {
 		final var timer = PrometheusMetrics.WEBSOCKET_REQUEST.labelValues(this.name, request.getFullyQualifiedMethod())
 				.startTimer();

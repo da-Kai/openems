@@ -1,4 +1,4 @@
-package io.openems.common.websocket;
+package io.openems.common.websocket.adapter;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;

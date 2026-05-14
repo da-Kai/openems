@@ -1,16 +1,19 @@
 package io.openems.backend.edge.server;
 
+import static io.openems.common.websocket.WebsocketUtils.getAsOptionalString;
 import static io.openems.common.websocket.WebsocketUtils.parseRemoteIdentifier;
-import static org.java_websocket.framing.CloseFrame.REFUSE;
 
-import org.java_websocket.WebSocket;
-import org.java_websocket.handshake.Handshakedata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError;
+import io.openems.common.websocket.CommonHttpHeader;
+import io.openems.common.websocket.HandshakeData;
+import io.openems.common.websocket.WebsocketConnection;
 
 public class OnOpen implements io.openems.common.websocket.OnOpen {
+
+	private static final int CLOSE_POLICY_VIOLATION = 1008; // RFC 6455 Policy Violation
 
 	private final Logger log = LoggerFactory.getLogger(OnOpen.class);
 	private final Runnable connectedEdgesChanged;
@@ -20,18 +23,23 @@ public class OnOpen implements io.openems.common.websocket.OnOpen {
 	}
 
 	@Override
-	public OpenemsError apply(WebSocket ws, Handshakedata handshakedata) {
-		var error = this._apply(ws);
+	public OpenemsError apply(WebsocketConnection ws, HandshakeData handshakedata) {
+		// get apikey from handshake
+		final var apikey = getAsOptionalString(handshakedata, CommonHttpHeader.APIKEY).orElse(null);
+
+		var error = this._apply(ws, apikey);
 		if (error != null) {
-			ws.closeConnection(REFUSE, "Connection to backend failed. Remote [" //
-					+ parseRemoteIdentifier(ws, handshakedata) //
-					+ "] Error: " + error.name() //
-			);
+			ws.close(CLOSE_POLICY_VIOLATION, new StringBuilder() //
+					.append("Connection to backend failed. Apikey [") //
+					.append(apikey).append("]. Remote [") //
+					.append(parseRemoteIdentifier(ws, handshakedata)) //
+					.append("] Error: ").append(error.name()) //
+					.toString());
 		}
 		return error;
 	}
 
-	private OpenemsError _apply(WebSocket ws) {
+	private OpenemsError _apply(WebsocketConnection ws, String apikey) {
 		// get websocket attachment
 		WsData wsData = ws.getAttachment();
 

@@ -2,7 +2,7 @@ package io.openems.backend.edge.server;
 
 import java.util.List;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 
 public class WsData extends io.openems.common.websocket.WsData {
 
@@ -14,7 +14,7 @@ public class WsData extends io.openems.common.websocket.WsData {
 	 */
 	private volatile String edgeId;
 
-	public WsData(WebSocket ws) {
+	public WsData(WebsocketConnection ws) {
 		super(ws);
 	}
 

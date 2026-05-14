@@ -1,6 +1,6 @@
 package io.openems.edge.controller.api.backend;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +17,7 @@ public class OnNotification implements io.openems.common.websocket.OnNotificatio
 	}
 
 	@Override
-	public void accept(WebSocket ws, JsonrpcNotification notification) throws OpenemsException {
+	public void accept(WebsocketConnection ws, JsonrpcNotification notification) throws OpenemsException {
 		this.parent.logWarn(this.log, "Unhandled Notification: " + notification);
 	}
 

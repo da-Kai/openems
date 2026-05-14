@@ -1,6 +1,6 @@
 package io.openems.edge.controller.api.websocket;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +14,7 @@ public class OnClose implements io.openems.common.websocket.OnClose {
 	}
 
 	@Override
-	public void accept(WebSocket ws, int code, String reason, boolean remote) {
+	public void accept(WebsocketConnection ws, int code, String reason, boolean remote) {
 		// get websocket attachment
 		WsData wsData = ws.getAttachment();
 		var user = wsData.getUser();

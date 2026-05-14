@@ -12,7 +12,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
-import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,19 +29,19 @@ import io.openems.common.jsonrpc.base.JsonrpcResponseSuccess;
 public final class OnMessageHandler implements Runnable {
 
 	private final Logger log = LoggerFactory.getLogger(OnMessageHandler.class);
-	private final WebSocket ws;
+	private final WebsocketConnection ws;
 	private final String message;
 	private final OnRequest onRequest;
 	private final OnNotification onNotification;
-	private final BiPredicate<WebSocket, JsonrpcMessage> sendMessage;
+	private final BiPredicate<WebsocketConnection, JsonrpcMessage> sendMessage;
 	private final BiConsumer<Throwable, String> handleInternalError;
 	private final BiConsumer<Logger, String> logWarn;
 
 	public OnMessageHandler(//
-			WebSocket ws, String message, //
+			WebsocketConnection ws, String message, //
 			OnRequest onRequest, //
 			OnNotification onNotification, //
-			BiPredicate<WebSocket, JsonrpcMessage> sendMessage, //
+			BiPredicate<WebsocketConnection, JsonrpcMessage> sendMessage, //
 			BiConsumer<Throwable, String> handleInternalError, //
 			BiConsumer<Logger, String> logWarn) {
 		this.ws = ws;
@@ -75,10 +74,10 @@ public final class OnMessageHandler implements Runnable {
 	/**
 	 * Handle a {@link JsonrpcRequest}.
 	 * 
-	 * @param ws      the {@link WebSocket}
+	 * @param ws      the {@link WebsocketConnection}
 	 * @param request the {@link JsonrpcRequest}
 	 */
-	protected void handleJsonrpcRequest(WebSocket ws, JsonrpcRequest request) {
+	protected void handleJsonrpcRequest(WebsocketConnection ws, JsonrpcRequest request) {
 		CompletableFuture<? extends JsonrpcResponseSuccess> responseFuture;
 		try {
 			responseFuture = this.onRequest.apply(ws, request);
@@ -113,11 +112,11 @@ public final class OnMessageHandler implements Runnable {
 		});
 	}
 
-	private void handleJsonrpcRequestResponse(WebSocket ws, JsonrpcResponse response) {
+	private void handleJsonrpcRequestResponse(WebsocketConnection ws, JsonrpcResponse response) {
 		this.sendMessage.test(ws, response);
 	}
 
-	private void handleJsonrpcRequestException(WebSocket ws, JsonrpcRequest request, Throwable t) {
+	private void handleJsonrpcRequestException(WebsocketConnection ws, JsonrpcRequest request, Throwable t) {
 		// Log Error
 		var log = new StringBuilder() //
 				.append("JSON-RPC Error "); //
@@ -158,10 +157,10 @@ public final class OnMessageHandler implements Runnable {
 	/**
 	 * Handle a {@link JsonrpcResponse}.
 	 * 
-	 * @param ws       the {@link WebSocket}
+	 * @param ws       the {@link WebsocketConnection}
 	 * @param response the {@link JsonrpcResponse}
 	 */
-	protected void handleJsonrpcResponse(WebSocket ws, JsonrpcResponse response) {
+	protected void handleJsonrpcResponse(WebsocketConnection ws, JsonrpcResponse response) {
 		try {
 			WsData wsData = this.ws.getAttachment();
 			wsData.handleJsonrpcResponse(response);
@@ -174,10 +173,10 @@ public final class OnMessageHandler implements Runnable {
 	/**
 	 * Handle a {@link JsonrpcNotification}.
 	 * 
-	 * @param ws           the {@link WebSocket}
+	 * @param ws           the {@link WebsocketConnection}
 	 * @param notification the {@link JsonrpcNotification}
 	 */
-	protected void handleJsonrpcNotification(WebSocket ws, JsonrpcNotification notification) {
+	protected void handleJsonrpcNotification(WebsocketConnection ws, JsonrpcNotification notification) {
 		try {
 			this.onNotification.accept(ws, notification);
 

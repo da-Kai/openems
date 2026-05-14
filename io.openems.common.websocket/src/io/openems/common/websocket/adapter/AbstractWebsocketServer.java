@@ -1,4 +1,4 @@
-package io.openems.common.websocket;
+package io.openems.common.websocket.adapter;
 
 import static io.openems.common.utils.ThreadPoolUtils.shutdownAndAwaitTermination;
 
@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.java_websocket.WebSocket;
 import org.java_websocket.drafts.Draft;
@@ -27,6 +28,20 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import io.openems.common.jsonrpc.base.JsonrpcMessage;
 import io.openems.common.utils.ThreadPoolUtils;
+import io.openems.common.websocket.AbstractWebsocket;
+import io.openems.common.websocket.HandshakeData;
+import io.openems.common.websocket.OnClose;
+import io.openems.common.websocket.OnCloseHandler;
+import io.openems.common.websocket.OnError;
+import io.openems.common.websocket.OnErrorHandler;
+import io.openems.common.websocket.OnInternalError;
+import io.openems.common.websocket.OnMessageHandler;
+import io.openems.common.websocket.OnNotification;
+import io.openems.common.websocket.OnOpen;
+import io.openems.common.websocket.OnOpenHandler;
+import io.openems.common.websocket.OnRequest;
+import io.openems.common.websocket.WebsocketConnection;
+import io.openems.common.websocket.WsData;
 
 public abstract class AbstractWebsocketServer<T extends WsData> extends AbstractWebsocket<T> {
 
@@ -74,8 +89,9 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 
 			@Override
 			public void onOpen(WebSocket ws, ClientHandshake handshake) {
+				var wsConnection = new WebsocketConnectionAdapter(ws);
 				AbstractWebsocketServer.this.execute(new OnOpenHandler(//
-						ws, handshake, //
+						wsConnection, new HandshakeDataAdapter(handshake), //
 						AbstractWebsocketServer.this.getOnOpen(), //
 						AbstractWebsocketServer.this::logWarn, //
 						AbstractWebsocketServer.this::handleInternalError));
@@ -83,8 +99,9 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 
 			@Override
 			public void onMessage(WebSocket ws, String message) {
+				var wsConnection = new WebsocketConnectionAdapter(ws);
 				AbstractWebsocketServer.this.execute(new OnMessageHandler(//
-						ws, message, //
+						wsConnection, message, //
 						AbstractWebsocketServer.this.getOnRequest(), //
 						AbstractWebsocketServer.this.getOnNotification(), //
 						AbstractWebsocketServer.this::sendMessage, //
@@ -94,16 +111,18 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 
 			@Override
 			public void onError(WebSocket ws, Exception ex) {
+				var wsConnection = ws != null ? new WebsocketConnectionAdapter(ws) : null;
 				AbstractWebsocketServer.this.execute(new OnErrorHandler(//
-						ws, ex, //
+						wsConnection, ex, //
 						AbstractWebsocketServer.this.getOnError(), //
 						AbstractWebsocketServer.this::handleInternalError));
 			}
 
 			@Override
 			public void onClose(WebSocket ws, int code, String reason, boolean remote) {
+				var wsConnection = new WebsocketConnectionAdapter(ws);
 				AbstractWebsocketServer.this.execute(new OnCloseHandler(//
-						ws, code, reason, remote, //
+						wsConnection, code, reason, remote, //
 						AbstractWebsocketServer.this.getOnClose(), //
 						AbstractWebsocketServer.this::handleInternalError));
 			}
@@ -197,8 +216,8 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 	 * {@link WsData} attachment.
 	 *
 	 * <p>
-	 * Override this method to validate the incoming handshake request and reject it
-	 * by throwing an {@link InvalidDataException}.
+	 * This adapter-layer method wraps the raw java-websocket types and delegates to
+	 * {@link #onHandshake(WebsocketConnection, HandshakeData)}.
 	 *
 	 * @param ws      the current {@link WebSocket} connection
 	 * @param draft   the negotiated WebSocket {@link Draft}
@@ -206,12 +225,44 @@ public abstract class AbstractWebsocketServer<T extends WsData> extends Abstract
 	 * @return the {@link WsData} object that is attached to the WebSocket
 	 * @throws InvalidDataException if the handshake should be rejected
 	 */
-	protected T onHandshake(WebSocket ws, Draft draft, ClientHandshake request) throws InvalidDataException {
+	final T onHandshake(WebSocket ws, Draft draft, ClientHandshake request) throws InvalidDataException {
+		try {
+			return this.onHandshake(new WebsocketConnectionAdapter(ws), new HandshakeDataAdapter(request));
+		} catch (InvalidDataException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new InvalidDataException(1008 /* CloseFrame.POLICY_VALIDATION */, e.getMessage());
+		}
+	}
+
+	/**
+	 * Handles the WebSocket handshake using domain types and creates the
+	 * connection-specific {@link WsData} attachment.
+	 *
+	 * <p>
+	 * Override this method to validate the incoming handshake and reject it by
+	 * throwing an exception. The exception will be wrapped into an
+	 * {@link InvalidDataException} with close code 1008 (POLICY_VALIDATION) if it
+	 * is not already an {@link InvalidDataException}.
+	 *
+	 * @param ws       the {@link WebsocketConnection}
+	 * @param handshake the incoming {@link HandshakeData}
+	 * @return the {@link WsData} object that is attached to the WebSocket
+	 * @throws Exception if the handshake should be rejected
+	 */
+	protected T onHandshake(WebsocketConnection ws, HandshakeData handshake) throws Exception {
 		return this.createWsData(ws);
 	}
 
-	public Collection<WebSocket> getConnections() {
-		return this.ws.getConnections();
+	/**
+	 * Gets all current connections as {@link WebsocketConnection} instances.
+	 *
+	 * @return the collection of {@link WebsocketConnection}s
+	 */
+	public Collection<WebsocketConnection> getConnections() {
+		return this.ws.getConnections().stream() //
+				.map(WebsocketConnectionAdapter::new) //
+				.collect(Collectors.toUnmodifiableList());
 	}
 
 	/**

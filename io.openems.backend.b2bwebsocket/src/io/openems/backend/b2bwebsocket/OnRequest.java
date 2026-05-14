@@ -4,7 +4,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 
 import io.openems.backend.b2bwebsocket.jsonrpc.request.SubscribeEdgesChannelsRequest;
 import io.openems.backend.common.metadata.User;
@@ -24,7 +24,7 @@ public class OnRequest implements io.openems.common.websocket.OnRequest {
 	}
 
 	@Override
-	public CompletableFuture<? extends JsonrpcResponseSuccess> apply(WebSocket ws, JsonrpcRequest request)
+	public CompletableFuture<? extends JsonrpcResponseSuccess> apply(WebsocketConnection ws, JsonrpcRequest request)
 			throws OpenemsException, OpenemsNamedException {
 		WsData wsData = ws.getAttachment();
 		var user = wsData.getUserWithTimeout(5, TimeUnit.SECONDS);

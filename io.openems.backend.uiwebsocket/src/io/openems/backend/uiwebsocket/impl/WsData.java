@@ -12,7 +12,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.UUID;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.JsonElement;
@@ -83,7 +83,7 @@ public class WsData extends io.openems.common.websocket.WsData {
 	private final RateLimiter limiterGlobal;
 	private final RateLimiter limiterLogMessages = RateLimiter.create(5);
 
-	public WsData(WebSocket ws, int requestLimit) {
+	public WsData(WebsocketConnection ws, int requestLimit) {
 		super(ws);
 		this.limiterGlobal = RateLimiter.create(requestLimit);
 	}

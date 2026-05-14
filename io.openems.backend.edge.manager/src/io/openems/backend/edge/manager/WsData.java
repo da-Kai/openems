@@ -7,7 +7,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.TreeBasedTable;
@@ -30,7 +30,7 @@ public class WsData extends io.openems.common.websocket.WsData {
 
 	private String id;
 
-	protected WsData(WebSocket ws) {
+	protected WsData(WebsocketConnection ws) {
 		super(ws);
 	}
 

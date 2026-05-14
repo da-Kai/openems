@@ -1,6 +1,6 @@
 package io.openems.edge.controller.api.websocket;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,7 +16,7 @@ public class OnError implements io.openems.common.websocket.OnError {
 	}
 
 	@Override
-	public void accept(WebSocket ws, Exception ex) throws OpenemsException {
+	public void accept(WebsocketConnection ws, Exception ex) throws OpenemsException {
 		// get websocket attachment
 		WsData wsData = ws.getAttachment();
 		var user = wsData.getUser();

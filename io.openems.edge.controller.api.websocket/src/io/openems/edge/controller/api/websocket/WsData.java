@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,7 +88,7 @@ public class WsData extends io.openems.common.websocket.WsData {
 
 	private volatile User user;
 
-	public WsData(WebSocket ws, ControllerApiWebsocketImpl parent) {
+	public WsData(WebsocketConnection ws, ControllerApiWebsocketImpl parent) {
 		super(ws);
 		this.parent = parent;
 	}

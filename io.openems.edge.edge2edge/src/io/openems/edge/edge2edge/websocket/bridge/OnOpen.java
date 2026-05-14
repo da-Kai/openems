@@ -2,8 +2,8 @@ package io.openems.edge.edge2edge.websocket.bridge;
 
 import java.util.function.Consumer;
 
-import org.java_websocket.WebSocket;
-import org.java_websocket.handshake.Handshakedata;
+import io.openems.common.websocket.WebsocketConnection;
+import io.openems.common.websocket.HandshakeData;
 
 import io.openems.common.exceptions.OpenemsError;
 
@@ -17,7 +17,7 @@ public class OnOpen implements io.openems.common.websocket.OnOpen {
 	}
 
 	@Override
-	public OpenemsError apply(WebSocket ws, Handshakedata handshakedata) {
+	public OpenemsError apply(WebsocketConnection ws, HandshakeData handshakedata) {
 		this.onStateChange.accept(ConnectionState.AUTHENTICATING);
 		return null;
 	}

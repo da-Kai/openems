@@ -51,7 +51,7 @@ import io.openems.common.session.Role;
 import io.openems.common.types.ChannelAddress;
 import io.openems.common.types.EdgeConfig;
 import io.openems.common.utils.PasswordUtils;
-import io.openems.common.websocket.AbstractWebsocketClient;
+import io.openems.common.websocket.adapter.AbstractWebsocketClient;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.jsonapi.ComponentJsonApi;

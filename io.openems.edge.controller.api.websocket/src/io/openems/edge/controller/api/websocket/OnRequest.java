@@ -3,7 +3,7 @@ package io.openems.edge.controller.api.websocket;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -58,7 +58,7 @@ public class OnRequest implements io.openems.common.websocket.OnRequest {
 	}
 
 	public static final Key<WsData> WS_DATA_KEY = new Key<>("wsData", WsData.class);
-	public static final Key<WebSocket> WEBSOCKET_KEY = new Key<>("websocket", WebSocket.class);
+	public static final Key<WebsocketConnection> WEBSOCKET_KEY = new Key<>("websocket", WebsocketConnection.class);
 
 	private final SingleJsonApiBinder apiBinder = new SingleJsonApiBinder();
 	private Consumer<Call<JsonrpcRequest, JsonrpcResponse>> onCall = FunctionUtils::doNothing;
@@ -77,7 +77,7 @@ public class OnRequest implements io.openems.common.websocket.OnRequest {
 	}
 
 	@Override
-	public CompletableFuture<? extends JsonrpcResponseSuccess> apply(WebSocket ws, JsonrpcRequest request)
+	public CompletableFuture<? extends JsonrpcResponseSuccess> apply(WebsocketConnection ws, JsonrpcRequest request)
 			throws OpenemsNamedException {
 		return this.apiBinder.handleRequest(request, call -> {
 			WsData wsData = ws.getAttachment();

@@ -1,9 +1,9 @@
 package io.openems.backend.uiwebsocket.impl;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 import org.slf4j.Logger;
 
-import io.openems.common.websocket.AbstractWebsocketServer;
+import io.openems.common.websocket.adapter.AbstractWebsocketServer;
 import io.openems.common.websocket.OnClose;
 import io.openems.common.websocket.OnOpen;
 
@@ -26,7 +26,7 @@ public class WebsocketServer extends AbstractWebsocketServer<WsData> {
 	}
 
 	@Override
-	protected WsData createWsData(WebSocket ws) {
+	protected WsData createWsData(WebsocketConnection ws) {
 		return new WsData(ws, this.requestLimit);
 	}
 

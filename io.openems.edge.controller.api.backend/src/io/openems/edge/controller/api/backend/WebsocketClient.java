@@ -7,18 +7,17 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.java_websocket.WebSocket;
-import org.java_websocket.framing.CloseFrame;
-import org.java_websocket.handshake.ClientHandshake;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.openems.common.websocket.AbstractWebsocketClient;
-import io.openems.common.websocket.ClientReconnectorWorker;
 import io.openems.common.websocket.CommonHttpHeader;
+import io.openems.common.websocket.HandshakeData;
 import io.openems.common.websocket.OnClose;
+import io.openems.common.websocket.WebsocketConnection;
 import io.openems.common.websocket.WebsocketUtils;
 import io.openems.common.websocket.WsData;
+import io.openems.common.websocket.adapter.AbstractWebsocketClient;
+import io.openems.common.websocket.adapter.ClientReconnectorWorker;
 import io.openems.edge.common.channel.ChannelUtils;
 import io.openems.edge.controller.api.backend.api.ControllerApiBackend;
 
@@ -34,7 +33,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 
 	protected WebsocketClient(ControllerApiBackendImpl parent, String name, URI serverUri,
 			Map<String, String> httpHeaders, Proxy proxy) {
-		super(name, serverUri, AbstractWebsocketClient.DEFAULT_DRAFT, httpHeaders, proxy, null,
+		super(name, serverUri, httpHeaders, proxy, null,
 				ClientReconnectorWorker.DEFAULT_CONFIG.withEventHandler(e -> onReconnectEvent(parent, e)));
 		this.parent = parent;
 		this.onOpen = new OnOpen(parent);
@@ -44,7 +43,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 			final var serverUriStr = serverUri.toString();
 			final var proxyStr = (proxy != AbstractWebsocketClient.NO_PROXY) ? " via Proxy" : "";
 
-			if (code == CloseFrame.NEVER_CONNECTED || code == CloseFrame.PROTOCOL_ERROR) {
+			if (code == -1 /* CloseFrame.NEVER_CONNECTED */ || code == 1002 /* CloseFrame.PROTOCOL_ERROR */) {
 				this.log.error("Failed to connect to OpenEMS Backend [{}{}]: {}", //
 						serverUriStr, proxyStr, reason);
 			} else {
@@ -64,9 +63,9 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	}
 
 	@Override
-	protected void onWebsocketHandshakeSent(ClientHandshake request) {
+	protected void onWebsocketHandshakeSent(HandshakeData handshake) {
 		final String systemId = WebsocketUtils //
-				.getAsOptionalString(request, CommonHttpHeader.INSTANCE_ID) //
+				.getAsOptionalString(handshake, CommonHttpHeader.INSTANCE_ID) //
 				.orElse("N/A");
 		this.log.info("Initiating handshake with OpenEMS Backend [InstanceID={}]", systemId);
 	}
@@ -97,7 +96,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	}
 
 	@Override
-	protected WsData createWsData(WebSocket ws) {
+	protected WsData createWsData(WebsocketConnection ws) {
 		return new WsData(ws);
 	}
 
@@ -117,7 +116,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	}
 
 	public boolean isConnected() {
-		return this.ws.isOpen();
+		return super.isConnected();
 	}
 
 	@Override

@@ -4,8 +4,6 @@ import static io.openems.common.utils.JsonrpcUtils.simplifyJsonrpcMessage;
 import static io.openems.common.utils.StringUtils.toShortString;
 import static io.openems.common.websocket.WebsocketUtils.generateWsDataString;
 
-import org.java_websocket.WebSocket;
-import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,12 +17,12 @@ public abstract class AbstractWebsocket<T extends WsData> {
 
 	/**
 	 * Creates an empty WsData object that is attached to the given
-	 * {@link WebSocket} as early as possible.
+	 * {@link WebsocketConnection} as early as possible.
 	 * 
-	 * @param ws the {@link WebSocket}
+	 * @param ws the {@link WebsocketConnection}
 	 * @return the typed {@link WsData}
 	 */
-	protected abstract T createWsData(WebSocket ws);
+	protected abstract T createWsData(WebsocketConnection ws);
 
 	/**
 	 * Callback for internal error.
@@ -100,17 +98,17 @@ public abstract class AbstractWebsocket<T extends WsData> {
 	protected abstract void execute(Runnable command);
 
 	/**
-	 * Sends a {@link JsonrpcMessage} to the {@link WebSocket}. Returns true if
-	 * sending was successful, otherwise false. Also logs a warning in that case.
+	 * Sends a {@link JsonrpcMessage} to the {@link WebsocketConnection}. Returns
+	 * true if sending was successful, otherwise false. Also logs a warning in that
+	 * case.
 	 *
-	 * @param ws      the {@link WebSocket}
+	 * @param ws      the {@link WebsocketConnection}
 	 * @param message the {@link JsonrpcMessage}
 	 * @return true if sending was successful
 	 */
-	protected final boolean sendMessage(WebSocket ws, JsonrpcMessage message) {
+	protected final boolean sendMessage(WebsocketConnection ws, JsonrpcMessage message) {
 		if (!ws.isOpen()) {
-			// Catch status before to avoid throwing an expensive
-			// WebsocketNotConnectedException
+			// Catch status before to avoid throwing an expensive exception
 			this.sendMessageFailedLog(ws, message);
 			return false;
 		}
@@ -119,14 +117,14 @@ public abstract class AbstractWebsocket<T extends WsData> {
 			ws.send(message.toString());
 			return true;
 
-		} catch (WebsocketNotConnectedException e) {
+		} catch (RuntimeException e) {
 			// Fallback for race condition if Connection was closed inbetween
 			this.sendMessageFailedLog(ws, message);
 			return false;
 		}
 	}
 
-	private void sendMessageFailedLog(WebSocket ws, JsonrpcMessage message) {
+	private void sendMessageFailedLog(WebsocketConnection ws, JsonrpcMessage message) {
 		final var b = new StringBuilder();
 
 		var wsDataString = generateWsDataString(ws);

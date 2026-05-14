@@ -7,7 +7,7 @@ import static java.util.concurrent.CompletableFuture.failedFuture;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +31,7 @@ public class OnRequest implements io.openems.common.websocket.OnRequest {
 	}
 
 	@Override
-	public CompletableFuture<? extends JsonrpcResponseSuccess> apply(WebSocket ws, JsonrpcRequest request) {
+	public CompletableFuture<? extends JsonrpcResponseSuccess> apply(WebsocketConnection ws, JsonrpcRequest request) {
 		final var timer = PrometheusMetrics.WEBSOCKET_REQUEST.labelValues(this.name, request.getFullyQualifiedMethod())
 				.startTimer();
 

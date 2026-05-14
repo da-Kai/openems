@@ -57,6 +57,7 @@
 	io.openems.backend.metrics.prometheus;version=snapshot,\
 	io.openems.common;version=snapshot,\
 	io.openems.common.bridge.http;version=snapshot,\
+	io.openems.common.websocket;version=snapshot,\
 	io.openems.core.logger;version=snapshot;startlevel=16,\
 	io.openems.wrapper.Java-WebSocket;version=snapshot,\
 	io.openems.wrapper.fastexcel;version=snapshot,\

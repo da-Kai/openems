@@ -7,7 +7,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
-import org.java_websocket.WebSocket;
+import io.openems.common.websocket.WebsocketConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,8 +16,8 @@ import com.google.gson.JsonElement;
 import io.openems.common.types.ChannelAddress;
 import io.openems.common.types.EdgeConfig;
 import io.openems.common.utils.FunctionUtils;
-import io.openems.common.websocket.AbstractWebsocketClient;
-import io.openems.common.websocket.ClientReconnectorWorker;
+import io.openems.common.websocket.adapter.AbstractWebsocketClient;
+import io.openems.common.websocket.adapter.ClientReconnectorWorker;
 import io.openems.common.websocket.OnClose;
 import io.openems.common.websocket.WsData;
 
@@ -39,7 +39,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 			Consumer<EdgeConfig> onEdgeConfig, //
 			Runnable onChannelChange //
 	) {
-		super(name, serverUri, DEFAULT_DRAFT, httpHeaders, proxy, null /* onConnectedChange */,
+		super(name, serverUri, httpHeaders, proxy, null /* onConnectedChange */,
 				new ClientReconnectorWorker.Config(5, 10, 5, FunctionUtils::doNothing));
 		this.onOpen = new OnOpen(onStateChange);
 		this.onNotification = new OnNotification(onCurrentData, onEdgeConfig, onChannelChange);
@@ -84,7 +84,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	}
 
 	@Override
-	protected WsData createWsData(WebSocket ws) {
+	protected WsData createWsData(WebsocketConnection ws) {
 		return new WsData(ws);
 	}
 
@@ -104,7 +104,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	}
 
 	public boolean isConnected() {
-		return this.ws.isOpen();
+		return super.isConnected();
 	}
 
 	@Override

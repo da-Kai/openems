@@ -8,8 +8,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-import org.java_websocket.WebSocket;
-import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,11 +30,11 @@ public class WsData {
 	private final Logger log = LoggerFactory.getLogger(WsData.class);
 
 	/**
-	 * Holds the WebSocket.
+	 * Holds the WebSocket connection.
 	 */
-	private final WebSocket websocket;
+	private final WebsocketConnection websocket;
 
-	public WsData(WebSocket ws) {
+	public WsData(WebsocketConnection ws) {
 		this.websocket = ws;
 	}
 
@@ -62,11 +60,11 @@ public class WsData {
 	}
 
 	/**
-	 * Gets the WebSocket. Possibly null!
+	 * Gets the WebSocket connection. Possibly null!
 	 *
-	 * @return the WebSocket instance
+	 * @return the {@link WebsocketConnection} instance
 	 */
-	public WebSocket getWebsocket() {
+	public WebsocketConnection getWebsocket() {
 		return this.websocket;
 	}
 
@@ -113,8 +111,8 @@ public class WsData {
 		try {
 			this.websocket.send(message.toString());
 			return true;
-		} catch (WebsocketNotConnectedException e) {
-			// handles corner cases
+		} catch (RuntimeException e) {
+			// handles corner cases (e.g. WebsocketNotConnectedException)
 			return false;
 		}
 	}

@@ -1,42 +1,39 @@
 package io.openems.common.websocket;
 
-import org.java_websocket.WebSocket;
-import org.java_websocket.handshake.Handshakedata;
-
 import java.util.Optional;
 import java.util.UUID;
 
 public class WebsocketUtils {
 
 	/**
-	 * Gets a String value from a {@link Handshakedata}.
+	 * Gets a String value from a {@link HandshakeData}.
 	 * 
 	 * <p>
 	 * NOTE: Per <a href=
 	 * "https://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2">specification</a>
 	 * "Field names are case-insensitive".
 	 *
-	 * @param handshakedata the {@link Handshakedata}
+	 * @param handshakedata the {@link HandshakeData}
 	 * @param fieldName     the name of the field
 	 * @return the field value; or null
 	 */
-	public static String getAsString(Handshakedata handshakedata, String fieldName) {
+	public static String getAsString(HandshakeData handshakedata, String fieldName) {
 		return getAsOptionalString(handshakedata, fieldName).orElse(null);
 	}
 
 	/**
-	 * Gets a String value from a {@link Handshakedata}.
+	 * Gets a String value from a {@link HandshakeData}.
 	 *
 	 * <p>
 	 * NOTE: Per <a href=
 	 * "https://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2">specification</a>
 	 * "Field names are case-insensitive".
 	 *
-	 * @param handshakedata the {@link Handshakedata}
+	 * @param handshakedata the {@link HandshakeData}
 	 * @param fieldName     the name of the field
 	 * @return the field value as optional; empty if not found
 	 */
-	public static Optional<String> getAsOptionalString(Handshakedata handshakedata, String fieldName) {
+	public static Optional<String> getAsOptionalString(HandshakeData handshakedata, String fieldName) {
 		for (var iter = handshakedata.iterateHttpFields(); iter.hasNext();) {
 			var field = iter.next();
 			if (fieldName.equalsIgnoreCase(field)) {
@@ -47,35 +44,35 @@ public class WebsocketUtils {
 	}
 
 	/**
-	 * Gets a String value from a {@link Handshakedata}.
+	 * Gets a String value from a {@link HandshakeData}.
 	 *
 	 * <p>
 	 * NOTE: Per <a href=
 	 * "https://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2">specification</a>
 	 * "Field names are case-insensitive".
 	 *
-	 * @param handshakedata the {@link Handshakedata}
-	 * @param header		the header to search for
+	 * @param handshakedata the {@link HandshakeData}
+	 * @param header        the header to search for
 	 * @return the field value as optional; empty if not found
 	 */
-	public static Optional<String> getAsOptionalString(Handshakedata handshakedata, CommonHttpHeader header) {
+	public static Optional<String> getAsOptionalString(HandshakeData handshakedata, CommonHttpHeader header) {
 		return getAsOptionalString(handshakedata, header.asString());
 	}
 
 	/**
-	 * Gets a UUID value from a {@link Handshakedata}.
+	 * Gets a UUID value from a {@link HandshakeData}.
 	 *
 	 * <p>
 	 * NOTE: Per <a href=
 	 * "https://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2">specification</a>
 	 * "Field names are case-insensitive".
 	 *
-	 * @param handshakedata the {@link Handshakedata}
-	 * @param header     	the header to search for
+	 * @param handshakedata the {@link HandshakeData}
+	 * @param header        the header to search for
 	 * @return the field value as optional; empty if not found or not a valid UUID
 	 */
-	public static Optional<UUID> getAsOptionalUuid(Handshakedata handshakedata, CommonHttpHeader header) {
-		return getAsOptionalString(handshakedata, header)
+	public static Optional<UUID> getAsOptionalUuid(HandshakeData handshakedata, CommonHttpHeader header) {
+		return getAsOptionalString(handshakedata, header) //
 				.map((raw) -> {
 					try {
 						return UUID.fromString(raw);
@@ -89,17 +86,17 @@ public class WebsocketUtils {
 			"Forwarded", "X-Forwarded-For", "X-Real-IP" };
 
 	/**
-	 * Parses a identifier for the Remote from the {@link Handshakedata}.
+	 * Parses a identifier for the Remote from the {@link HandshakeData}.
 	 * 
 	 * <p>
 	 * Tries to use the headers "Forwarded", "X-Forwarded-For" or "X-Real-IP". Falls
 	 * back to `ws.getRemoteSocketAddress()`. See https://serverfault.com/a/920060
 	 * 
-	 * @param ws            the {@link WebSocket}
-	 * @param handshakedata the {@link Handshakedata}
+	 * @param ws            the {@link WebsocketConnection}
+	 * @param handshakedata the {@link HandshakeData}
 	 * @return an identifier String
 	 */
-	public static String parseRemoteIdentifier(WebSocket ws, Handshakedata handshakedata) {
+	public static String parseRemoteIdentifier(WebsocketConnection ws, HandshakeData handshakedata) {
 		for (var key : REMOTE_IDENTIFICATION_HEADERS) {
 			var value = getAsString(handshakedata, key);
 			if (value != null) {
@@ -111,13 +108,13 @@ public class WebsocketUtils {
 	}
 
 	/**
-	 * Gets the toLogString() content of the WsData attachment of the WebSocket; or
-	 * empty string if not available.
+	 * Gets the toLogString() content of the WsData attachment of the
+	 * WebsocketConnection; or empty string if not available.
 	 *
-	 * @param ws the WebSocket
+	 * @param ws the {@link WebsocketConnection}
 	 * @return the {@link WsData#toLogString()} content
 	 */
-	public static String generateWsDataString(WebSocket ws) {
+	public static String generateWsDataString(WebsocketConnection ws) {
 		if (ws == null) {
 			return "";
 		}
