@@ -1,4 +1,4 @@
-package io.openems.common.types;
+package io.openems.common.uri;
 
 import java.net.InetAddress;
 import java.net.URI;

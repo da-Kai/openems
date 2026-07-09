@@ -1,5 +1,6 @@
 package io.openems.common.types;
 
+import io.openems.common.uri.ResolvedURI;
 import org.junit.jupiter.api.Test;
 
 import java.net.Inet4Address;

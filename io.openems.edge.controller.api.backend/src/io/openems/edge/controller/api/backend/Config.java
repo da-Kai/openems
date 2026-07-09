@@ -27,9 +27,6 @@ import java.net.Proxy;
 	@AttributeDefinition(name = "URI", description = "The connection URI to OpenEMS Backend.")
 	String uri() default "";
 
-	@AttributeDefinition(name = "Fallback URIs", description = "Possible alternative routes to the same Backend.")
-	String[] fallbackUris();
-
 	@AttributeDefinition(name = "Proxy Address", description = "The IP address or hostname of the proxy server.")
 	String proxyAddress() default "";
 

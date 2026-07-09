@@ -2,6 +2,7 @@ package io.openems.common.websocket;
 
 import java.net.ConnectException;
 import java.net.Proxy;
+import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -20,8 +21,8 @@ import io.openems.common.jsonrpc.base.JsonrpcMessage;
 import io.openems.common.jsonrpc.base.JsonrpcRequest;
 import io.openems.common.jsonrpc.base.JsonrpcResponseSuccess;
 import io.openems.common.logger.ContextLogger;
-import io.openems.common.types.ResolvedURI;
-import io.openems.common.types.URISet;
+import io.openems.common.uri.ResolvedURI;
+import io.openems.common.uri.URIResolver;
 
 /**
  * A Websocket Client implementation that automatically tries to reconnect a
@@ -37,7 +38,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	private final Proxy proxy;
 	private final Draft draft;
 	private final Map<String, String> httpHeaders;
-	private final URISet serverUris;
+	private final URI serverUri;
 	private final BooleanConsumer onConnectedChange;
 	private final AtomicBoolean isConnected = new AtomicBoolean(false);
 	private final ClientReconnectorWorker reconnectorWorker;
@@ -45,14 +46,14 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	protected AbstractWebsocketClient(String name, WebsocketClientParams params) {
 		super(name);
 		this.log = new ContextLogger(AbstractWebsocketClient.class, name);
-		this.serverUris = params.serverUri();
+		this.serverUri = params.serverUri();
 		this.proxy = params.proxy();
 		this.draft = params.draft();
 		this.httpHeaders = params.httpHeaders();
 		this.onConnectedChange = params.onConnectedChange();
 
 		// Initialize reconnector
-		this.reconnectorWorker = new ClientReconnectorWorker(this, this.serverUris, params.reconnectorConfig());
+		this.reconnectorWorker = new ClientReconnectorWorker(this, this.serverUri, params.reconnectorConfig());
 	}
 
 	private WebSocketClient createWsClient(ResolvedURI uri) {
@@ -195,7 +196,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	 * @throws IllegalStateException on waiting error
 	 */
 	public void startBlocking() throws IllegalStateException {
-		final var resolvedUris = this.serverUris.resolve();
+		final var resolvedUris = URIResolver.resolve(this.serverUri);
 		if (resolvedUris.isEmpty()) {
 			this.log.error("Unable to resolve websocket server URI");
 		}

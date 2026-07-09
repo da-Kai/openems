@@ -7,13 +7,10 @@ import io.openems.common.jsonrpc.base.JsonrpcResponseSuccess;
 import io.openems.common.jsonrpc.notification.EdgeConfigNotification;
 import io.openems.common.oem.OpenemsEdgeOem;
 import io.openems.common.types.EdgeConfig;
-import io.openems.common.types.URISet;
 import io.openems.common.utils.ThreadPoolUtils;
-import io.openems.common.websocket.AbstractWebsocketClient;
 import io.openems.common.websocket.ClientReconnectorWorker;
 import io.openems.common.websocket.CommonHttpHeader;
 import io.openems.common.websocket.WebsocketClientParams;
-import io.openems.edge.common.channel.ChannelUtils;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -44,7 +41,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -130,21 +126,12 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 		this.apiWorker.setTimeoutSeconds(config.apiTimeout());
 
 		// Get URI
-		final var uris = new ArrayList<URI>();
+		final URI uri;
 		try {
-			var uri = new URI(definedOrElse(config.uri(), this.oem.getBackendApiUrl()));
-			uris.add(uri);
+			uri = new URI(definedOrElse(config.uri(), this.oem.getBackendApiUrl()));
 		} catch (URISyntaxException e) {
 			this.log.error("URI [{}] is invalid: {}", config.uri(), e.getMessage());
 			return;
-		}
-
-		for (String val : config.fallbackUris()) {
-			try {
-				uris.add(new URI(val));
-			} catch (URISyntaxException e) {
-				this.log.warn("Fallback URI [{}] is invalid: {}", val, e.getMessage());
-			}
 		}
 
 		// Get Proxy configuration
@@ -159,7 +146,7 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 		httpHeaders.put(CommonHttpHeader.APIKEY.asString(), config.apikey());
 		httpHeaders.put(CommonHttpHeader.INSTANCE_ID.asString(), this.instanceId);
 
-		final var uriScheme = uris.getFirst().getScheme();
+		final var uriScheme = uri.getScheme();
 		if (!("https".equalsIgnoreCase(uriScheme) || "wss".equalsIgnoreCase(uriScheme))) {
 			this.log.warn("Insecure or missing URI scheme detected: [{}]. " //
 							+ "This may lead to credential exposure. " //
@@ -168,7 +155,7 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 		}
 
 		// Create Websocket instance
-		this.websocket = new WebsocketClient(this, name, new WebsocketClientParams.Builder(uris) //
+		this.websocket = new WebsocketClient(this, name, new WebsocketClientParams.Builder(uri) //
 				.proxy(proxy) //
 				.httpHeaders(httpHeaders) //
 				.reconnectorConfig(ClientReconnectorWorker.DEFAULT_CONFIG.withEventHandler(this::onReconnectEvent)) //

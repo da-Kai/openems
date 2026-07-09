@@ -2,12 +2,13 @@ package io.openems.common.websocket;
 
 import com.google.common.base.Stopwatch;
 import io.openems.common.logger.LazyContextLogger;
-import io.openems.common.types.URISet;
+import io.openems.common.uri.URIResolver;
 import io.openems.common.utils.FunctionUtils;
 import io.openems.common.worker.AbstractWorker;
 import org.java_websocket.enums.ReadyState;
 import org.slf4j.Logger;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -44,19 +45,19 @@ public class ClientReconnectorWorker extends AbstractWorker {
     private final Logger log;
     private final AbstractWebsocketClient<?> parent;
     private final Config config;
-    private final URISet serverUris;
+    private final URI serverUri;
 
     private final List<String> additionalLogInfos = new CopyOnWriteArrayList<>();
     private String debugLog = null;
 
     private final AtomicBoolean isConnected = new AtomicBoolean(false);
 
-    public ClientReconnectorWorker(AbstractWebsocketClient<?> parent, URISet serverUris, Config config) {
+    public ClientReconnectorWorker(AbstractWebsocketClient<?> parent, URI serverUri, Config config) {
         super(DelayReferencePoint.END_TIME);
 
         this.parent = parent;
         this.config = config;
-        this.serverUris = serverUris;
+        this.serverUri = serverUri;
 
         this.log = new LazyContextLogger(ClientReconnectorWorker.class, parent::getName);
     }
@@ -71,7 +72,7 @@ public class ClientReconnectorWorker extends AbstractWorker {
         }
 
         final var timer = Stopwatch.createStarted();
-        final var retryUris = this.serverUris.resolve();
+        final var retryUris = URIResolver.resolve(this.serverUri);
 
 
         this.debugLog = "Reconnecting...";

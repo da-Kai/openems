@@ -2,7 +2,7 @@ package io.openems.common.websocket;
 
 import com.google.common.base.Stopwatch;
 import io.openems.common.exceptions.OpenemsException;
-import io.openems.common.types.ResolvedURI;
+import io.openems.common.uri.ResolvedURI;
 import io.openems.common.utils.FunctionUtils;
 import org.java_websocket.WebSocketImpl;
 import org.java_websocket.drafts.Draft;
@@ -16,7 +16,6 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;

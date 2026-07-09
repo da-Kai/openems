@@ -1,7 +1,6 @@
 package io.openems.common.websocket;
 
 import io.openems.common.function.BooleanConsumer;
-import io.openems.common.types.URISet;
 import io.openems.common.utils.FunctionUtils;
 import org.java_websocket.drafts.Draft;
 import org.java_websocket.drafts.Draft_6455;
@@ -9,16 +8,13 @@ import org.java_websocket.extensions.permessage_deflate.PerMessageDeflateExtensi
 
 import java.net.Proxy;
 import java.net.URI;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
  * Configuration parameters for an {@link AbstractWebsocketClient}.
  *
- * @param serverUri         the websocket server URIs to resolve and try in order
+ * @param serverUri         the websocket server URI to resolve
  * @param draft             the websocket draft to use for the connection handshake
  * @param httpHeaders       additional HTTP headers to send during the handshake
  * @param proxy             the proxy to use, or {@code null} if no proxy should be used
@@ -26,7 +22,7 @@ import java.util.Map;
  *                          changes
  * @param reconnectorConfig configuration for automatic reconnect attempts
  */
-public record WebsocketClientParams(URISet serverUri, Draft draft, Map<String, String> httpHeaders, Proxy proxy,
+public record WebsocketClientParams(URI serverUri, Draft draft, Map<String, String> httpHeaders, Proxy proxy,
                                     BooleanConsumer onConnectedChange,
                                     ClientReconnectorWorker.Config reconnectorConfig) {
 
@@ -52,7 +48,7 @@ public record WebsocketClientParams(URISet serverUri, Draft draft, Map<String, S
 	 * callback and {@link ClientReconnectorWorker#DEFAULT_CONFIG}.
 	 */
 	public static class Builder {
-		private final URISet serverUri;
+		private final URI serverUri;
 
 		private Draft draft = DEFAULT_DRAFT;
 		private Map<String, String> httpHeaders = NO_HTTP_HEADERS;
@@ -61,22 +57,13 @@ public record WebsocketClientParams(URISet serverUri, Draft draft, Map<String, S
 		private ClientReconnectorWorker.Config reconnectorConfig = ClientReconnectorWorker.DEFAULT_CONFIG;
 
 		/**
-		 * Creates a builder from a list of candidate websocket server URIs.
-		 *
-		 * @param serverUris the server URIs to try
-		 */
-		public Builder(List<URI> serverUris) {
-			this.serverUri = new URISet(serverUris);
-		}
-
-		/**
 		 * Creates a builder from a variable number of candidate websocket server
 		 * URIs.
 		 *
-		 * @param serverUris the server URIs to try
+		 * @param serverUri the server URIs to try
 		 */
-		public Builder(URI... serverUris) {
-			this.serverUri = new URISet(serverUris);
+		public Builder(URI serverUri) {
+			this.serverUri = serverUri;
 		}
 
 		/**
