@@ -1,6 +1,5 @@
 package io.openems.edge.edge2edge.websocket.bridge;
 
-import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toMap;
 
 import java.io.IOException;
@@ -18,6 +17,9 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import io.openems.common.utils.FunctionUtils;
+import io.openems.common.websocket.ClientReconnectorWorker;
+import io.openems.common.websocket.WebsocketClientParams;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -51,7 +53,6 @@ import io.openems.common.session.Role;
 import io.openems.common.types.ChannelAddress;
 import io.openems.common.types.EdgeConfig;
 import io.openems.common.utils.PasswordUtils;
-import io.openems.common.websocket.AbstractWebsocketClient;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.jsonapi.ComponentJsonApi;
@@ -170,8 +171,10 @@ public class Edge2EdgeWebsocketBridgeImpl extends AbstractOpenemsComponent
 		super.activate(context, config.id(), config.alias(), config.enabled());
 		this.config = config;
 
-		this.client = new WebsocketClient(config.id(), URI.create("ws://" + config.ip() + ":" + config.port()),
-				emptyMap(), AbstractWebsocketClient.NO_PROXY, this::setConnectionState, this::onCurrentData,
+		var wsConfig = new WebsocketClientParams.Builder(URI.create("ws://" + config.ip() + ":" + config.port())) //
+				.reconnectorConfig(new ClientReconnectorWorker.Config(5, 10, 5, FunctionUtils::doNothing)) //
+				.build();
+		this.client = new WebsocketClient(config.id(), wsConfig, this::setConnectionState, this::onCurrentData,
 				this::onEdgeConfig, this::onChannelChange);
 
 		this.client.start();

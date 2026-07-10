@@ -3,6 +3,7 @@ package io.openems.edge.controller.ess.fastfrequencyreserve;
 import java.net.URI;
 import java.util.Map;
 
+import io.openems.common.websocket.WebsocketClientParams;
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,8 +26,8 @@ public class TestClient extends AbstractWebsocketClient<WsData> {
 	private OnError onError;
 	private OnClose onClose;
 
-	protected TestClient(URI serverUri, Map<String, String> httpHeaders) {
-		super("JsonTest.Unittest", serverUri, httpHeaders);
+	protected TestClient(WebsocketClientParams params) {
+		super("JsonTest.Unittest", params);
 		this.onOpen = (ws, handshake) -> {
 			return null;
 		};

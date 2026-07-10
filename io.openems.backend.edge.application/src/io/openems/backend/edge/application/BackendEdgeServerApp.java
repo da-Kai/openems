@@ -2,8 +2,12 @@ package io.openems.backend.edge.application;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import io.openems.common.utils.FunctionUtils;
+import io.openems.common.websocket.ClientReconnectorWorker;
+import io.openems.common.websocket.WebsocketClientParams;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -52,9 +56,13 @@ public class BackendEdgeServerApp {
 		this.log.info(line);
 
 		// Prepare Client
-		this.client = new WebsocketClient("Backend.Edge.Client", new URI(config.uri()), config.id(),
+		var wsParams = new WebsocketClientParams.Builder(new URI(config.uri()))
+				.httpHeaders(Map.of("id", config.id()))
+				.onConnectedChange(this::evaluateServerStart)
+				.reconnectorConfig(new ClientReconnectorWorker.Config(100, 30, 2, FunctionUtils::doNothing))
+				.build();
+		this.client = new WebsocketClient("Backend.Edge.Client", wsParams,
 				config.clientPoolSize(), //
-				this::evaluateServerStart, //
 				this::sendRequestToEdge, //
 				this::sendNotificationToEdge, //
 				this.cache::update);
