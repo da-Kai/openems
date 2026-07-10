@@ -53,6 +53,15 @@ public class URIResolver {
 		// utility class
 	}
 
+	private static String toSecondLevelDomain(String domain) {
+		if (domain == null || domain.isEmpty()) {
+			return domain;
+		}
+		domain = domain.replaceAll("^\\.+|\\.+$", "");
+		final var domainParts = domain.split("\\.");
+		return domainParts[domainParts.length - 2] + "."  + domainParts[domainParts.length - 1];
+	}
+
 	private static boolean isSubdomain(String base, String subdomain) {
 		if (base == null || subdomain == null) {
 			return false;
@@ -88,8 +97,9 @@ public class URIResolver {
 				return List.of(uri);
 			}
 
+			final var secondLevelDomain = toSecondLevelDomain(host);
 			final var enumeration = srvAttr.getAll();
-			final var resolvedUris = Stream.generate(() -> {
+			final var srvEntries = Stream.generate(() -> {
 				try {
 					return enumeration.hasMore() ? enumeration.next() : null;
 				} catch (Exception e) {
@@ -113,11 +123,12 @@ public class URIResolver {
 							return new SRVEntry(resolvedPriority, resolvedWeight, resolvedPort, resolvedHost);
 						}
 						return null;
-					}) //
-					.filter(Objects::nonNull) //
-					.sorted(SRVEntry::compareTo) //
+					}).filter(Objects::nonNull).toList();
+
+			final var orderedSrvEntries = SRVEntry.ordered(srvEntries);
+			final var resolvedUris = orderedSrvEntries.stream() //
 					.map(resolvedEntry -> {
-						if (isSubdomain(host, resolvedEntry.host())) {
+						if (resolvedEntry == null || !isSubdomain(secondLevelDomain, resolvedEntry.host())) {
 							return null;
 						}
 						try {
