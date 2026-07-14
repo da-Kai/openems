@@ -228,7 +228,7 @@ public class EdgeManagerImpl extends AbstractOpenemsBackendComponent
 	 * @param edgeId the Edge-ID
 	 * @return the {@link WsData}, or null if not found
 	 */
-	private WsData getWebSocketForEdgeId(String edgeId) {
+	private final WsData getWebSocketForEdgeId(String edgeId) {
 		return this.edgeIdToWsData.get(edgeId);
 	}
 
