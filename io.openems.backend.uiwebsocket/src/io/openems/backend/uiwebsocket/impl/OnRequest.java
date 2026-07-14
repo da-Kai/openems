@@ -68,9 +68,11 @@ public class OnRequest implements io.openems.common.websocket.OnRequest {
 	private final Logger log = LoggerFactory.getLogger(OnRequest.class);
 
 	private final UiWebsocketImpl parent;
+	private final WsSessionRegistry wsSessionRegistry;
 
-	public OnRequest(UiWebsocketImpl parent) {
+	public OnRequest(UiWebsocketImpl parent, WsSessionRegistry wsSessionRegistry) {
 		this.parent = parent;
+		this.wsSessionRegistry = wsSessionRegistry;
 	}
 
 	@Override
@@ -416,8 +418,17 @@ public class OnRequest implements io.openems.common.websocket.OnRequest {
 		for (var edgeId : request.getEdges()) {
 			this.parent.metadata.assertUserRole(user, edgeId, Role.GUEST, SubscribeEdgesRequest.METHOD);
 		}
+
+		// Unsubscribe current
+		for (var edgeId : wsData.getSubscribedEdges()) {
+			this.wsSessionRegistry.unregisterWsDataForEdgeId(edgeId, wsData);
+		}
+
 		// Register subscription in WsData
 		wsData.handleSubscribeEdgesRequest(request.getEdges());
+		for (var edgeId : request.getEdges()) {
+			this.wsSessionRegistry.registerWsDataForEdgeId(edgeId, wsData);
+		}
 
 		// JSON-RPC response
 		return CompletableFuture.completedFuture(new GenericJsonrpcResponseSuccess(request.getId()));

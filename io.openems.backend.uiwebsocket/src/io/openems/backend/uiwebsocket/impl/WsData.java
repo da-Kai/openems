@@ -245,4 +245,8 @@ public class WsData extends io.openems.common.websocket.WsData {
 		this.subscribedChannels.dispose();
 	}
 
+	public Set<String> getSubscribedEdges() {
+		return this.subscribedEdges;
+	}
+
 }
