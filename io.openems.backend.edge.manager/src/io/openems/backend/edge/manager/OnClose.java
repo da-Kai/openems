@@ -2,6 +2,7 @@ package io.openems.backend.edge.manager;
 
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.java_websocket.WebSocket;
@@ -15,12 +16,15 @@ public class OnClose implements io.openems.common.websocket.OnClose {
 	private final Logger log = LoggerFactory.getLogger(OnClose.class);
 	private final Function<String, Optional<Edge>> getEdge;
 	private final BiConsumer<Logger, String> logInfo;
+	private final Consumer<String> onEdgeDisconnected;
 
 	public OnClose(//
 			Function<String, Optional<Edge>> getEdge, //
-			BiConsumer<Logger, String> logInfo) {
+			BiConsumer<Logger, String> logInfo, //
+			Consumer<String> onEdgeDisconnected) {
 		this.getEdge = getEdge;
 		this.logInfo = logInfo;
+		this.onEdgeDisconnected = onEdgeDisconnected;
 	}
 
 	@Override
@@ -29,6 +33,7 @@ public class OnClose implements io.openems.common.websocket.OnClose {
 
 		var edgeIds = wsData.onClose();
 		for (var edgeId : edgeIds) {
+			this.onEdgeDisconnected.accept(edgeId);
 			this.getEdge.apply(edgeId).ifPresent(edge -> {
 				edge.setOnline(false);
 			});

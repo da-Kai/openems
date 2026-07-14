@@ -6,12 +6,12 @@ import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import org.osgi.service.component.annotations.Activate;
@@ -70,6 +70,12 @@ public class EdgeManagerImpl extends AbstractOpenemsBackendComponent
 		implements EdgeManager, EventHandler, DebugLoggable {
 
 	private static final String COMPONENT_ID = "edgewebsocket0";
+
+	/**
+	 * Index mapping Edge-ID to the {@link WsData} of the connection that owns it.
+	 * Maintained by {@link #onEdgeConnected} and {@link #onEdgeDisconnected}.
+	 */
+	private final ConcurrentHashMap<String, WsData> edgeIdToWsData = new ConcurrentHashMap<>();
 
 	protected final SystemLogHandler systemLogHandler;
 
@@ -137,16 +143,35 @@ public class EdgeManagerImpl extends AbstractOpenemsBackendComponent
 	}
 
 	/**
+	 * Called when an Edge announces itself as connected via a
+	 * {@link io.openems.backend.common.edge.jsonrpc.ConnectedEdges.Notification}.
+	 * Updates the edge-ID index for O(1) lookups.
+	 *
+	 * @param edgeId the Edge-ID
+	 * @param wsData the {@link WsData} of the owning connection
+	 */
+	protected void onEdgeConnected(String edgeId, WsData wsData) {
+		this.edgeIdToWsData.put(edgeId, wsData);
+	}
+
+	/**
+	 * Called when an Edge disconnects or its connection closes. Removes the
+	 * edge-ID from the index.
+	 *
+	 * @param edgeId the Edge-ID
+	 */
+	protected void onEdgeDisconnected(String edgeId) {
+		this.edgeIdToWsData.remove(edgeId);
+	}
+
+	/**
 	 * Gets whether the Websocket for this Edge is connected.
 	 *
 	 * @param edgeId the Edge-ID
 	 * @return true if it is online
 	 */
 	protected boolean isOnline(String edgeId) {
-		if (this.server == null) {
-			return false;
-		}
-		return this.server.isOnline(edgeId);
+		return this.edgeIdToWsData.containsKey(edgeId);
 	}
 
 	@Override
@@ -197,36 +222,23 @@ public class EdgeManagerImpl extends AbstractOpenemsBackendComponent
 	}
 
 	/**
-	 * Gets the {@link WsData} of the WebSocket connection for an Edge-ID. If more
-	 * than one connection exists, the first one is returned. Returns null if none
-	 * is found.
+	 * Gets the {@link WsData} of the WebSocket connection for an Edge-ID using the
+	 * O(1) edge-ID index.
 	 *
 	 * @param edgeId the Edge-ID
-	 * @return the {@link WsData}
+	 * @return the {@link WsData}, or null if not found
 	 */
-	private final WsData getWebSocketForEdgeId(String edgeId) {
-		var server = this.server;
-		if (server == null) {
-			return null;
-		}
-		return server.getConnections().stream() //
-				.map(ws -> (WsData) ws.getAttachment()) //
-				.filter(Objects::nonNull) //
-				.filter(wsData -> wsData.containsEdgeId(edgeId)) //
-				.findFirst().orElse(null);
+	private WsData getWebSocketForEdgeId(String edgeId) {
+		return this.edgeIdToWsData.get(edgeId);
 	}
 
 	@Override
 	public final EdgeCache getEdgeCacheForEdgeId(String edgeId) {
-		var server = this.server;
-		if (server == null) {
+		var wsData = this.edgeIdToWsData.get(edgeId);
+		if (wsData == null) {
 			return null;
 		}
-		return server.getConnections().stream() //
-				.map(ws -> (WsData) ws.getAttachment()) //
-				.map(wsData -> wsData.getEdgeCache(edgeId)) //
-				.filter(Objects::nonNull) //
-				.findFirst().orElse(null);
+		return wsData.getEdgeCache(edgeId);
 	}
 
 	@Override

@@ -1,7 +1,5 @@
 package io.openems.backend.edge.manager;
 
-import java.util.Objects;
-
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
 
@@ -38,30 +36,20 @@ public class WebsocketServer extends AbstractWebsocketServer<WsData> {
 				parent.metadata::getEdge, //
 				parent.systemLogHandler::handleSystemLogNotification, //
 				parent::logInfo, //
-				parent::logWarn);
+				parent::logWarn, //
+				parent::onEdgeConnected, //
+				parent::onEdgeDisconnected);
 		this.onError = new OnError(//
 				parent::logWarn);
 		this.onClose = new OnClose(//
 				parent.metadata::getEdge, //
-				parent::logInfo);
+				parent::logInfo, //
+				parent::onEdgeDisconnected);
 	}
 
 	@Override
 	protected WsData createWsData(WebSocket ws) {
 		return new WsData(ws);
-	}
-
-	/**
-	 * Is the given Edge online?.
-	 *
-	 * @param edgeId the Edge-ID
-	 * @return true if it is online.
-	 */
-	public boolean isOnline(String edgeId) {
-		return this.getConnections().stream() //
-				.map(ws -> (WsData) ws.getAttachment()) //
-				.filter(Objects::nonNull) //
-				.anyMatch(wsData -> wsData.containsEdgeId(edgeId));
 	}
 
 	@Override

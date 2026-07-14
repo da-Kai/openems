@@ -6,6 +6,7 @@ import static io.openems.common.utils.JsonUtils.getAsPrimitive;
 
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -47,6 +48,8 @@ public class OnNotification implements io.openems.common.websocket.OnNotificatio
 	private final BiConsumer<String, SystemLogNotification> handleSystemLogNotification;
 	private final BiConsumer<Logger, String> logInfo;
 	private final BiConsumer<Logger, String> logWarn;
+	private final BiConsumer<String, WsData> onEdgeConnected;
+	private final Consumer<String> onEdgeDisconnected;
 
 	public OnNotification(//
 			String name, //
@@ -56,7 +59,9 @@ public class OnNotification implements io.openems.common.websocket.OnNotificatio
 			Function<String, Optional<Edge>> getEdge, //
 			BiConsumer<String, SystemLogNotification> handleSystemLogNotification, //
 			BiConsumer<Logger, String> logInfo, //
-			BiConsumer<Logger, String> logWarn) {
+			BiConsumer<Logger, String> logWarn, //
+			BiConsumer<String, WsData> onEdgeConnected, //
+			Consumer<String> onEdgeDisconnected) {
 		this.name = name;
 		this.eventAdmin = eventAdmin;
 		this.uiWebsocket = uiWebsocket;
@@ -65,6 +70,8 @@ public class OnNotification implements io.openems.common.websocket.OnNotificatio
 		this.handleSystemLogNotification = handleSystemLogNotification;
 		this.logInfo = logInfo;
 		this.logWarn = logWarn;
+		this.onEdgeConnected = onEdgeConnected;
+		this.onEdgeDisconnected = onEdgeDisconnected;
 	}
 
 	@Override
@@ -92,8 +99,14 @@ public class OnNotification implements io.openems.common.websocket.OnNotificatio
 	 */
 	private void handleConnectedEdgesNotification(ConnectedEdges.Notification notification, WsData wsData) {
 		wsData.handleConnectedEdgesNotification(notification, //
-				this::announceOnline, //
-				this::announceOffline, //
+				edgeId -> {
+					this.onEdgeConnected.accept(edgeId, wsData);
+					this.announceOnline(edgeId);
+				}, //
+				edgeId -> {
+					this.announceOffline(edgeId);
+					this.onEdgeDisconnected.accept(edgeId);
+				}, //
 				metrics -> {
 
 					// TODO should be moved to generic metric component

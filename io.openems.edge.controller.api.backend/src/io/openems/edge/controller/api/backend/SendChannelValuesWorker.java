@@ -394,6 +394,11 @@ public class SendChannelValuesWorker {
 				}
 			}
 
+			// Skip sending if nothing has changed since the last successful send
+			if (sendValuesMap.isEmpty()) {
+				return;
+			}
+
 			// Create JSON-RPC notification
 			var message = new TimestampedDataNotification();
 			message.add(timestampMillis, sendValuesMap);
