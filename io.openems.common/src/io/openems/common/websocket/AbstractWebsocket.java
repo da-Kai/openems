@@ -116,13 +116,25 @@ public abstract class AbstractWebsocket<T extends WsData> {
 		}
 
 		try {
-			ws.send(message.toString());
+			final var payload = message.toString();
+			ws.send(payload);
+			this.onTextMessageSent(ws, payload);
 			return true;
 
 		} catch (WebsocketNotConnectedException e) {
 			// Fallback for race condition if Connection was closed inbetween
 			this.sendMessageFailedLog(ws, message);
 			return false;
+		}
+
+		/**
+		 * Callback after a text message was sent successfully.
+		 *
+		 * @param ws      the {@link WebSocket}
+		 * @param message the sent payload
+		 */
+		protected void onTextMessageSent(WebSocket ws, String message) {
+			// nothing
 		}
 	}
 

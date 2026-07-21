@@ -6,6 +6,10 @@ import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -15,6 +19,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
 
 import io.openems.common.websocket.CommonHttpHeader;
 import org.osgi.service.component.ComponentContext;
@@ -95,6 +100,11 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 	protected Config config;
 	/** Used for SubscribeSystemLogRequests. */
 	private ScheduledExecutorService executor;
+	private ScheduledFuture<?> dailyTrafficResetTask;
+	private final LongAdder dailyTransferredBytesSent = new LongAdder();
+	private final LongAdder dailyTransferredBytesReceived = new LongAdder();
+	private final Object dailyTrafficLock = new Object();
+	private LocalDate dailyTrafficDateUtc = null;
 
 	public ControllerApiBackendImpl() {
 		super(//
@@ -124,6 +134,8 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 
 		// initialize ApiWorker
 		this.apiWorker.setTimeoutSeconds(config.apiTimeout());
+		this.resetDailyTrafficCountersIfRequired(this.nowUtcDate());
+		this.scheduleDailyTrafficResetTask();
 
 		// Get URI
 		URI uri = null;
@@ -186,6 +198,10 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 		this.sendChannelValuesWorker.deactivate();
 		if (this.websocket != null) {
 			this.websocket.stop();
+		}
+		if (this.dailyTrafficResetTask != null) {
+			this.dailyTrafficResetTask.cancel(false);
+			this.dailyTrafficResetTask = null;
 		}
 		ThreadPoolUtils.shutdownAndAwaitTermination(this.executor, 5);
 	}
@@ -282,6 +298,59 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 	@Override
 	public String debugLog() {
 		return this.websocket.debugLog();
+	}
+
+	private void scheduleDailyTrafficResetTask() {
+		final var now = ZonedDateTime.now(this.componentManager.getClock()).withZoneSameInstant(ZoneOffset.UTC);
+		final var nextMidnight = now.toLocalDate().plusDays(1).atStartOfDay(ZoneOffset.UTC);
+		final var initialDelayMillis = Math.max(0, nextMidnight.toInstant().toEpochMilli() - now.toInstant().toEpochMilli());
+		this.dailyTrafficResetTask = this.scheduleWithFixedDelay(this::resetDailyTrafficCountersAtMidnightUtc,
+				initialDelayMillis, TimeUnit.DAYS.toMillis(1), TimeUnit.MILLISECONDS);
+	}
+
+	private void resetDailyTrafficCountersAtMidnightUtc() {
+		this.resetDailyTrafficCountersIfRequired(this.nowUtcDate());
+	}
+
+	private LocalDate nowUtcDate() {
+		return ZonedDateTime.now(this.componentManager.getClock()).withZoneSameInstant(ZoneOffset.UTC).toLocalDate();
+	}
+
+	private void resetDailyTrafficCountersIfRequired(LocalDate dateUtc) {
+		synchronized (this.dailyTrafficLock) {
+			if (dateUtc.equals(this.dailyTrafficDateUtc)) {
+				return;
+			}
+			this.dailyTransferredBytesSent.reset();
+			this.dailyTransferredBytesReceived.reset();
+			this.dailyTrafficDateUtc = dateUtc;
+			this.updateDailyTrafficChannels();
+		}
+	}
+
+	private void updateDailyTrafficChannels() {
+		this.getDailyTransferredBytesSentChannel().setNextValue(this.dailyTransferredBytesSent.sum());
+		this.getDailyTransferredBytesReceivedChannel().setNextValue(this.dailyTransferredBytesReceived.sum());
+	}
+
+	protected void onBackendPayloadSent(String payload) {
+		this.onBackendPayloadTransferred(payload, this.dailyTransferredBytesSent);
+	}
+
+	protected void onBackendPayloadReceived(String payload) {
+		this.onBackendPayloadTransferred(payload, this.dailyTransferredBytesReceived);
+	}
+
+	private void onBackendPayloadTransferred(String payload, LongAdder counter) {
+		if (payload == null || payload.isEmpty()) {
+			return;
+		}
+
+		synchronized (this.dailyTrafficLock) {
+			this.resetDailyTrafficCountersIfRequired(this.nowUtcDate());
+			counter.add(payload.getBytes(StandardCharsets.UTF_8).length);
+			this.updateDailyTrafficChannels();
+		}
 	}
 
 }

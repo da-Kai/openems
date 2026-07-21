@@ -4,6 +4,7 @@ import java.net.Proxy.Type;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import io.openems.common.channel.PersistencePriority;
@@ -21,6 +22,10 @@ public class ControllerApiBackendImplTest {
 	public void test() throws Exception {
 
 		try (final var server = DummyWebsocketServer.create() //
+				.onOpen((ws, handshakedata) -> {
+					ws.send("{\"jsonrpc\":\"2.0\",\"method\":\"dummy/notification\"}");
+					return null;
+				}) //
 				.build()) {
 			server.start();
 
@@ -51,6 +56,10 @@ public class ControllerApiBackendImplTest {
 							.setAggregationPriority(PersistencePriority.VERY_LOW) //
 							.setResendPriority(PersistencePriority.MEDIUM) //
 							.build());
+
+			Thread.sleep(500);
+			Assert.assertTrue(sut.getDailyTransferredBytesSentChannel().value().orElse(0L) > 0);
+			Assert.assertTrue(sut.getDailyTransferredBytesReceivedChannel().value().orElse(0L) > 0);
 
 			// Stop connection
 			sut.deactivate();

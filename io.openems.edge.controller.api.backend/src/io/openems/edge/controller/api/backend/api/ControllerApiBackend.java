@@ -38,6 +38,12 @@ public interface ControllerApiBackend extends Controller, OpenemsComponent, Even
 		 * in java. The channel is used for better reporting.
 		 */
 		CONNECTION_CLOSE_FAILURE(Doc.of(BOOLEAN)), //
+		DAILY_TRANSFERRED_BYTES_SENT(Doc.of(OpenemsType.LONG) //
+				.unit(Unit.NONE) //
+				.text("Total bytes sent to Backend since midnight UTC")), //
+		DAILY_TRANSFERRED_BYTES_RECEIVED(Doc.of(OpenemsType.LONG) //
+				.unit(Unit.NONE) //
+				.text("Total bytes received from Backend since midnight UTC")), //
 
 		;
 
@@ -78,6 +84,24 @@ public interface ControllerApiBackend extends Controller, OpenemsComponent, Even
 	 */
 	public default LongReadChannel getLastSuccessFulResendChannel() {
 		return this.channel(ChannelId.LAST_SUCCESSFUL_RESEND);
+	}
+
+	/**
+	 * Gets the Channel for {@link ChannelId#DAILY_TRANSFERRED_BYTES_SENT}.
+	 *
+	 * @return the Channel
+	 */
+	public default LongReadChannel getDailyTransferredBytesSentChannel() {
+		return this.channel(ChannelId.DAILY_TRANSFERRED_BYTES_SENT);
+	}
+
+	/**
+	 * Gets the Channel for {@link ChannelId#DAILY_TRANSFERRED_BYTES_RECEIVED}.
+	 *
+	 * @return the Channel
+	 */
+	public default LongReadChannel getDailyTransferredBytesReceivedChannel() {
+		return this.channel(ChannelId.DAILY_TRANSFERRED_BYTES_RECEIVED);
 	}
 
 	/**

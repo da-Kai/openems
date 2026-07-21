@@ -107,6 +107,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 
 			@Override
 			public void onMessage(String message) {
+				AbstractWebsocketClient.this.onTextMessageReceived(message);
 				AbstractWebsocketClient.this.execute(new OnMessageHandler(//
 						AbstractWebsocketClient.this.ws, message, //
 						AbstractWebsocketClient.this.getOnRequest(), //
@@ -186,6 +187,15 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	}
 
 	/**
+	 * Callback when a text message was received.
+	 *
+	 * @param message the received payload
+	 */
+	protected void onTextMessageReceived(String message) {
+		// nothing
+	}
+
+	/**
 	 * Starts the websocket client.
 	 */
 	@Override
@@ -248,7 +258,11 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	 */
 	public CompletableFuture<JsonrpcResponseSuccess> sendRequest(JsonrpcRequest request) {
 		WsData wsData = this.ws.getAttachment();
-		return wsData.send(request);
+		final var future = wsData.send(request);
+		if (!future.isCompletedExceptionally()) {
+			this.onTextMessageSent(this.ws, request.toString());
+		}
+		return future;
 	}
 
 	/**
