@@ -29,9 +29,11 @@ import io.openems.common.websocket.AbstractWebsocketServer;
 public final class WebsocketServer extends AbstractWebsocketServer<WsData> {
 
 	/**
-	 * API-key must be 8–256 characters of URL-safe base64-alphabet characters.
-	 * Intentionally permissive to accommodate various key generation schemes while
-	 * still rejecting obviously malformed input.
+	 * Permissive API-key validation pattern: allows alphanumeric characters plus
+	 * common Base64, URL-safe, and path characters ({@code + / = _ : @ . -}).
+	 * The primary goal is to reject null, blank, or excessively long keys and to
+	 * block control characters or whitespace before the value reaches the
+	 * authentication function.
 	 */
 	private static final Pattern APIKEY_PATTERN = Pattern.compile("[A-Za-z0-9+/=_:@.\\-]{8,256}");
 

@@ -71,7 +71,9 @@ public class WsData {
 	public void dispose() {
 		this.debugLog(this.log, () -> "dispose() Futures[" + this.requestFutures.mappingCount() + "]");
 
-		this.futureTimeoutScheduler.shutdownNow();
+		// Stop accepting new timeout tasks. Existing pending tasks are harmless — they
+		// check the map before acting and will find it empty after the clear below.
+		this.futureTimeoutScheduler.shutdown();
 
 		if (!this.requestFutures.isEmpty()) {
 			final var e = new OpenemsException("Websocket connection closed");
