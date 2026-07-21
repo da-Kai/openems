@@ -18,6 +18,8 @@ import io.openems.edge.common.test.DummyCycle;
 
 public class ControllerApiBackendImplTest {
 
+	private static final int WAIT_FOR_TRAFFIC_TIMEOUT_MILLIS = 5000;
+
 	@Test
 	public void test() throws Exception {
 
@@ -57,7 +59,12 @@ public class ControllerApiBackendImplTest {
 							.setResendPriority(PersistencePriority.MEDIUM) //
 							.build());
 
-			Thread.sleep(500);
+			var end = System.currentTimeMillis() + WAIT_FOR_TRAFFIC_TIMEOUT_MILLIS;
+			while (System.currentTimeMillis() < end
+					&& (sut.getDailyTransferredBytesSentChannel().value().orElse(0L) <= 0
+							|| sut.getDailyTransferredBytesReceivedChannel().value().orElse(0L) <= 0)) {
+				Thread.sleep(50);
+			}
 			Assert.assertTrue(sut.getDailyTransferredBytesSentChannel().value().orElse(0L) > 0);
 			Assert.assertTrue(sut.getDailyTransferredBytesReceivedChannel().value().orElse(0L) > 0);
 

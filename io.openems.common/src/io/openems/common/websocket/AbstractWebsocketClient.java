@@ -3,6 +3,7 @@ package io.openems.common.websocket;
 import java.net.ConnectException;
 import java.net.Proxy;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -107,7 +108,8 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 
 			@Override
 			public void onMessage(String message) {
-				AbstractWebsocketClient.this.onTextMessageReceived(message);
+				final var messageBytes = message.getBytes(StandardCharsets.UTF_8).length;
+				AbstractWebsocketClient.this.onTextMessageReceived(message, messageBytes);
 				AbstractWebsocketClient.this.execute(new OnMessageHandler(//
 						AbstractWebsocketClient.this.ws, message, //
 						AbstractWebsocketClient.this.getOnRequest(), //
@@ -189,9 +191,10 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	/**
 	 * Callback when a text message was received.
 	 *
-	 * @param message the received payload
+	 * @param message      the received payload
+	 * @param messageBytes the received payload size in bytes
 	 */
-	protected void onTextMessageReceived(String message) {
+	protected void onTextMessageReceived(String message, int messageBytes) {
 		// nothing
 	}
 
@@ -258,11 +261,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 	 */
 	public CompletableFuture<JsonrpcResponseSuccess> sendRequest(JsonrpcRequest request) {
 		WsData wsData = this.ws.getAttachment();
-		final var future = wsData.send(request);
-		if (!future.isCompletedExceptionally()) {
-			this.onTextMessageSent(this.ws, request.toString());
-		}
-		return future;
+		return wsData.send(request);
 	}
 
 	/**

@@ -4,6 +4,8 @@ import static io.openems.common.utils.JsonrpcUtils.simplifyJsonrpcMessage;
 import static io.openems.common.utils.StringUtils.toShortString;
 import static io.openems.common.websocket.WebsocketUtils.generateWsDataString;
 
+import java.nio.charset.StandardCharsets;
+
 import org.java_websocket.WebSocket;
 import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import org.slf4j.Logger;
@@ -117,8 +119,12 @@ public abstract class AbstractWebsocket<T extends WsData> {
 
 		try {
 			final var payload = message.toString();
+			final var payloadBytes = payload.getBytes(StandardCharsets.UTF_8).length;
 			ws.send(payload);
-			this.onTextMessageSent(ws, payload);
+			final var wsData = ws.<WsData>getAttachment();
+			if (wsData != null) {
+				wsData.notifyTextMessageSent(payloadBytes);
+			}
 			return true;
 
 		} catch (WebsocketNotConnectedException e) {
@@ -127,15 +133,6 @@ public abstract class AbstractWebsocket<T extends WsData> {
 			return false;
 		}
 
-		/**
-		 * Callback after a text message was sent successfully.
-		 *
-		 * @param ws      the {@link WebSocket}
-		 * @param message the sent payload
-		 */
-		protected void onTextMessageSent(WebSocket ws, String message) {
-			// nothing
-		}
 	}
 
 	private void sendMessageFailedLog(WebSocket ws, JsonrpcMessage message) {

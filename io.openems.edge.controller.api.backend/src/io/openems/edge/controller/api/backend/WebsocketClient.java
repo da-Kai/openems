@@ -98,17 +98,14 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 
 	@Override
 	protected WsData createWsData(WebSocket ws) {
-		return new WsData(ws);
+		final var wsData = new WsData(ws);
+		wsData.setOnTextMessageSent(this.parent::onBackendPayloadSent);
+		return wsData;
 	}
 
 	@Override
-	protected void onTextMessageSent(WebSocket ws, String message) {
-		this.parent.onBackendPayloadSent(message);
-	}
-
-	@Override
-	protected void onTextMessageReceived(String message) {
-		this.parent.onBackendPayloadReceived(message);
+	protected void onTextMessageReceived(String message, int messageBytes) {
+		this.parent.onBackendPayloadReceived(messageBytes);
 	}
 
 	@Override

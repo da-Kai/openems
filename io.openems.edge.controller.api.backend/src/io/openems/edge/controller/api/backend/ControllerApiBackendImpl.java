@@ -6,7 +6,7 @@ import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -100,7 +100,7 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 	protected Config config;
 	/** Used for SubscribeSystemLogRequests. */
 	private ScheduledExecutorService executor;
-	private ScheduledFuture<?> dailyTrafficResetTask;
+	private volatile ScheduledFuture<?> dailyTrafficResetTask;
 	private final LongAdder dailyTransferredBytesSent = new LongAdder();
 	private final LongAdder dailyTransferredBytesReceived = new LongAdder();
 	private final Object dailyTrafficLock = new Object();
@@ -290,6 +290,22 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 		return this.executor.scheduleWithFixedDelay(command, initialDelay, delay, unit);
 	}
 
+	/**
+	 * Schedules a command at a fixed rate using the {@link ScheduledExecutorService}.
+	 *
+	 * @param command      a {@link Runnable}
+	 * @param initialDelay the initial delay
+	 * @param period       the period
+	 * @param unit         the {@link TimeUnit}
+	 * @return a {@link ScheduledFuture}, or null if Executor is shutting down
+	 */
+	public ScheduledFuture<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit) {
+		if (this.executor.isShutdown()) {
+			return null;
+		}
+		return this.executor.scheduleAtFixedRate(command, initialDelay, period, unit);
+	}
+
 	@Override
 	public CompletableFuture<? extends JsonrpcResponseSuccess> sendRequest(User user, JsonrpcRequest request) {
 		return this.websocket.sendRequest(request);
@@ -303,8 +319,8 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 	private void scheduleDailyTrafficResetTask() {
 		final var now = ZonedDateTime.now(this.componentManager.getClock()).withZoneSameInstant(ZoneOffset.UTC);
 		final var nextMidnight = now.toLocalDate().plusDays(1).atStartOfDay(ZoneOffset.UTC);
-		final var initialDelayMillis = Math.max(0, nextMidnight.toInstant().toEpochMilli() - now.toInstant().toEpochMilli());
-		this.dailyTrafficResetTask = this.scheduleWithFixedDelay(this::resetDailyTrafficCountersAtMidnightUtc,
+		final var initialDelayMillis = Math.max(0, Duration.between(now, nextMidnight).toMillis());
+		this.dailyTrafficResetTask = this.scheduleAtFixedRate(this::resetDailyTrafficCountersAtMidnightUtc,
 				initialDelayMillis, TimeUnit.DAYS.toMillis(1), TimeUnit.MILLISECONDS);
 	}
 
@@ -333,22 +349,22 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 		this.getDailyTransferredBytesReceivedChannel().setNextValue(this.dailyTransferredBytesReceived.sum());
 	}
 
-	protected void onBackendPayloadSent(String payload) {
-		this.onBackendPayloadTransferred(payload, this.dailyTransferredBytesSent);
+	protected void onBackendPayloadSent(int transferredBytes) {
+		this.onBackendPayloadTransferred(transferredBytes, this.dailyTransferredBytesSent);
 	}
 
-	protected void onBackendPayloadReceived(String payload) {
-		this.onBackendPayloadTransferred(payload, this.dailyTransferredBytesReceived);
+	protected void onBackendPayloadReceived(int transferredBytes) {
+		this.onBackendPayloadTransferred(transferredBytes, this.dailyTransferredBytesReceived);
 	}
 
-	private void onBackendPayloadTransferred(String payload, LongAdder counter) {
-		if (payload == null || payload.isEmpty()) {
+	private void onBackendPayloadTransferred(int transferredBytes, LongAdder counter) {
+		if (transferredBytes <= 0) {
 			return;
 		}
 
 		synchronized (this.dailyTrafficLock) {
 			this.resetDailyTrafficCountersIfRequired(this.nowUtcDate());
-			counter.add(payload.getBytes(StandardCharsets.UTF_8).length);
+			counter.add(transferredBytes);
 			this.updateDailyTrafficChannels();
 		}
 	}

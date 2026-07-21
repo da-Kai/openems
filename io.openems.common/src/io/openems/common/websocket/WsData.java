@@ -3,9 +3,11 @@ package io.openems.common.websocket;
 import static io.openems.common.utils.JsonrpcUtils.simplifyJsonrpcMessage;
 import static io.openems.common.utils.StringUtils.toShortString;
 
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.IntConsumer;
 import java.util.function.Supplier;
 
 import org.java_websocket.WebSocket;
@@ -35,6 +37,8 @@ public class WsData {
 	 * Holds the WebSocket.
 	 */
 	private final WebSocket websocket;
+	private volatile IntConsumer onTextMessageSentCallback = bytes -> {
+	};
 
 	public WsData(WebSocket ws) {
 		this.websocket = ws;
@@ -111,12 +115,34 @@ public class WsData {
 			return false;
 		}
 		try {
-			this.websocket.send(message.toString());
+			final var payload = message.toString();
+			final var payloadBytes = payload.getBytes(StandardCharsets.UTF_8).length;
+			this.websocket.send(payload);
+			this.notifyTextMessageSent(payloadBytes);
 			return true;
 		} catch (WebsocketNotConnectedException e) {
 			// handles corner cases
 			return false;
 		}
+	}
+
+	/**
+	 * Sets a callback that is called after a text message was sent successfully.
+	 * 
+	 * @param onTextMessageSent the callback
+	 */
+	public void setOnTextMessageSent(IntConsumer onTextMessageSent) {
+		this.onTextMessageSentCallback = onTextMessageSent == null ? bytes -> {
+		} : onTextMessageSent;
+	}
+
+	/**
+	 * Handles callback after a text message was sent successfully.
+	 * 
+	 * @param payloadBytes the sent payload size in bytes
+	 */
+	public void notifyTextMessageSent(int payloadBytes) {
+		this.onTextMessageSentCallback.accept(payloadBytes);
 	}
 
 	/**
