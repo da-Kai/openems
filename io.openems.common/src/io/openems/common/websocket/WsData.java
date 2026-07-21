@@ -6,12 +6,18 @@ import static io.openems.common.utils.StringUtils.toShortString;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import org.java_websocket.WebSocket;
 import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import io.openems.common.exceptions.OpenemsError;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
@@ -41,10 +47,22 @@ public class WsData {
 	}
 
 	/**
+	 * Timeout for pending JSON-RPC request futures. Futures not resolved within
+	 * this duration are failed with a {@link TimeoutException}.
+	 */
+	private static final long REQUEST_TIMEOUT_SECONDS = 30;
+
+	/**
 	 * Holds Futures for JSON-RPC Requests.
 	 */
-	// TODO add timeout to requestFutures
 	private final ConcurrentHashMap<UUID, CompletableFuture<JsonrpcResponseSuccess>> requestFutures = new ConcurrentHashMap<>();
+
+	/**
+	 * Single-threaded scheduler used to expire pending request futures after
+	 * {@link #REQUEST_TIMEOUT_SECONDS}.
+	 */
+	private final ScheduledExecutorService futureTimeoutScheduler = Executors.newSingleThreadScheduledExecutor(
+			new ThreadFactoryBuilder().setNameFormat("ws-future-reaper-%d").setDaemon(true).build());
 
 	/**
 	 * This method is called on close of the parent websocket. Use it to release
@@ -52,6 +70,8 @@ public class WsData {
 	 */
 	public void dispose() {
 		this.debugLog(this.log, () -> "dispose() Futures[" + this.requestFutures.mappingCount() + "]");
+
+		this.futureTimeoutScheduler.shutdownNow();
 
 		if (!this.requestFutures.isEmpty()) {
 			final var e = new OpenemsException("Websocket connection closed");
@@ -73,6 +93,10 @@ public class WsData {
 	/**
 	 * Sends a JSON-RPC request to a Websocket and registers a callback.
 	 *
+	 * <p>
+	 * The returned future is automatically failed with a {@link TimeoutException}
+	 * after {@link #REQUEST_TIMEOUT_SECONDS} seconds if no response is received.
+	 *
 	 * @param request the JSON-RPC Request
 	 * @return a promise for a successful JSON-RPC Response
 	 */
@@ -83,6 +107,17 @@ public class WsData {
 		if (existingFuture != null) {
 			return CompletableFuture.failedFuture(OpenemsError.JSONRPC_ID_NOT_UNIQUE.exception(request.getId()));
 		}
+
+		// Schedule automatic timeout to prevent orphaned futures
+		this.futureTimeoutScheduler.schedule(() -> {
+			var pending = this.requestFutures.remove(request.getId());
+			if (pending != null && !pending.isDone()) {
+				pending.completeExceptionally(
+						new TimeoutException("JSON-RPC request timed out after " + REQUEST_TIMEOUT_SECONDS
+								+ "s: " + request.getMethod()));
+			}
+		}, REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
 		if (!this.sendMessage(request)) {
 			future.completeExceptionally(OpenemsError.JSONRPC_SEND_FAILED.exception());
 		}

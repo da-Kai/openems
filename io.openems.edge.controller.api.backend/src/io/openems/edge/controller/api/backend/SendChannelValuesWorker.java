@@ -62,11 +62,27 @@ public class SendChannelValuesWorker {
 	private final Logger log = LoggerFactory.getLogger(SendChannelValuesWorker.class);
 
 	private final ControllerApiBackendImpl parent;
+
+	/**
+	 * Counts telemetry batches discarded due to send-queue overflow. Incremented
+	 * whenever the queue rejection handler drops a task.
+	 */
+	private final AtomicInteger droppedBatchCount = new AtomicInteger();
+
 	private final ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.SECONDS,
-			new ArrayBlockingQueue<>(1), //
+			new ArrayBlockingQueue<>(3), //
 			new ThreadFactoryBuilder().setNameFormat(ControllerApiBackendImpl.COMPONENT_NAME + ":SendWorker-%d")
 					.build(), //
-			new ThreadPoolExecutor.DiscardOldestPolicy());
+			(r, e) -> {
+				if (!e.isShutdown()) {
+					// Apply discard-oldest semantics while tracking the drop count
+					this.droppedBatchCount.incrementAndGet();
+					this.log.warn("SendChannelValuesWorker: telemetry batch dropped due to queue overflow "
+							+ "(total dropped: {})", this.droppedBatchCount.get());
+					e.getQueue().poll();
+					e.execute(r);
+				}
+			});
 
 	private final ScheduledExecutorService aggregatedExecutor = Executors.newScheduledThreadPool(1,
 			new ThreadFactoryBuilder()
@@ -363,12 +379,17 @@ public class SendChannelValuesWorker {
 			final Map<String, JsonElement> lastAllValues;
 
 			if (this.parent.sendValuesOfAllChannels.getAndSet(false)) {
-				// Send values of all Channels once in a while
+				// Explicitly requested: send values of all Channels (e.g. on reconnect)
 				lastAllValues = ImmutableMap.of();
 
 			} else if (Duration.between(this.parent.lastSendValuesOfAllChannels, this.timestamp)
 					.getSeconds() > SEND_VALUES_OF_ALL_CHANNELS_AFTER_SECONDS) {
-				// Send values of all Channels if explicitly asked for
+				// Periodic safety resync: only force a full send if the values have actually
+				// changed since the last transmission; otherwise reset the timer and skip
+				if (this.allValues.equals(this.parent.lastAllValues)) {
+					this.parent.lastSendValuesOfAllChannels = this.timestamp;
+					return; // nothing changed - skip redundant full sync
+				}
 				lastAllValues = ImmutableMap.of();
 
 			} else {
