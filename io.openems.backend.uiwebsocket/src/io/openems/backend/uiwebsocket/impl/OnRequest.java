@@ -249,7 +249,6 @@ public class OnRequest implements io.openems.common.websocket.OnRequest {
 				}).thenCompose(user -> {
 					return this.handleAuthentication(wsData, request.getId(), user);
 				}).exceptionallyCompose(throwable -> {
-					this.log.info("Authentication failed for username={}", request.usernameOpt.get());
 					return CompletableFuture.failedFuture(OpenemsError.COMMON_AUTHENTICATION_FAILED.exception());
 				});
 	}
