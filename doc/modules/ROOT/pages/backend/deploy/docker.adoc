@@ -163,6 +163,8 @@ to add InfluxDB to your setup, you can do so by adjusting your `docker-compose.y
     hostname: openems_influxdb
     restart: unless-stopped
     volumes:
+      # Keep the data directory on /var/lib/influxdb2 so upgrades do not silently
+      # switch to a different storage layout that may be incompatible with older data.
       - openems-influxdb:/var/lib/influxdb2:rw
     ports:
       - 8086:8086
