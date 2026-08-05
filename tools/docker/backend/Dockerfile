@@ -37,6 +37,8 @@ COPY --from=build_backend --chown=abc:abc /opt/openems-backend.jar /opt/openems/
 
 RUN find /etc/s6-overlay/ -type f -name 'run' -exec chmod +x {} \;
 
+ENV OPENEMS_IPV4_ONLY = "Y"
+
 VOLUME /var/opt/openems/config
 VOLUME /var/opt/openems/data
 
