@@ -1,0 +1,20 @@
+name: "OpenEMS UI-Backend"
+version: "2025.9.0"
+slug: "openems-ui-backend"
+description: "Run OpenEMS UI for Backend inside Home Assistant"
+arch:
+  - amd64
+  - aarch64
+startup: "services"
+init: false
+ports:
+  80/tcp: 80  
+map:
+  - type: config
+    read_only: false
+  - type: ssl
+  - type: addons
+    read_only: false
+  - type: share
+    read_only: false
+image: openems/ui-backend

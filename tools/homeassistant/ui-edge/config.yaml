@@ -1,0 +1,27 @@
+name: "OpenEMS UI-Edge"
+version: "2025.9.0"
+slug: "openems-ui-edge"
+description: "Run OpenEMS UI-Edge inside Home Assistant"
+arch:
+  - amd64
+  - aarch64
+startup: "services"
+init: false
+ports:
+  80/tcp: 80
+  443/tcp: 
+ports_description:
+  80/tcp: "HTTP"
+  443/tcp: "HTTPS"
+map:
+  - type: config
+    read_only: false
+  - type: ssl
+  - type: addons
+    read_only: false
+  - type: share
+    read_only: false
+options:
+  UI_WEBSOCKET: "ws://<hostname>:8085"
+schema:
+  UI_WEBSOCKET: str
