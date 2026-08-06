@@ -122,7 +122,9 @@ public class EdgeManagerImpl extends AbstractOpenemsBackendComponent
 	 */
 	private synchronized void startServer() {
 		if (this.server == null) {
-			this.server = new WebsocketServer(this, this.getName(), this.config.port(), this.config.poolSize());
+			this.server = new WebsocketServer(this, //
+					this.getName(), this.config.port(), //
+					this.config.poolSize(), this.config.secret());
 			this.server.start();
 		}
 	}

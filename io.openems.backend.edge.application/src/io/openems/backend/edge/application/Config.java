@@ -1,6 +1,7 @@
 package io.openems.backend.edge.application;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.AttributeType;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition(//
@@ -18,6 +19,9 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 	@AttributeDefinition(name = "Number of Client-Threads", description = "Pool-Size: the number of threads dedicated to handle the Client tasks")
 	int clientPoolSize() default 10;
+
+	@AttributeDefinition(name = "Backend Secret", description = "A secret that is expected by the Backend, to connect", type = AttributeType.PASSWORD)
+	String backendSecret() default "";
 
 	// Related to Server
 

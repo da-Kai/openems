@@ -2,8 +2,12 @@ package io.openems.backend.edge.application;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import io.openems.common.websocket.CommonHttpHeader;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -40,6 +44,8 @@ public class BackendEdgeServerApp {
 
 	private WebsocketServer server;
 
+	private final UUID instanceId = UUID.randomUUID();
+
 	@Activate
 	public BackendEdgeServerApp(@Reference ConfigurationAdmin cm, Config config) throws URISyntaxException {
 		this.config = config;
@@ -51,8 +57,13 @@ public class BackendEdgeServerApp {
 		this.log.info(message);
 		this.log.info(line);
 
+		final var httpHeaders = new HashMap<String, String>();
+		httpHeaders.put("id", config.id());
+		httpHeaders.put(CommonHttpHeader.EDGE_MANAGER_SECRET.asString(), config.backendSecret());
+		httpHeaders.put(CommonHttpHeader.INSTANCE_ID.asString(), this.instanceId.toString());
+
 		// Prepare Client
-		this.client = new WebsocketClient("Backend.Edge.Client", new URI(config.uri()), config.id(),
+		this.client = new WebsocketClient("Backend.Edge.Client", new URI(config.uri()), httpHeaders,
 				config.clientPoolSize(), //
 				this::evaluateServerStart, //
 				this::sendRequestToEdge, //

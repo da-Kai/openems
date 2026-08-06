@@ -1,6 +1,7 @@
 package io.openems.backend.edge.manager;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.AttributeType;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @ObjectClassDefinition(//
@@ -13,6 +14,9 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 	@AttributeDefinition(name = "Number of Threads", description = "Pool-Size: the number of threads dedicated to handle the tasks")
 	int poolSize() default 10;
+
+	@AttributeDefinition(name = "Secret", description = "A secret that must be provided by the BackendEdgeApp to connect")
+	String secret() default "";
 
 	String webconsole_configurationFactory_nameHint() default "Edge Manager";
 }
