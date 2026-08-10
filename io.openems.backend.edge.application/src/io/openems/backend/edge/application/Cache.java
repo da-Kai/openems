@@ -3,19 +3,26 @@ package io.openems.backend.edge.application;
 import io.openems.backend.common.edge.jsonrpc.UpdateMetadataCache;
 import io.openems.common.function.BooleanConsumer;
 
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class Cache {
 
 	private final BooleanConsumer onInitializedChange;
+	private final AtomicBoolean initialized = new AtomicBoolean(false);
 
-	private volatile UpdateMetadataCache.Notification metadata = UpdateMetadataCache.Notification.empty();
+	private volatile Map<String, String> apikeyToEdgeId = Map.of();
 
 	public Cache(BooleanConsumer onInitializedChange) {
 		this.onInitializedChange = onInitializedChange;
 	}
 
-	protected synchronized void update(UpdateMetadataCache.Notification notification) {
-		this.metadata = notification;
-		this.onInitializedChange.accept(this.isInitialized());
+	protected void update(UpdateMetadataCache.Notification notification) {
+		this.apikeyToEdgeId = Map.copyOf(notification.getApikeysToEdgeIds());
+		final var init = !this.apikeyToEdgeId.isEmpty();
+		if (this.initialized.getAndSet(init) != init) {
+			this.onInitializedChange.accept(init);
+		}
 	}
 
 	/**
@@ -23,8 +30,8 @@ public class Cache {
 	 * 
 	 * @return true if initialized
 	 */
-	public synchronized boolean isInitialized() {
-		return !this.metadata.getApikeysToEdgeIds().isEmpty();
+	public boolean isInitialized() {
+		return this.initialized.get();
 	}
 
 	/**
@@ -37,6 +44,6 @@ public class Cache {
 		if (apikey == null || apikey.isBlank()) {
 			return null;
 		}
-		return this.metadata.getApikeysToEdgeIds().get(apikey);
+		return this.apikeyToEdgeId.get(apikey);
 	}
 }
