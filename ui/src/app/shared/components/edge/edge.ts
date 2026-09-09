@@ -398,7 +398,7 @@ export class Edge {
 
     /** Handles a SystemLogNotification */
     public handleSystemLogNotification(message: SystemLogNotification): void {
-        this.systemLog.next(message.params.line);
+        message.params.lines.forEach(line => this.systemLog.next(line));
     }
 
     /**
