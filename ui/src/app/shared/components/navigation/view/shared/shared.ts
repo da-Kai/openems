@@ -1,10 +1,8 @@
 import { TSignalValue } from "src/app/shared/type/utility";
 import { NumberUtils } from "src/app/shared/utils/number/number-utils";
-import { NavigationComponent } from "../../action-sheet-modal";
 import { NavigationService } from "../../service/navigation.service";
 
 export namespace ViewUtils {
-
     export function getTotalHeaderFooterHeight(): { header: number; footer: number } {
         const bars = getVisibleBars();
 
@@ -17,27 +15,17 @@ export namespace ViewUtils {
         return { header: headerHeight, footer: footerHeight };
     }
 
-
     // Ionic cached pages remain in the DOM even after navigating back.
     // This becomes a problem when reloading on routes like history/autarchy or history/production:
     // After a reload, the previous route's <ion-footer> or <oe-footer-subnavigation>
     // stays in the DOM (but is visually hidden). When returning to the Energy Monitor page,
     // these cached elements would still be detected and included in the height calculation.
     function getVisibleBars(): { headers: HTMLElement[]; footers: HTMLElement[] } {
-        const allHeaders = Array.from(
-            document.querySelectorAll<HTMLElement>("ion-header")
-        );
+        const allHeaders = Array.from(document.querySelectorAll<HTMLElement>("ion-header"));
 
-        const allIonFooters = Array.from(
-            document.querySelectorAll<HTMLElement>("ion-footer")
-        );
-
-        const standaloneFooters = allIonFooters.filter(
-            f => !f.closest("oe-footer-subnavigation")
-        );
-
-        const footersSource =
-            standaloneFooters.length > 0 ? standaloneFooters : allIonFooters;
+        const allIonFooters = Array.from(document.querySelectorAll<HTMLElement>("ion-footer"));
+        const favoriteButtonContent = (document.querySelector<HTMLElement>("oe-favorite-button")?.children ??
+            []) as HTMLCollectionOf<HTMLElement>;
 
         const isVisible = (el: HTMLElement) => {
             const rect = el.getBoundingClientRect();
@@ -46,79 +34,72 @@ export namespace ViewUtils {
                 return false;
             }
             const style = window.getComputedStyle(el);
-            if (style.display === "none") {
-                return false;
-            }
-            if (style.visibility !== "visible") {
-                return false;
-            }
             if (parseFloat(style.opacity || "1") === 0) {
                 return false;
             }
 
             return true;
         };
-
         return {
-            headers: allHeaders.filter(isVisible),
-            footers: footersSource.filter(isVisible),
+            headers: [...allHeaders, ...favoriteButtonContent].filter(isVisible),
+            footers: allIonFooters.filter(isVisible),
         };
+    }
+
+    export function getWindowVisualViewPort() {
+        return window.visualViewport?.height ?? window.innerHeight;
     }
 
     export function getViewHeightInPx(position: TSignalValue<NavigationService["position"]> | null) {
         const { header, footer } = ViewUtils.getTotalHeaderFooterHeight();
-        if (position == null || position == "disabled") {
-            return window.innerHeight - header - footer;
-        }
-        if (position === "bottom") {
-            const actionSheetModal = getActionSheetModalHeightInPx();
-            return window.innerHeight - header - footer - actionSheetModal;
-        }
 
-        return window.innerHeight - header - footer;
+        if (position == null || position == "disabled") {
+            return getWindowVisualViewPort() - header - footer;
+        }
+        return getWindowVisualViewPort() - header - footer;
     }
 
     export function getActionSheetModalHeightInPx() {
-        return window.innerHeight * NavigationComponent.INITIAL_BREAKPOINT;
+        return getWindowVisualViewPort();
+    }
+
+    export function getConfirmButtonHeight() {
+        // button has fixed size of 56 px
+        // TODO: get actual height of the button
+        return 72;
     }
 
     export function getActionSheetModalHeightInVh(position: TSignalValue<NavigationService["position"]> | null) {
         if (position == "bottom") {
-            return (getActionSheetModalHeightInPx() / window.innerHeight) * 100;
+            const combinedHeight = getConfirmButtonHeight() + getActionSheetModalHeightInPx();
+            return (combinedHeight / getWindowVisualViewPort()) * 100;
         }
         return 0;
     }
 
     /**
-    * Gets the available chart content height in [vh].
-    *
-    * @param windowHeight the window height
-    * @param customChartHeightPercentage optional chart height in percent (0–100) to scale the available height to.
-    * @returns the available height
-    */
-    export function getChartContentHeightInVh(windowHeight: number, position: TSignalValue<NavigationService["position"]> | null, customChartHeightPercentage?: number | null): number | null {
-        let viewHeight = ViewUtils.getViewHeightInPx(position);
-        const legendHeight = getLegendHeight();
-
+     * Gets the available chart content height in [vh].
+     *
+     * @param windowHeight The window height
+     * @param customChartHeightPercentage Optional chart height in percent (0–100) to scale the available height to.
+     * @returns The available height
+     */
+    export function getChartContentHeightInVh(
+        position: TSignalValue<NavigationService["position"]> | null,
+        customChartHeightPercentage?: number | null,
+    ): number | null {
         if (customChartHeightPercentage != null) {
-            viewHeight = viewHeight * (customChartHeightPercentage / 100);
-        }
-
-        return NumberUtils.multiplySafely(
-            NumberUtils.divideSafely(
-                NumberUtils.subtractSafely(
-                    viewHeight, legendHeight
+            return NumberUtils.multiplySafely(
+                NumberUtils.multiplySafely(
+                    NumberUtils.divideSafely(ViewUtils.getViewHeightInPx(position), getWindowVisualViewPort()),
+                    100,
                 ),
-                windowHeight),
-            100);
-    }
-
-    function getLegendHeight() {
-        const chartLegend = document.querySelector<HTMLElement>("oe-chart-legend");
-        if (chartLegend == null) {
-            return 0;
+                customChartHeightPercentage / 100,
+            );
         }
-        const legendRow = chartLegend.querySelector<HTMLElement>("ion-row");
-        return legendRow?.clientHeight ?? 0;
+        return NumberUtils.multiplySafely(
+            NumberUtils.divideSafely(ViewUtils.getViewHeightInPx(position), getWindowVisualViewPort()),
+            100,
+        );
     }
 }

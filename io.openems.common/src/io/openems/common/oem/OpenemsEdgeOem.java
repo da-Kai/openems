@@ -3,7 +3,7 @@ package io.openems.common.oem;
 import java.util.Map;
 
 import io.openems.common.session.Language;
-import io.openems.common.types.Tuple;
+import io.openems.common.types.Tuple2;
 
 public interface OpenemsEdgeOem {
 
@@ -151,7 +151,7 @@ public interface OpenemsEdgeOem {
 	 * 
 	 * @return the value
 	 */
-	public default Tuple<String, String> getBmwBatteryAuth() {
+	public default Tuple2<String, String> getBmwBatteryAuth() {
 		return null;
 	}
 
@@ -204,8 +204,14 @@ public interface OpenemsEdgeOem {
 			String appId, //
 			Language language//
 	) {
-		return appToWebsiteUrl.get(appId).getLinkByLanguage(language).filter(s -> !s.isBlank())
-				.or(() -> appToWebsiteUrl.get(appId).getLinkByLanguage(Language.EN).filter(s -> !s.isBlank()))
+		var appLink = appToWebsiteUrl.get(appId);
+		if (appLink == null) {
+			return null;
+		}
+		return appLink.getLinkByLanguage(language) //
+				.filter(s -> !s.isBlank()) //
+				.or(() -> appLink.getLinkByLanguage(Language.EN) //
+						.filter(s -> !s.isBlank()))
 				.orElse("");
 	}
 }

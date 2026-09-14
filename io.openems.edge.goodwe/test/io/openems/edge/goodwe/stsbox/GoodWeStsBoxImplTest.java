@@ -1,11 +1,11 @@
 package io.openems.edge.goodwe.stsbox;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.openems.common.test.DummyConfigurationAdmin;
 import io.openems.edge.bridge.modbus.test.DummyModbusBridge;
 import io.openems.edge.common.test.AbstractComponentTest.TestCase;
 import io.openems.edge.common.test.ComponentTest;
+import io.openems.edge.common.test.DummySerialNumberStorage;
 import io.openems.edge.goodwe.common.enums.EnableDisable;
 import io.openems.edge.goodwe.common.enums.MultiplexingMode;
 
@@ -32,8 +32,8 @@ public class GoodWeStsBoxImplTest {
 
 	private static ComponentTest getComponentTest(int runtime) throws Exception {
 		return new ComponentTest(new GoodWeStsBoxImpl()) //
-				.addReference("cm", new DummyConfigurationAdmin()) //
 				.addReference("setModbus", new DummyModbusBridge("modbus0")) //
+				.addReference("serialNumberStorage", new DummySerialNumberStorage()) //
 				.activate(MyConfig.create() //
 						.setId("sts0") //
 						.setModbusId("modbus0").setModbusUnitId(10) //

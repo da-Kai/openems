@@ -1,5 +1,7 @@
 package io.openems.edge.core.appmanager.dependency.aggregatetask;
 
+import java.util.ArrayList;
+
 import io.openems.common.types.EdgeConfig;
 import io.openems.common.utils.JsonUtils;
 
@@ -51,6 +53,24 @@ public record ComponentDef(String id, String alias, String factoryId, ComponentP
 	}
 
 	/**
+	 * Returns a copy of this {@link ComponentDef} with the new properties added to
+	 * the current properties.
+	 * 
+	 * @param properties the properties to add
+	 * @return copied {@link ComponentDef}
+	 */
+	public ComponentDef withAdditionalProperties(ComponentProperties properties) {
+		if (this.properties.values().stream() //
+				.anyMatch(p1 -> properties.values().stream() //
+						.anyMatch(p2 -> p2.name().equals(p1.name())))) {
+			throw new IllegalArgumentException("Duplicated property found");
+		}
+		final var props = new ArrayList<>(this.properties.values());
+		props.addAll(properties.values());
+		return new ComponentDef(this.id, this.alias, this.factoryId, new ComponentProperties(props), this.config);
+	}
+
+	/**
 	 * Creates a {@link EdgeConfig.Component} from this {@link ComponentDef}.
 	 * 
 	 * @return the {@link EdgeConfig.Component}
@@ -73,5 +93,21 @@ public record ComponentDef(String id, String alias, String factoryId, ComponentP
 		}
 		return new ComponentDef(comp.getId(), comp.getAlias(), comp.getFactoryId(),
 				ComponentProperties.fromMap(comp.getProperties()), Configuration.defaultConfig());
+	}
+
+	/**
+	 * Creates a {@link ComponentDef} from a {@link EdgeConfig.Component} with
+	 * additional {@link Configuration}.
+	 *
+	 * @param comp             the {@link EdgeConfig.Component}
+	 * @param additionalConfig the {@link Configuration}
+	 * @return the {@link ComponentDef}
+	 */
+	public static ComponentDef from(EdgeConfig.Component comp, Configuration additionalConfig) {
+		if (comp == null) {
+			return null;
+		}
+		return new ComponentDef(comp.getId(), comp.getAlias(), comp.getFactoryId(),
+				ComponentProperties.fromMap(comp.getProperties()), additionalConfig);
 	}
 }
