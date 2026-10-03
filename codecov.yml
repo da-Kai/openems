@@ -31,7 +31,7 @@ comment:
   hide_project_coverage: true
 
 component_management:
-  default_rules: 
+  default_rules:
     statuses:
       - type: project
         target: auto
@@ -63,4 +63,4 @@ component_management:
       statuses:
         - type: project
           target: auto
-          threshold: 0.5%  
+          threshold: 0.5%

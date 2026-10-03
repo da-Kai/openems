@@ -6,7 +6,7 @@ on:
     branches:
       - main
       - develop
-  
+
 jobs:
   build-java:
     runs-on: ubuntu-latest
@@ -81,3 +81,27 @@ jobs:
           flags: ui
           directory: ./ui/
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  check-auxiliary-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: prepare
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck yamllint
+
+      - name: lint auxiliary scripts
+        run: |
+          set -e
+          find tools/ -name "*.sh" -exec shellcheck -e SC2120,SC2034 -S warning -x {} \;
+
+      - name: validate yaml files
+        run: |
+          set -e
+          CONFIG="{extends: relaxed, rules: {document-start: disable, line-length: {max: 256}}}"
+          find .github/ \( -name "*.yml" -o -name "*.yaml" \) -exec yamllint -d "${CONFIG}" {} \;
+          find tools/ \( -name "*.yml" -o -name "*.yaml" \) -exec yamllint -d "${CONFIG}" {} \;
+          yamllint -d "${CONFIG}" codecov.yml
+          yamllint -d "${CONFIG}" .gitpod.yml
