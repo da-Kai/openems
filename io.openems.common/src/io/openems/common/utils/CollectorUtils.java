@@ -10,6 +10,7 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeBasedTable;
 
 public final class CollectorUtils {
@@ -50,7 +51,8 @@ public final class CollectorUtils {
 	 */
 	public static final <KEY extends Comparable<KEY>, KEY2 extends Comparable<KEY2>, VALUE> //
 			Collector<Entry<KEY, Map<KEY2, VALUE>>, ?, TreeBasedTable<KEY, KEY2, VALUE>> toTreeBasedTable() {
-		return Collector.of(TreeBasedTable::create, (t, u) -> {
+		return Collector.of(() -> TreeBasedTable.create(Ordering.natural(), Ordering.allEqual()), //
+				(t, u) -> {
 			for (var entry : u.getValue().entrySet()) {
 				t.put(u.getKey(), entry.getKey(), entry.getValue());
 			}

@@ -1,7 +1,11 @@
 package io.openems.common.jsonrpc.notification;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
+import com.google.common.collect.Ordering;
+import com.google.common.collect.Tables;
 import com.google.common.collect.TreeBasedTable;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -35,7 +39,7 @@ public abstract sealed class AbstractDataNotification extends JsonrpcNotificatio
 	protected static TreeBasedTable<Long, String, JsonElement> parseParams(//
 			final JsonObject params //
 	) throws OpenemsNamedException {
-		var data = TreeBasedTable.<Long, String, JsonElement>create();
+		var data = TreeBasedTable.<Long, String, JsonElement>create(Ordering.natural(), Ordering.allEqual());
 		for (var e1 : params.entrySet()) {
 			var timestamp = Long.parseLong(e1.getKey());
 			var jTime = JsonUtils.getAsJsonObject(e1.getValue());

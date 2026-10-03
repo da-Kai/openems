@@ -9,6 +9,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import com.google.gson.JsonPrimitive;
 import org.java_websocket.WebSocket;
 import org.osgi.service.event.EventAdmin;
 import org.slf4j.Logger;
@@ -201,13 +202,18 @@ public class OnNotification implements io.openems.common.websocket.OnNotificatio
 
 		final var timedataManager = this.timedataManager.get();
 		if (timedataManager != null) {
-			// TODO java 21 switch case with type
-			if (message instanceof TimestampedDataNotification timestampNotification) {
-				edgeCache.updateCurrentData(timestampNotification);
-				timedataManager.write(edgeId, timestampNotification);
-			} else if (message instanceof AggregatedDataNotification aggregatedNotification) {
-				edgeCache.updateAggregatedData(aggregatedNotification);
-				timedataManager.write(edgeId, aggregatedNotification);
+			switch (message) {
+				case TimestampedDataNotification timestampNotification -> {
+					edgeCache.updateCurrentData(timestampNotification);
+					timedataManager.write(edgeId, timestampNotification);
+				}
+				case AggregatedDataNotification aggregatedNotification -> {
+					edgeCache.updateAggregatedData(aggregatedNotification);
+					timedataManager.write(edgeId, aggregatedNotification);
+				}
+				default -> {
+					// ignore other types of AbstractDataNotification
+				}
 			}
 		}
 
@@ -221,18 +227,17 @@ public class OnNotification implements io.openems.common.websocket.OnNotificatio
 		var edgeOpt = this.getEdge.apply(edgeId);
 		if (edgeOpt.isPresent()) {
 			var edge = edgeOpt.get();
-			for (var entry : message.getParams().entrySet()) {
-				var d = getAsJsonObject(entry.getValue());
-
-				// set specific Edge values
-				if (d.has("_sum/State") && d.get("_sum/State").isJsonPrimitive()) {
-					var sumState = Level.fromJson(d, "_sum/State").orElse(FAULT);
+			for (var row : message.getData().rowMap().values()) {
+				final var stateJson = row.get("_sum/State");
+				if (stateJson instanceof JsonPrimitive) {
+					var sumState = Level.fromJson(stateJson).orElse(FAULT);;
 					edge.setSumState(sumState);
 				}
 
-				if (d.has("_meta/Version") && d.get("_meta/Version").isJsonPrimitive()) {
-					var version = getAsPrimitive(d, "_meta/Version").getAsString();
-					edge.setVersion(SemanticVersion.fromString(version));
+				var versionJson = row.get("_meta/Version");
+				if (versionJson instanceof JsonPrimitive) {
+					var version = SemanticVersion.fromString(versionJson.getAsString());
+					edge.setVersion(version);
 				}
 			}
 		}
