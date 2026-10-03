@@ -817,4 +817,19 @@ public class JsonUtilsTest {
 		assertEquals("foo", r.get(0).getAsString());
 		assertEquals("bar", r.get(1).getAsString());
 	}
+	
+	@Test
+	public void testToList() throws OpenemsNamedException {
+		var arr = buildJsonArray() //
+				.add("foo") //
+				.add("bar") //
+				.build();
+		var list = JsonUtils.toList(arr, e -> e.getAsString());
+		
+		assertEquals("foo", list.get(0));
+		assertEquals("bar", list.get(1));
+		
+		assertTrue(JsonUtils.toList(new JsonArray(), e -> e).isEmpty());
+		assertThrows(OpenemsNamedException.class, () -> JsonUtils.toList(null, e -> e));
+	}
 }
