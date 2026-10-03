@@ -5,6 +5,7 @@ import static io.openems.common.utils.ThreadPoolUtils.shutdownAndAwaitTerminatio
 
 import java.net.URI;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -51,7 +52,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	 * @param name                   a human readble name
 	 * @param uri                    the connection Uri to OpenEMS Backend
 	 *                               Edge-Manager
-	 * @param id                     unique ID of this Backend Edge Application
+	 * @param httpHeaders			 the HTTP headers to use for the Websocket connection
 	 * @param poolSize               number of threads to handle tasks
 	 * @param onConnectedChange      callback for connection to Edge-Manager status
 	 *                               changes
@@ -62,12 +63,12 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	 * @param updateCache            callback for a {@link Cache} update
 	 */
 	public WebsocketClient(//
-			String name, URI uri, String id, int poolSize, //
+			String name, URI uri, Map<String, String> httpHeaders, int poolSize, //
 			BooleanConsumer onConnectedChange, //
 			BiFunction<String, JsonrpcRequest, CompletableFuture<? extends JsonrpcResponseSuccess>> sendRequestToEdge, //
 			BiConsumer<String, JsonrpcNotification> sendNotificationToEdge, //
 			Consumer<UpdateMetadataCache.Notification> updateCache) {
-		super(name, uri, Map.of("id", id), onConnectedChange,
+		super(name, uri, httpHeaders, onConnectedChange,
 				new ClientReconnectorWorker.Config(100, 30, 2, FunctionUtils::doNothing));
 		this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(poolSize,
 				new ThreadFactoryBuilder().setNameFormat("Backend.Edge.App-%d").build());
