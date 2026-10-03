@@ -1,0 +1,24 @@
+name: "OpenEMS Edge"
+version: "2025.9.0"
+slug: "openems-edge"
+description: "Run OpenEMS Edge inside Home Assistant"
+arch:
+  - amd64
+  - aarch64
+startup: "services"
+init: false
+ports:
+  8080/tcp: 8080
+  8085/tcp: 8085
+ports_description:
+  80/tcp: "HTTP"
+  443/tcp: "HTTPS"
+map:
+  - type: config
+    read_only: false
+  - type: ssl
+  - type: addons
+    read_only: false
+  - type: share
+    read_only: false
+image: openems/edge
