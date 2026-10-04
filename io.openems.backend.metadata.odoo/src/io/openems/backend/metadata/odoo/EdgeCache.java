@@ -50,7 +50,7 @@ public class EdgeCache {
 	 * @throws SQLException     on error
 	 * @throws OpenemsException on error
 	 */
-	public MyEdge addOrUpdate(ResultSet rs) throws SQLException, OpenemsException {
+	public synchronized MyEdge addOrUpdate(ResultSet rs) throws SQLException, OpenemsException {
 		// simple fields
 		var edgeId = PgUtils.getAsString(rs, EdgeDevice.NAME);
 		var odooId = PgUtils.getAsInt(rs, EdgeDevice.ID);
@@ -66,7 +66,9 @@ public class EdgeCache {
 		if (edge == null) {
 			// This is new -> create instance of Edge
 			edge = new MyEdge(this.parent, odooId, edgeId, apikey, comment, version, producttype, lastmessage);
-			this.addEdge(edge);
+			this.edgeIdToEdge.put(edge.getId(), edge);
+			this.odooIdToEdgeId.put(edge.getOdooId(), edge.getId());
+			this.apikeyToEdgeId.put(edge.getApikey(), edge.getId());
 		} else {
 			// Edge exists -> update information
 			edge.setComment(comment);
@@ -76,12 +78,6 @@ public class EdgeCache {
 		}
 
 		return edge;
-	}
-
-	private synchronized void addEdge(MyEdge edge) {
-		this.edgeIdToEdge.putIfAbsent(edge.getId(), edge);
-		this.odooIdToEdgeId.putIfAbsent(edge.getOdooId(), edge.getId());
-		this.apikeyToEdgeId.putIfAbsent(edge.getApikey(), edge.getId());
 	}
 
 	/**
