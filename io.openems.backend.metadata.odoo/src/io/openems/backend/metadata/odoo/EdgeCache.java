@@ -66,9 +66,9 @@ public class EdgeCache {
 		if (edge == null) {
 			// This is new -> create instance of Edge
 			edge = new MyEdge(this.parent, odooId, edgeId, apikey, comment, version, producttype, lastmessage);
-			this.edgeIdToEdge.put(edge.getId(), edge);
-			this.odooIdToEdgeId.put(edge.getOdooId(), edge.getId());
-			this.apikeyToEdgeId.put(edge.getApikey(), edge.getId());
+			this.edgeIdToEdge.put(edgeId, edge);
+			this.odooIdToEdgeId.put(odooId, edgeId);
+			this.apikeyToEdgeId.put(apikey, edgeId);
 		} else {
 			// Edge exists -> update information
 			edge.setComment(comment);
