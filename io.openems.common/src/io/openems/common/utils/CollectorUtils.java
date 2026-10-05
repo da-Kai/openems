@@ -10,7 +10,6 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeBasedTable;
 
 public final class CollectorUtils {

@@ -1,11 +1,7 @@
 package io.openems.common.jsonrpc.notification;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeMap;
 
-import com.google.common.collect.Ordering;
-import com.google.common.collect.Tables;
 import com.google.common.collect.TreeBasedTable;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
