@@ -27,10 +27,8 @@ public class ChannelFilter {
 	 */
 	public static ChannelFilter from(String[] blacklistedChannelAddresses, String[] blacklistedChannelIds) {
 		return new ChannelFilter(//
-				stream(blacklistedChannelAddresses) //
-						.collect(ImmutableSet.toImmutableSet()), //
-				stream(blacklistedChannelIds) //
-						.collect(ImmutableSet.toImmutableSet()));
+				ImmutableSet.copyOf(blacklistedChannelAddresses), //
+				ImmutableSet.copyOf(blacklistedChannelIds));
 	}
 
 	private final ImmutableSet<String> blacklistedChannelAddresses;
