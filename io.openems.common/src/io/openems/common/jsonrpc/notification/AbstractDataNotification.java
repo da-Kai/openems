@@ -39,7 +39,7 @@ public abstract sealed class AbstractDataNotification extends JsonrpcNotificatio
 	protected static TreeBasedTable<Long, String, JsonElement> parseParams(//
 			final JsonObject params //
 	) throws OpenemsNamedException {
-		var data = TreeBasedTable.<Long, String, JsonElement>create(Ordering.natural(), Ordering.allEqual());
+		var data = TreeBasedTable.<Long, String, JsonElement>create();
 		for (var e1 : params.entrySet()) {
 			var timestamp = Long.parseLong(e1.getKey());
 			var jTime = JsonUtils.getAsJsonObject(e1.getValue());
