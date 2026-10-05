@@ -193,8 +193,7 @@ public class OnNotification implements io.openems.common.websocket.OnNotificatio
 	 * @param edgeId  the Edge-ID
 	 * @param wsData  the {@link WsData}
 	 */
-	private void handleDataNotification(AbstractDataNotification message, String edgeId, WsData wsData)
-			throws OpenemsNamedException {
+	private void handleDataNotification(AbstractDataNotification message, String edgeId, WsData wsData) {
 		final var edgeCache = wsData.getEdgeCache(edgeId);
 		if (edgeCache == null) {
 			return;

@@ -2,9 +2,21 @@ package io.openems.backend.timedata.influx;
 
 import static java.util.Arrays.stream;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableSet;
 
 public class ChannelFilter {
+
+	private static final LoadingCache<String, Boolean> CACHE = CacheBuilder.newBuilder() //
+			.maximumSize(3000) //
+			.build(new CacheLoader<>() {
+				@Override
+				public Boolean load(String key) {
+					return checkIfValidComponentId(key);
+				}
+			});
 
 	/**
 	 * Creates a new {@link ChannelFilter} from the provided arguments.
@@ -95,6 +107,10 @@ public class ChannelFilter {
 		if (componentId == null || componentId.length() < 2) {
 			return false;
 		}
+		return CACHE.getUnchecked(componentId);
+    }
+
+	private static boolean checkIfValidComponentId(String componentId) {
 		// core/singleton component
 		if (componentId.startsWith("_")) {
 			if (!isLatinLowerCaseLetter(componentId.charAt(1))) {
