@@ -7,6 +7,8 @@ import io.openems.common.channel.PersistencePriority;
 import io.openems.common.channel.PropertyChannel;
 import io.openems.common.types.CurrencyConfig;
 import io.openems.edge.common.meta.ThirdPartyUsageAcceptance;
+import io.openems.edge.common.meta.types.Environment;
+import io.openems.edge.common.meta.types.EnvironmentStatus;
 import io.openems.edge.common.meta.types.SubdivisionCode;
 
 @ObjectClassDefinition(//
@@ -25,6 +27,9 @@ import io.openems.edge.common.meta.types.SubdivisionCode;
 
 	@AttributeDefinition(name = "Is Ess Charge From Grid Allowed", description = "Charging the battery from grid is allowed.")
 	boolean isEssChargeFromGridAllowed() default false;
+
+	@AttributeDefinition(name = "Is Ess Discharge To Grid Allowed", description = "Discharging the battery to grid is allowed.")
+	boolean isEssDischargeToGridAllowed() default false;
 
 	@AttributeDefinition(name = "Grid Connection Point Fuse Limit", description = "Maximum current allowed at the Grid Connection Point (GCP), i.e. the rating of the fuses [A].")
 	int gridConnectionPointFuseLimit() default 32;
@@ -52,6 +57,12 @@ import io.openems.edge.common.meta.types.SubdivisionCode;
 
 	@AttributeDefinition(name = "Third-Party Usage Acceptance", description = "Indicates whether the user has accepted, declined, or not yet decided on third-party usage.")
 	ThirdPartyUsageAcceptance thirdPartyUsageAcceptance() default ThirdPartyUsageAcceptance.UNDECIDED;
+
+	@AttributeDefinition(name = "Environment", description = "Defines whether the system is running in the Stable or Beta environment.")
+	Environment environment() default Environment.STABLE;
+
+	@AttributeDefinition(name = "Environment Status", description = "Automatically determined environment status, including whether Beta is set manually or enforced by a component.")
+	EnvironmentStatus environmentStatus() default EnvironmentStatus.STABLE;
 
 	String webconsole_configurationFactory_nameHint() default "Core Meta";
 }

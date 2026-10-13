@@ -1,10 +1,10 @@
 package io.openems.edge.app.heat;
 
 import static io.openems.edge.common.test.DummyUser.DUMMY_ADMIN;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonObject;
@@ -22,7 +22,7 @@ public class TestHeatingElement {
 	private HeatingElement heatingElement;
 	private FeneconHome20 homeApp;
 
-	@Before
+	@BeforeEach
 	public void beforeEach() throws Exception {
 		this.appManagerTestBundle = new AppManagerTestBundle(null, null, t -> {
 			return ImmutableList.of(//

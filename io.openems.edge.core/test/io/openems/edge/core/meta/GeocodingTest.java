@@ -4,17 +4,17 @@ import static io.openems.common.bridge.http.dummy.DummyBridgeHttpFactory.dummyBr
 import static io.openems.common.bridge.http.dummy.DummyBridgeHttpFactory.dummyEndpointFetcher;
 import static io.openems.common.bridge.http.dummy.DummyBridgeHttpFactory.ofBridgeImpl;
 import static io.openems.common.test.TestUtils.createDummyClock;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
 import java.util.concurrent.ExecutionException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.google.gson.JsonParser;
 
@@ -172,11 +172,11 @@ public class GeocodingTest {
 
 			final var url = t.url();
 
-			assertTrue("Base URL is incorrect", url.contains(expectedBaseUrl));
-			assertTrue("Location param is missing or incorrect", url.contains(expectedLocationParam));
-			assertTrue("API key param is missing or incorrect", url.contains(expectedApiKeyParam));
-			assertTrue("No annotations param is missing or incorrect", url.contains(expectedNoAnnotationsParam));
-			assertTrue("No record param is missing or incorrect", url.contains(expectedNoRecordParam));
+			assertTrue(url.contains(expectedBaseUrl), "Base URL is incorrect");
+			assertTrue(url.contains(expectedLocationParam), "Location param is missing or incorrect");
+			assertTrue(url.contains(expectedApiKeyParam), "API key param is missing or incorrect");
+			assertTrue(url.contains(expectedNoAnnotationsParam), "No annotations param is missing or incorrect");
+			assertTrue(url.contains(expectedNoRecordParam), "No record param is missing or incorrect");
 
 			return HttpResponse.ok(null);
 		});

@@ -5,16 +5,17 @@ import static io.openems.edge.common.test.DummyUser.DUMMY_ADMIN;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toSet;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.google.gson.JsonPrimitive;
 
@@ -33,7 +34,7 @@ public class PersistencePredictorAggregateTaskImplTest {
 	private PersistencePredictorAggregateTask task;
 	private DummyPseudoComponentManager componentManager;
 
-	@Before
+	@BeforeEach
 	public void setUp() throws Exception {
 		this.componentManager = new DummyPseudoComponentManager();
 		this.componentManager.setConfigurationAdmin(new DummyConfigurationAdmin());
@@ -50,11 +51,11 @@ public class PersistencePredictorAggregateTaskImplTest {
 		this.task.aggregate(config, config);
 	}
 
-	@Test(expected = OpenemsNamedException.class)
+	@Test
 	public void testCreateWithoutPredictor() throws Exception {
 		final var config = new PersistencePredictorConfiguration("test/Test");
 		this.task.aggregate(config, null);
-		this.task.create(DUMMY_ADMIN, emptyList());
+		assertThrows(OpenemsNamedException.class, () -> this.task.create(DUMMY_ADMIN, emptyList()));
 	}
 
 	@Test
@@ -102,7 +103,7 @@ public class PersistencePredictorAggregateTaskImplTest {
 		final var errors = new ArrayList<String>();
 		this.task.validate(errors, config, config.getConfiguration(PersistencePredictorAggregateTask.class),
 				emptyMap());
-		assertTrue("Validation has error but all channels got added.", errors.isEmpty());
+		assertTrue(errors.isEmpty(), "Validation has error but all channels got added.");
 	}
 
 	@Test
@@ -116,7 +117,7 @@ public class PersistencePredictorAggregateTaskImplTest {
 		final var errors = new ArrayList<String>();
 		this.task.validate(errors, config, config.getConfiguration(PersistencePredictorAggregateTask.class),
 				emptyMap());
-		assertFalse("Validation has no error but channels are missing.", errors.isEmpty());
+		assertFalse(errors.isEmpty(), "Validation has no error but channels are missing.");
 	}
 
 	@Test
@@ -142,14 +143,14 @@ public class PersistencePredictorAggregateTaskImplTest {
 		final var existingAddresses = this.getChannelsInPredictor();
 		final var expectedChannels = Stream.of(channels).collect(toSet());
 		expectedChannels.removeAll(existingAddresses);
-		assertTrue("Missing channels [" + String.join(", ", existingAddresses) + "]", expectedChannels.isEmpty());
+		assertTrue(expectedChannels.isEmpty(), "Missing channels [" + String.join(", ", existingAddresses) + "]");
 	}
 
 	private void assertChannelsNotInPredictor(String... channels) throws OpenemsNamedException {
 		final var existingAddresses = this.getChannelsInPredictor();
 		final var expectedChannels = Stream.of(channels).collect(toSet());
-		assertFalse("Missing channels [" + String.join(", ", existingAddresses) + "]",
-				expectedChannels.removeAll(existingAddresses));
+		assertFalse(expectedChannels.removeAll(existingAddresses),
+				"Missing channels [" + String.join(", ", existingAddresses) + "]");
 	}
 
 	private Set<String> getChannelsInPredictor() throws OpenemsNamedException {

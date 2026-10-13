@@ -39,7 +39,6 @@ public class ClientReconnectorWorker extends AbstractWorker {
     public static final ClientReconnectorWorker.Config DEFAULT_CONFIG = new Config(100, 100, 10,
             FunctionUtils::doNothing);
 
-    private static final long CLOSE_TIMEOUT_MILLIS = 60_000L;
     private static final int THREAD_CYCLE_MILLIS = 30_000;
 
     private final Logger log;
@@ -131,7 +130,7 @@ public class ClientReconnectorWorker extends AbstractWorker {
         this.callEvent(WebsocketReconnectorEvent.RESET_WEBSOCKET_CLIENT);
 
         try {
-            final var time = ws.reset(CLOSE_TIMEOUT_MILLIS);
+            final var time = ws.reset(WebSocketClient.CLOSE_TIMEOUT_MILLIS);
             this.log.info("Closed websocket connection after {}ms", time);
         } catch (TimeoutException ex) {
             this.log.error("Failed to close socket. Timeout reached. Connection is still open and we continue with a new connection. {}",

@@ -233,7 +233,7 @@ public class AppKebaEvse extends AbstractOpenemsAppWithProps<AppKebaEvse, Proper
 
 			return AppConfiguration.create() //
 					.addTask(Tasks.component(components)) //
-					.addTask(Tasks.cluster(ctrlSingleId))//
+					.addTask(Tasks.cluster(ctrlSingleId)) //
 					.addDependencies(AppEvseCluster.dependency())//
 					.build();
 		};

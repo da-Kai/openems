@@ -4,7 +4,6 @@ import static io.openems.common.utils.JsonUtils.buildJsonObject;
 import static io.openems.common.utils.JsonUtils.getAsOptionalDouble;
 import static io.openems.common.utils.JsonUtils.getAsOptionalInt;
 import static io.openems.common.utils.JsonUtils.toJsonArray;
-import static io.openems.edge.common.type.TypeUtils.fitWithin;
 import static io.openems.edge.controller.ess.timeofusetariff.StateMachine.BALANCING;
 import static io.openems.edge.controller.ess.timeofusetariff.Utils.SUM_CONSUMPTION;
 import static io.openems.edge.controller.ess.timeofusetariff.Utils.SUM_ESS_DISCHARGE_POWER;
@@ -131,8 +130,7 @@ public class GetScheduleResponse extends JsonrpcResponseSuccess {
 	 * @param timedata      the {@link Timedata}
 	 * @return {@link Stream} of {@link JsonObject}s
 	 */
-	// TODO protected is sufficient after v1
-	public static Stream<JsonObject> fromHistoricData(String componentId, ZonedDateTime firstSchedule,
+	private static Stream<JsonObject> fromHistoricData(String componentId, ZonedDateTime firstSchedule,
 			Timedata timedata) {
 		// Process last three hours of historic data
 		final var fromTime = firstSchedule.minusHours(3);
@@ -202,8 +200,8 @@ public class GetScheduleResponse extends JsonrpcResponseSuccess {
 							.addProperty("consumption",
 									convertEnergyToPower.applyAsInt(p.energyFlow().getConsumption())) //
 							.addProperty("ess", convertEnergyToPower.applyAsInt(p.energyFlow().getEss())) //
-							.addProperty("soc", round(fitWithin(0F, 100F, //
-									p.essInitialEnergy() * 100F / essTotalEnergy))) //
+							.addProperty("soc",
+									round(Math.clamp(p.essInitialEnergy() * 100F / essTotalEnergy, 0F, 100F))) //
 							.build();
 				});
 	}

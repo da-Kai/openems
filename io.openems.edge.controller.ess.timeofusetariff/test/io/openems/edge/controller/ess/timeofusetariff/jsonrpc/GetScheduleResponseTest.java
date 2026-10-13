@@ -4,7 +4,6 @@ import static io.openems.common.utils.DateUtils.roundDownToQuarter;
 import static io.openems.common.utils.JsonUtils.getAsJsonArray;
 import static io.openems.common.utils.UuidUtils.getNilUuid;
 import static io.openems.edge.controller.ess.timeofusetariff.EnergyScheduler.applyBalancing;
-import static io.openems.edge.controller.ess.timeofusetariff.UtilsTest.CLOCK;
 import static io.openems.edge.controller.ess.timeofusetariff.jsonrpc.TestData.CONSUMPTION_PREDICTION_QUARTERLY;
 import static io.openems.edge.controller.ess.timeofusetariff.jsonrpc.TestData.PAST_HOURLY_GRID_BUY_PRICES;
 import static io.openems.edge.controller.ess.timeofusetariff.jsonrpc.TestData.PAST_HOURLY_GRID_SELL_PRICES;
@@ -15,20 +14,22 @@ import static io.openems.edge.controller.ess.timeofusetariff.jsonrpc.TestData.PR
 import static io.openems.edge.energy.api.simulation.periods.PeriodDuration.QUARTER;
 import static org.junit.Assert.assertEquals;
 
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSortedMap;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
+import io.openems.common.test.TimeLeapClock;
 import io.openems.common.types.ChannelAddress;
 import io.openems.common.utils.JsonUtils;
 import io.openems.edge.controller.ess.timeofusetariff.StateMachine;
 import io.openems.edge.controller.ess.timeofusetariff.TimeOfUseTariffControllerImplTest;
 import io.openems.edge.controller.ess.timeofusetariff.Utils;
 import io.openems.edge.energy.api.Environment;
-import io.openems.edge.energy.api.Version;
 import io.openems.edge.energy.api.handler.DifferentModes.Period;
 import io.openems.edge.energy.api.simulation.EnergyFlow;
 import io.openems.edge.energy.api.simulation.GlobalOptimizationContext;
@@ -37,6 +38,8 @@ import io.openems.edge.ess.test.DummyManagedSymmetricEss;
 import io.openems.edge.timedata.test.DummyTimedata;
 
 public class GetScheduleResponseTest {
+
+	private static final TimeLeapClock CLOCK = new TimeLeapClock(Instant.ofEpochSecond(946684800), ZoneId.of("UTC"));
 
 	@Test
 	public void test() throws Exception {
@@ -70,7 +73,7 @@ public class GetScheduleResponseTest {
 		}
 
 		// Simulate future Schedule
-		var ctrl = TimeOfUseTariffControllerImplTest.create(CLOCK, Version.V2_ENERGY_SCHEDULABLE, ess, timedata);
+		var ctrl = TimeOfUseTariffControllerImplTest.create(CLOCK, ess, timedata);
 		var esh = ctrl.getEnergyScheduleHandler();
 		esh.initialize(new GlobalOptimizationContext(CLOCK, Environment.PRODUCTION, null, null, null, null, //
 				new GlobalOptimizationContext.Ess(0, 0, 0, 0), Periods.empty()));

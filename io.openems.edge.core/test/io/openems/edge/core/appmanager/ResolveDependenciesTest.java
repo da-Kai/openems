@@ -1,12 +1,12 @@
 package io.openems.edge.core.appmanager;
 
 import static io.openems.edge.common.test.DummyUser.DUMMY_ADMIN;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import io.openems.common.utils.JsonUtils;
 
@@ -14,7 +14,7 @@ public class ResolveDependenciesTest {
 
 	private AppManagerTestBundle testBundle;
 
-	@Before
+	@BeforeEach
 	public void before() throws Exception {
 		this.testBundle = new AppManagerTestBundle(//
 				null, MyConfig.create() //

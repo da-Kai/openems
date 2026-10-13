@@ -4,17 +4,17 @@ import static io.openems.edge.common.test.DummyUser.DUMMY_ADMIN;
 import static io.openems.edge.common.test.DummyUser.DUMMY_GUEST;
 import static io.openems.edge.common.test.DummyUser.DUMMY_INSTALLER;
 import static io.openems.edge.common.test.DummyUser.DUMMY_OWNER;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.google.gson.JsonObject;
 
@@ -44,7 +44,7 @@ public class AppManagerImplJsonApiTest {
 
 	private JsonApiBuilder routes;
 
-	@Before
+	@BeforeEach
 	public void before() {
 		final var appManager = new AppManagerImpl();
 		this.routes = new JsonApiBuilder();

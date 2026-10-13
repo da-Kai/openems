@@ -1,10 +1,10 @@
 package io.openems.edge.core.appmanager;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableList;
 
@@ -16,7 +16,7 @@ public class AppDefTest {
 
 	private TestC testCApp;
 
-	@Before
+	@BeforeEach
 	public void beforeEach() throws Exception {
 		new AppManagerTestBundle(null, null, t -> {
 			return ImmutableList.of(//

@@ -3,16 +3,17 @@ package io.openems.edge.core.appmanager.dependency.aggregatetask;
 import static io.openems.edge.common.test.DummyUser.DUMMY_ADMIN;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.session.Language;
@@ -29,7 +30,7 @@ public class ComponentAggregateTaskImplTest {
 	private ComponentAggregateTask task;
 	private DummyPseudoComponentManager componentManager;
 
-	@Before
+	@BeforeEach
 	public void setUp() throws Exception {
 		this.componentManager = new DummyPseudoComponentManager();
 		this.componentManager.setConfigurationAdmin(new DummyConfigurationAdmin());
@@ -137,7 +138,7 @@ public class ComponentAggregateTaskImplTest {
 		assertEquals(1, this.componentManager.getAllComponents().size());
 	}
 
-	@Test(expected = OpenemsNamedException.class)
+	@Test
 	public void testCreateWithExistingComponentFromOtherAppDifferentConfig() throws Exception {
 		final var dummyComponentId = "test0";
 		final var config = AppConfiguration.create() //
@@ -159,10 +160,10 @@ public class ComponentAggregateTaskImplTest {
 						.addProperty("testProperty", "test_updated_value") //
 						.build()) //
 		), null);
-		this.task.create(DUMMY_ADMIN, List.of(config));
+		assertThrows(OpenemsNamedException.class, () -> this.task.create(DUMMY_ADMIN, List.of(config)));
 	}
 
-	@Test(expected = OpenemsNamedException.class)
+	@Test
 	public void testDelete() throws Exception {
 		final var dummyComponentId = "test0";
 		try {
@@ -178,7 +179,7 @@ public class ComponentAggregateTaskImplTest {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-		this.componentManager.getComponent(dummyComponentId);
+		assertThrows(OpenemsNamedException.class, () -> this.componentManager.getComponent(dummyComponentId));
 	}
 
 	@Test
@@ -204,7 +205,7 @@ public class ComponentAggregateTaskImplTest {
 
 		final var errors = new ArrayList<String>();
 		this.task.validate(errors, config, config.getConfiguration(ComponentAggregateTask.class), emptyMap());
-		assertTrue(String.join(", ", errors), errors.isEmpty());
+		assertTrue(errors.isEmpty(), String.join(", ", errors));
 	}
 
 	@Test
@@ -217,7 +218,7 @@ public class ComponentAggregateTaskImplTest {
 
 		final var errors = new ArrayList<String>();
 		this.task.validate(errors, config, config.getConfiguration(ComponentAggregateTask.class), emptyMap());
-		assertFalse("No errors while validating configuration", errors.isEmpty());
+		assertFalse(errors.isEmpty(), "No errors while validating configuration");
 	}
 
 	@Test

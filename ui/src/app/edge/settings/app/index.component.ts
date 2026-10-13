@@ -1,5 +1,5 @@
 // @ts-strict-ignore
-import { Component, OnDestroy, OnInit, ViewChild } from "@angular/core";
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, inject, model, OnDestroy, OnInit, Signal, signal, viewChild, } from "@angular/core";
 import { ActivatedRoute, NavigationEnd, NavigationExtras, Router, RouterModule } from "@angular/router";
 import { IonPopover, ModalController } from "@ionic/angular";
 import { TranslateService } from "@ngx-translate/core";
@@ -10,12 +10,15 @@ import { ChosenFilter, Filter, FilterComponent, FilterOption } from "src/app/ind
 import { DomChangeDirective } from "src/app/shared/directive/oe-dom-change";
 import { ComponentJsonApiRequest } from "src/app/shared/jsonrpc/request/componentJsonApiRequest";
 import { PipeComponentsModule } from "src/app/shared/pipe/pipe.module";
+import { Language } from "src/app/shared/type/language";
 import { Role } from "src/app/shared/type/role";
 import { StringUtils } from "src/app/shared/utils/string/string.utils";
 import { Environment, environment } from "src/environments";
 import { CommonUiModule } from "../../../shared/common-ui.module";
 import { Edge, Service, Websocket } from "../../../shared/shared";
 import { ExecuteSystemUpdate } from "../system/executeSystemUpdate";
+import de from "./i18n/de.json";
+import en from "./i18n/en.json";
 import { InstallAppComponent } from "./install.component";
 import { Flags } from "./jsonrpc/flag/flags";
 import { GetApps } from "./jsonrpc/getApps";
@@ -40,34 +43,43 @@ import { canEnterKey } from "./permissions";
         DomChangeDirective,
         FilterComponent,
     ],
+
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IndexComponent implements OnInit, OnDestroy {
-
     private static readonly SELECTOR = "app-index";
-    /**
-   * e. g. if more than 4 apps are in a list the apps are displayed in their categories
-  */
+    /** E. g. if more than 4 apps are in a list the apps are displayed in their categories */
     private static readonly MAX_APPS_IN_LIST: number = 4;
-    @ViewChild("hasKeyPopover") private hasKeyPopover: IonPopover;
     public readonly spinnerId: string = IndexComponent.SELECTOR;
 
     public apps: GetApps.App[] = [];
 
     public installedApps: AppList = {
-        name: "EDGE.CONFIG.APP.INSTALLED", appCategories: []
-        , shouldBeShown: () => this.key === null, // only show installed apps when the user is not currently selecting an app from a key
-    };
-    public availableApps: AppList = {
-        name: "EDGE.CONFIG.APP.AVAILABLE", appCategories: []
-        , shouldBeShown: () => true, // always show available apps
-    };
-    public incompatibleApps: AppList = {
-        name: "EDGE.CONFIG.APP.INCOMPATIBLE", appCategories: []
-        , shouldBeShown: () => this.edge.roleIsAtLeast(Role.ADMIN), // only show incompatible apps for admins
+        name: "EDGE.CONFIG.APP.INSTALLED",
+        appCategories: [],
+        shouldBeShown: () => this.key === null, // only show installed apps when the user is not currently selecting an app from a key
     };
 
-    public appLists: AppList[] = [this.installedApps, this.availableApps, this.incompatibleApps];
-    public categories: { val: GetApps.Category, isChecked: boolean }[] = [];
+    public availableApps: AppList = {
+        name: "EDGE.CONFIG.APP.AVAILABLE",
+        appCategories: [],
+        shouldBeShown: () => true, // always show available apps
+        additionalInfo: computed<string | null>(() => {
+            const _areTranslationLoaded = this.areTranslationsLoaded();
+            if (environment.backend !== "OpenEMS Backend") {
+                return this.translate.instant("APP_CENTER.LOCAL_MONITORING");
+            }
+            return null;
+        }),
+    };
+    public incompatibleApps: AppList = {
+        name: "EDGE.CONFIG.APP.INCOMPATIBLE",
+        appCategories: [],
+        shouldBeShown: () => this.edge.roleIsAtLeast(Role.ADMIN), // only show incompatible apps for admins
+    };
+
+    public appLists = signal<AppList[]>([this.installedApps, this.availableApps, this.incompatibleApps]);
+    public categories: { val: GetApps.Category; isChecked: boolean }[] = [];
 
     protected readonly environment: Environment = environment;
     protected edge: Edge | null = null;
@@ -76,15 +88,18 @@ export class IndexComponent implements OnInit, OnDestroy {
     protected selectedBundle: number | null = null;
     protected isUpdateAvailable: boolean = false;
     protected canEnterKey: boolean = false;
-    protected numberOfUnusedRegisteredKeys: number = 0;
-    protected showPopover: boolean = false;
+    protected numberOfUnusedRegisteredKeys = signal<number>(0);
+    protected showPopover = model<boolean>(false);
     protected searchParams: Map<string, ChosenFilter["value"]> = new Map();
+    protected hasKeyPopover = viewChild<IonPopover>("hasKeyPopover");
 
     private useMasterKey: boolean = false;
     private hasSeenPopover: boolean = false;
     private stopOnDestroy: Subject<void> = new Subject<void>();
     private inputValue: string;
 
+    private readonly cdRef: ChangeDetectorRef = inject(ChangeDetectorRef);
+    private readonly areTranslationsLoaded = signal<boolean>(false);
 
     public constructor(
         private route: ActivatedRoute,
@@ -93,21 +108,30 @@ export class IndexComponent implements OnInit, OnDestroy {
         private translate: TranslateService,
         private router: Router,
         private modalController: ModalController,
-    ) { }
+    ) {
+        Language.normalizeAdditionalTranslationFiles({ de: de, en: en }).then((translations) => {
+            for (const { lang, translation, shouldMerge } of translations) {
+                translate.setTranslation(lang, translation, shouldMerge);
+            }
+            this.areTranslationsLoaded.set(true);
+        });
+    }
 
     public ngOnInit() {
         this.init();
-        this.router.events.pipe(
-            filter(event => event instanceof NavigationEnd),
-            switchMap(() => this.route.url),
-            takeUntil(this.stopOnDestroy),
-        ).subscribe(() => {
-            const navigationExtras = this.router.currentNavigation()?.extras as NavigationExtras;
-            const appInstanceChange = navigationExtras?.state?.appInstanceChange;
-            if (appInstanceChange != null && appInstanceChange) {
-                this.init();
-            }
-        });
+        this.router.events
+            .pipe(
+                filter((event) => event instanceof NavigationEnd),
+                switchMap(() => this.route.url),
+                takeUntil(this.stopOnDestroy),
+            )
+            .subscribe(() => {
+                const navigationExtras = this.router.currentNavigation()?.extras as NavigationExtras;
+                const appInstanceChange = navigationExtras?.state?.appInstanceChange;
+                if (appInstanceChange != null && appInstanceChange) {
+                    this.init();
+                }
+            });
     }
 
     public ngOnDestroy(): void {
@@ -125,7 +149,7 @@ export class IndexComponent implements OnInit, OnDestroy {
     }
 
     protected onDomChange(mutation: MutationRecord, appId: string) {
-        mutation.addedNodes.forEach(node => {
+        mutation.addedNodes.forEach((node) => {
             if (!(node instanceof HTMLElement && node.classList.contains("open-modal-thirdpartyaccess"))) {
                 return;
             }
@@ -133,34 +157,37 @@ export class IndexComponent implements OnInit, OnDestroy {
     }
 
     /**
-   * Updates the selected categories.
-   * @param event the event of a click on a 'ion-fab-list' to stop it from closing
-   */
+     * Updates the selected categories.
+     *
+     * @param event The event of a click on a 'ion-fab-list' to stop it from closing
+     */
     protected updateSelection(event?: PointerEvent) {
-
         this.installedApps.appCategories = [];
         this.availableApps.appCategories = [];
         this.incompatibleApps.appCategories = [];
 
         const sortedApps = [];
-        this.apps.forEach(app => {
-            app.categorys.forEach(category => {
+        this.apps.forEach((app) => {
+            app.categorys.forEach((category) => {
                 if (this.selectedBundle >= 0 && this.key) {
                     if (!this.key.bundles[this.selectedBundle].some((a) => app.appId === a.appId)) {
                         return false;
                     }
                 } else {
-                    if (Flags.getByType(app.flags, Flags.SHOW_AFTER_KEY_REDEEM)
-                        && environment.production
-                        && app.instanceIds.length === 0) {
+                    if (
+                        Flags.getByType(app.flags, Flags.SHOW_AFTER_KEY_REDEEM) &&
+                        environment.production &&
+                        app.instanceIds.length === 0
+                    ) {
                         return false;
                     }
                 }
-                const cat = this.categories.find(c => c.val.name === category.name);
+                const cat = this.categories.find((c) => c.val.name === category.name);
                 if (cat?.isChecked == false) {
                     return false;
                 }
-                if (this.inputValue &&
+                if (
+                    this.inputValue &&
                     !(
                         app.name.toLowerCase().includes(this.inputValue.toLowerCase()) ||
                         category.readableName.toLowerCase().includes(this.inputValue.toLowerCase())
@@ -168,7 +195,8 @@ export class IndexComponent implements OnInit, OnDestroy {
                 ) {
                     return false;
                 }
-                const selectedCategories = this.searchParams.get("categories") ?? this.categoryFilter().options.map(el => el.option.value);
+                const selectedCategories =
+                    this.searchParams.get("categories") ?? this.categoryFilter().options.map((el) => el.option.value);
                 if (selectedCategories != null && selectedCategories != undefined) {
                     if (Array.isArray(selectedCategories)) {
                         if (!selectedCategories.includes(category.name)) {
@@ -181,7 +209,7 @@ export class IndexComponent implements OnInit, OnDestroy {
             });
         });
 
-        sortedApps.forEach(a => {
+        sortedApps.forEach((a) => {
             if (a.instanceIds.length > 0) {
                 this.pushIntoCategory(a, this.installedApps);
                 if (a.cardinality === "MULTIPLE" && a.status.name !== AppStatusName.INCOMPATIBLE) {
@@ -196,22 +224,28 @@ export class IndexComponent implements OnInit, OnDestroy {
             }
         });
 
-        this.appLists = [];
-        const selectedStatuses = this.searchParams.get("appStatus") ?? this.statusFilter().options.map(el => el.option.value);
+        let nextAppLists: AppList[] = [];
+        const selectedStatuses =
+            this.searchParams.get("appStatus") ?? this.statusFilter().options.map((el) => el.option.value);
         if (Array.isArray(selectedStatuses)) {
             if (StringUtils.isInArr(AppStatusName.INSTALLABLE, selectedStatuses)) {
-                this.appLists.push(this.installedApps);
+                nextAppLists.push(this.installedApps);
             }
             if (StringUtils.isInArr(AppStatusName.COMPATIBLE, selectedStatuses)) {
-                this.appLists.push(this.availableApps);
+                nextAppLists.push(this.availableApps);
             }
             if (StringUtils.isInArr(AppStatusName.INCOMPATIBLE, selectedStatuses)) {
-                this.appLists.push(this.incompatibleApps);
+                nextAppLists.push(this.incompatibleApps);
             }
+        } else {
+            nextAppLists.push(this.installedApps, this.availableApps, this.incompatibleApps);
         }
-        else {
-            this.appLists = [this.installedApps, this.availableApps, this.incompatibleApps];
+
+        if (environment.backend !== "OpenEMS Backend") {
+            nextAppLists = [this.installedApps, this.availableApps];
         }
+
+        this.appLists.set(nextAppLists);
     }
 
     protected showCategories(app: AppList): boolean {
@@ -222,9 +256,7 @@ export class IndexComponent implements OnInit, OnDestroy {
         return this.sum(app) === 0;
     }
 
-    /**
-   * Opens a popup to select a key.
-   */
+    /** Opens a popup to select a key. */
     protected async redeemKey(): Promise<void> {
         const modal = await this.modalController.create({
             component: KeyModalComponent,
@@ -232,10 +264,11 @@ export class IndexComponent implements OnInit, OnDestroy {
                 edge: this.edge,
                 behaviour: KeyValidationBehaviour.SELECT,
                 knownApps: this.apps,
+                route: this.route,
             },
             cssClass: "auto-height",
         });
-        modal.onDidDismiss().then(data => {
+        modal.onDidDismiss().then((data) => {
             if (!data.data) {
                 this.key = null;
                 this.useMasterKey = false;
@@ -246,11 +279,14 @@ export class IndexComponent implements OnInit, OnDestroy {
                 this.selectedBundle = 0;
                 // set dummy key for available apps to install
                 this.key = {
-                    keyId: null, bundles: [this.apps
-                        .filter(e => !Flags.getByType(e.flags, Flags.SHOW_AFTER_KEY_REDEEM))
-                        .map<App>(d => {
-                            return { id: 0, appId: d.appId };
-                        })],
+                    keyId: null,
+                    bundles: [
+                        this.apps
+                            .filter((e) => !Flags.getByType(e.flags, Flags.SHOW_AFTER_KEY_REDEEM))
+                            .map<App>((d) => {
+                                return { id: 0, appId: d.appId };
+                            }),
+                    ],
                 };
                 this.useMasterKey = true;
                 this.updateSelection();
@@ -260,16 +296,21 @@ export class IndexComponent implements OnInit, OnDestroy {
             this.key = data.data.key;
             if (!this.key.bundles) {
                 // load bundles
-                this.edge.sendRequest(this.websocket, new AppCenter.Request({
-                    payload: new AppCenterGetPossibleApps.Request({
-                        key: this.key.keyId,
-                    }),
-                })).then(response => {
-                    const result = (response as AppCenterGetPossibleApps.Response).result;
-                    this.key.bundles = result.bundles;
-                    this.selectedBundle = 0;
-                    this.updateSelection();
-                });
+                this.edge
+                    .sendRequest(
+                        this.websocket,
+                        new AppCenter.Request({
+                            payload: new AppCenterGetPossibleApps.Request({
+                                key: this.key.keyId,
+                            }),
+                        }),
+                    )
+                    .then((response) => {
+                        const result = (response as AppCenterGetPossibleApps.Response).result;
+                        this.key.bundles = result.bundles;
+                        this.selectedBundle = 0;
+                        this.updateSelection();
+                    });
             } else {
                 this.selectedBundle = 0;
                 this.updateSelection();
@@ -281,25 +322,35 @@ export class IndexComponent implements OnInit, OnDestroy {
     protected onAppClicked(app: GetApps.App): void {
         // navigate
         if (this.key != null || this.useMasterKey) {
-            this.router.navigate(["device/" + (this.edge.id) + "/settings/app/single/" + app.appId]
-                , { queryParams: { name: app.name }, state: { app: app, appKey: this.key.keyId, useMasterKey: this.useMasterKey } });
+            this.router.navigate(["single"], {
+                queryParams: { name: app.name, appId: app.appId },
+                state: {
+                    app: app,
+                    appKey: this.key.keyId,
+                    useMasterKey: this.useMasterKey,
+                },
+                relativeTo: this.route,
+            });
         } else {
-            this.router.navigate(["device/" + (this.edge.id) + "/settings/app/single/" + app.appId], { queryParams: { name: app.name }, state: app });
+            this.router.navigate(["single"], {
+                queryParams: { name: app.name, appId: app.appId },
+                state: app,
+                relativeTo: this.route,
+            });
         }
         // reset keys
         this.key = null;
         this.useMasterKey = false;
     }
 
-    /**
-   * Opens a popup to register a key.
-   */
+    /** Opens a popup to register a key. */
     protected async registerKey(): Promise<void> {
         const modal = await this.modalController.create({
             component: KeyModalComponent,
             componentProps: {
                 edge: this.edge,
                 behaviour: KeyValidationBehaviour.REGISTER,
+                route: this.route,
             },
             cssClass: "auto-height",
         });
@@ -311,25 +362,31 @@ export class IndexComponent implements OnInit, OnDestroy {
         if (this.hasSeenPopover) {
             return;
         }
+
         if (!this.canEnterKey) {
             return;
         }
-        if (this.numberOfUnusedRegisteredKeys === 0) {
+        if (this.numberOfUnusedRegisteredKeys() === 0) {
             return;
         }
 
         this.hasSeenPopover = true;
+        const popover = this.hasKeyPopover();
 
-        this.hasKeyPopover.event = {
+        if (popover == null) {
+            return;
+        }
+
+        popover.event = {
             type: "willPresent",
             target: document.querySelector("#redeemKeyCard"),
         };
-        this.showPopover = true;
+        this.showPopover.set(true);
     }
 
     private pushIntoCategory(app: GetApps.App, list: AppList): void {
-        app.categorys.forEach(category => {
-            let catList = list.appCategories.find(l => l.category.name === category.name);
+        app.categorys.forEach((category) => {
+            let catList = list.appCategories.find((l) => l.category.name === category.name);
             if (catList === undefined) {
                 catList = { category: category, apps: [] };
                 list.appCategories.push(catList);
@@ -340,10 +397,21 @@ export class IndexComponent implements OnInit, OnDestroy {
 
     private statusFilter(): Filter {
         const filterOptions: FilterOption<string>[] = [
-            { name: this.translate.instant("EDGE.CONFIG.APP.STATUS_INSTALLED"), option: { value: AppStatusName.INSTALLABLE, default: true } },
-            { name: this.translate.instant("EDGE.CONFIG.APP.STATUS_AVAILABLE"), option: { value: AppStatusName.COMPATIBLE, default: true } },
+            {
+                name: this.translate.instant("EDGE.CONFIG.APP.STATUS_INSTALLED"),
+                option: { value: AppStatusName.INSTALLABLE, default: true },
+            },
+            {
+                name: this.translate.instant("EDGE.CONFIG.APP.STATUS_AVAILABLE"),
+                option: { value: AppStatusName.COMPATIBLE, default: true },
+            },
             ...(this.edge.roleIsAtLeast(Role.ADMIN)
-                ? [{ name: this.translate.instant("EDGE.CONFIG.APP.STATUS_INCOMPATIBLE"), option: { value: AppStatusName.INCOMPATIBLE } }]
+                ? [
+                      {
+                          name: this.translate.instant("EDGE.CONFIG.APP.STATUS_INCOMPATIBLE"),
+                          option: { value: AppStatusName.INCOMPATIBLE },
+                      },
+                  ]
                 : []),
         ];
         return {
@@ -358,10 +426,12 @@ export class IndexComponent implements OnInit, OnDestroy {
             placeholder: this.translate.instant("EDGE.CONFIG.APP.CATEGORY_FILTER"),
             category: "categories",
             multiple: true,
-            options: this.categories.map(t => ({ name: t.val.readableName, option: { value: t.val.name } })),
+            options: this.categories.map((t) => ({
+                name: t.val.readableName,
+                option: { value: t.val.name },
+            })),
         };
     }
-
 
     private sum(app: AppList): number {
         return app.appCategories.reduce((p, c) => p + c.apps.length, 0);
@@ -372,79 +442,122 @@ export class IndexComponent implements OnInit, OnDestroy {
         this.key = null;
         this.selectedBundle = null;
 
-        this.appLists.forEach(element => {
+        this.appLists().forEach((element) => {
             element.appCategories = [];
         });
 
-        this.service.setCurrentComponent({
-            languageKey: "EDGE.CONFIG.APP.NAME_WITH_EDGE_NAME",
-            interpolateParams: { edgeShortName: environment.edgeShortName },
-        }, this.route).then(edge => {
-            this.edge = edge;
+        this.service
+            .setCurrentComponent(
+                {
+                    languageKey: "EDGE.CONFIG.APP.NAME_WITH_EDGE_NAME",
+                    interpolateParams: {
+                        edgeShortName: environment.edgeShortName,
+                    },
+                },
+                this.route,
+            )
+            .then((edge) => {
+                this.edge = edge;
 
-            this.service.metadata
-                .pipe(takeUntil(this.stopOnDestroy))
-                .subscribe(entry => {
+                this.service.metadata.pipe(takeUntil(this.stopOnDestroy)).subscribe((entry) => {
                     this.canEnterKey = canEnterKey(edge, entry.user);
+
+                    if (environment.backend !== "OpenEMS Backend") {
+                        return;
+                    }
                     this.updateHasUnusedKeysPopover();
                 });
-            edge.sendRequest(this.websocket,
-                new ComponentJsonApiRequest({
-                    componentId: "_appManager",
-                    payload: new GetApps.Request(),
-                })).then(response => {
+                edge.sendRequest(
+                    this.websocket,
+                    new ComponentJsonApiRequest({
+                        componentId: "_appManager",
+                        payload: new GetApps.Request(),
+                    }),
+                )
+                    .then((response) => {
+                        this.apps = (response as GetApps.Response).result.apps.map((app) => {
+                            app.imageUrl = environment.links.APP_CENTER.APP_IMAGE(
+                                this.translate.getCurrentLang(),
+                                app.appId,
+                            );
+                            return app;
+                        });
 
-                this.service.stopSpinner(this.spinnerId);
+                        // init categories
+                        const statusFilter = this.statusFilter();
+                        this.apps.forEach((a) => {
+                            a.categorys.forEach((category) => {
+                                const isCategoryAlreadyExisting =
+                                    this.categories.filter((c) => c.val.name === category.name)?.length > 0;
+                                const isCategoryAllowed = StringUtils.isInArr(
+                                    a.status.name,
+                                    statusFilter.options.map((el) => el.option.value),
+                                );
+                                if (!isCategoryAlreadyExisting && isCategoryAllowed) {
+                                    this.categories.push({
+                                        val: category,
+                                        isChecked: true,
+                                    });
+                                }
+                            });
+                        });
 
-                this.apps = (response as GetApps.Response).result.apps.map(app => {
-                    app.imageUrl = environment.links.APP_CENTER.APP_IMAGE(this.translate.getCurrentLang(), app.appId);
-                    return app;
-                });
+                        this.filters = [this.categoryFilter(), this.statusFilter()];
+                        this.updateSelection();
 
-                // init categories
-                const statusFilter = this.statusFilter();
-                this.apps.forEach(a => {
-                    a.categorys.forEach(category => {
-                        const isCategoryAlreadyExisting = this.categories.filter(c => c.val.name === category.name)?.length > 0;
-                        const isCategoryAllowed = StringUtils.isInArr(a.status.name, statusFilter.options.map(el => el.option.value));
-                        if (!isCategoryAlreadyExisting && isCategoryAllowed) {
-                            this.categories.push({ val: category, isChecked: true });
+                        if (environment.backend !== "OpenEMS Backend") {
+                            this.appLists.set([this.installedApps, this.availableApps]);
+                            this.service.stopSpinner(this.spinnerId);
+                            return;
                         }
+
+                        edge.sendRequest(
+                            this.websocket,
+                            new AppCenter.Request({
+                                payload: new AppCenterGetRegisteredKeys.Request({}),
+                            }),
+                        )
+                            .then((response) => {
+                                const result = (response as AppCenterGetRegisteredKeys.Response).result;
+                                this.numberOfUnusedRegisteredKeys.set(result.keys.length);
+                                this.updateHasUnusedKeysPopover();
+                                this.service.stopSpinner(this.spinnerId);
+                            })
+                            .catch((err) => {
+                                this.service.handleError(err);
+                                this.service.stopSpinner(this.spinnerId);
+                            });
+                    })
+                    .catch(
+                        InstallAppComponent.errorToast(
+                            this.service,
+                            (error) => "Error while receiving available apps: " + error,
+                        ),
+                    )
+                    .finally(() => {
+                        this.cdRef.markForCheck();
                     });
-                });
 
-                this.filters = [this.categoryFilter(), this.statusFilter()];
-                this.updateSelection();
-
-                edge.sendRequest(this.websocket, new AppCenter.Request({
-                    payload: new AppCenterGetRegisteredKeys.Request({}),
-                })).then(response => {
-                    const result = (response as AppCenterGetRegisteredKeys.Response).result;
-                    this.numberOfUnusedRegisteredKeys = result.keys.length;
-                    this.updateHasUnusedKeysPopover();
-                }).catch(this.service.handleError);
-            }).catch(InstallAppComponent.errorToast(this.service, error => "Error while receiving available apps: " + error));
-
-            const systemUpdate = new ExecuteSystemUpdate(edge, this.websocket);
-            systemUpdate.systemUpdateStateChange = (updateState) => {
-                if (updateState.available) {
-                    this.isUpdateAvailable = true;
-                }
-            };
-            systemUpdate.start();
-        });
+                const systemUpdate = new ExecuteSystemUpdate(edge, this.websocket);
+                systemUpdate.systemUpdateStateChange = (updateState) => {
+                    if (updateState.available) {
+                        this.isUpdateAvailable = true;
+                    }
+                };
+                systemUpdate.start();
+            });
     }
-
 }
 
 interface AppList {
-    name: string,
-    appCategories: AppListByCategorie[],
+    name: string;
+    appCategories: AppListByCategorie[];
     shouldBeShown: () => boolean;
+    additionalInfo?: Signal<string | null>;
 }
 
 interface AppListByCategorie {
-    category: GetApps.Category,
+    category: GetApps.Category;
     apps: GetApps.App[];
 }
 

@@ -1,5 +1,4 @@
-// @ts-strict-ignore
-import { Component, OnDestroy, OnInit } from "@angular/core";
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from "@angular/core";
 import { AbstractControl } from "@angular/forms";
 import { FieldWrapper } from "@ngx-formly/core";
 import { Subscription } from "rxjs";
@@ -7,10 +6,10 @@ import { Subscription } from "rxjs";
 @Component({
     selector: "formly-wrapper-default-of-cases",
     template: "<ng-container #fieldComponent ></ng-container>",
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false,
 })
 export class FormlyWrapperDefaultValueWithCasesComponent extends FieldWrapper implements OnInit, OnDestroy {
-
     private casesToSubscribe: FieldDefaultCases[] = [];
     private subscriptions: Subscription = new Subscription();
 
@@ -18,7 +17,7 @@ export class FormlyWrapperDefaultValueWithCasesComponent extends FieldWrapper im
         this.getOptions().forEach((item: FieldDefaultCases) => {
             this.subscriptions.add(
                 this.form.valueChanges.subscribe((value) => {
-                    const indicesToRemove = [];
+                    const indicesToRemove: number[] = [];
                     const casesToSub = this.casesToSubscribe;
                     this.casesToSubscribe = [];
                     casesToSub.forEach((defaultCase, i) => {
@@ -29,12 +28,12 @@ export class FormlyWrapperDefaultValueWithCasesComponent extends FieldWrapper im
                         }
                     });
                     casesToSub.forEach((a, i) => {
-                        if (indicesToRemove.some(c => c === i)) {
+                        if (indicesToRemove.some((c) => c === i)) {
                             return;
                         }
                         this.casesToSubscribe.push(a);
                     });
-                })
+                }),
             );
 
             const control = this.form.get(item.field);
@@ -82,7 +81,7 @@ export class FormlyWrapperDefaultValueWithCasesComponent extends FieldWrapper im
                         }
                     }
                 }
-            })
+            }),
         );
         this.onChange(item, this.form.getRawValue()[item.field]);
     }
@@ -92,7 +91,7 @@ export class FormlyWrapperDefaultValueWithCasesComponent extends FieldWrapper im
     }
 
     private onChange(item: FieldDefaultCases, value: any): boolean {
-        const foundCase = item.cases.find(element => element.case == value);
+        const foundCase = item.cases.find((element) => element.case == value);
         if (!foundCase) {
             return false;
         }
@@ -102,7 +101,6 @@ export class FormlyWrapperDefaultValueWithCasesComponent extends FieldWrapper im
         this.formControl.setValue(foundCase.defaultValue);
         return true;
     }
-
 }
 
-type FieldDefaultCases = { field: string, cases: [{ case: any, defaultValue: any }] };
+type FieldDefaultCases = { field: string; cases: [{ case: any; defaultValue: any }] };

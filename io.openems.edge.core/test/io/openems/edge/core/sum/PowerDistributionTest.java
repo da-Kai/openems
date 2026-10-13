@@ -1,9 +1,9 @@
 package io.openems.edge.core.sum;
 
 import static io.openems.edge.core.sum.PowerDistribution.EMPTY;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class PowerDistributionTest {
 

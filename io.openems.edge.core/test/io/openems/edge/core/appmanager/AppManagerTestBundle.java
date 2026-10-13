@@ -7,8 +7,8 @@ import static io.openems.common.utils.ReflectionUtils.setAttributeViaReflection;
 import static io.openems.common.utils.ReflectionUtils.setStaticAttributeViaReflection;
 import static io.openems.edge.common.test.DummyUser.DUMMY_ADMIN;
 import static java.util.stream.Collectors.joining;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -39,6 +39,7 @@ import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.common.test.DummyConfigurationAdmin;
 import io.openems.common.types.EdgeConfig;
+import io.openems.common.utils.CancellationToken;
 import io.openems.common.utils.JsonUtils;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.host.DummyHost;
@@ -287,7 +288,7 @@ public class AppManagerTestBundle {
 	 * @throws Exception on error
 	 */
 	public void assertNoValidationErrors() throws Exception {
-		this.appValidateWorker.validateApps();
+		this.appValidateWorker.validateApps(new CancellationToken());
 
 		// should not have found defective Apps
 		if (!this.appValidateWorker.defectiveApps.isEmpty()) {
@@ -370,6 +371,21 @@ public class AppManagerTestBundle {
 		for (var component : components) {
 			this.assertComponentExist(component);
 		}
+	}
+
+	/**
+	 * Creates assertions for the given {@link AbstractOpenemsAppWithProps}.
+	 *
+	 * @param <APP>       the app type
+	 * @param <PROPERTY>  the property type
+	 * @param <PARAMETER> the parameter type
+	 * @param app         the app under test
+	 * @return the app assertions
+	 */
+	public <APP extends AbstractOpenemsAppWithProps<APP, PROPERTY, PARAMETER>, //
+			PROPERTY extends Type<PROPERTY, APP, PARAMETER>, //
+			PARAMETER> AppAssertions<APP, PROPERTY, PARAMETER> withApp(APP app) {
+		return new AppAssertions<>(app);
 	}
 
 	/**
@@ -718,6 +734,17 @@ public class AppManagerTestBundle {
 	public AddAppInstance.Response tryInstallWithMinConfig(OpenemsApp app) throws OpenemsNamedException {
 		return this.sut.handleAddAppInstanceRequest(DUMMY_ADMIN,
 				new AddAppInstance.Request(app.getAppId(), "key", "alias", Apps.getMinConfig(app.getAppId())));
+	}
+
+	/**
+	 * Creates fluent permission assertions for the given app.
+	 *
+	 * @param app        the app under test
+	 * @param properties valid properties to install the app with
+	 * @return the {@link AppPermissionAssertions}
+	 */
+	public AppPermissionAssertions assertPermissions(OpenemsApp app, JsonObject properties) {
+		return new AppPermissionAssertions(this, app, properties);
 	}
 
 }

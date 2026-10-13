@@ -3,12 +3,12 @@ package io.openems.edge.core.appmanager.dependency.aggregatetask;
 import static io.openems.edge.common.test.DummyUser.DUMMY_ADMIN;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import io.openems.common.session.Language;
 import io.openems.common.test.DummyConfigurationAdmin;
@@ -29,7 +29,7 @@ public class SchedulerAggregateTaskImplTest {
 	private ComponentAggregateTask aggregateTask;
 	private TestScheduler scheduler;
 
-	@Before
+	@BeforeEach
 	public void setUp() throws Exception {
 		this.componentManager = new DummyPseudoComponentManager();
 		this.cm = new DummyConfigurationAdmin();

@@ -4,8 +4,8 @@ import static io.openems.common.test.TestUtils.createDummyClock;
 import static io.openems.edge.energy.optimizer.Utils.calculateExecutionLimitSeconds;
 import static io.openems.edge.energy.optimizer.Utils.calculateSleepMillis;
 import static io.openems.edge.energy.optimizer.Utils.sortByScheduler;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -14,7 +14,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.stream.Stream;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import io.openems.common.utils.DateUtils;
 import io.openems.edge.energy.api.EnergySchedulable;
@@ -59,14 +59,34 @@ public class UtilsTest {
 	}
 
 	@Test
-	public void testCalculateAdjustedDelay_ShouldReturnAdjustedDelay_WhenGreaterThanMaxAllowed() {
-		var clock = Clock.fixed(Instant.parse("2026-01-13T10:28:30Z"), ZoneId.of("UTC"));
-		var requestedDelay = Duration.ofSeconds(31);
+	public void testCalculateAdjustedDelay_shouldReturnRequestedDelay_whenBelowMaxAllowedDelay() {
+		var clock = Clock.fixed(//
+				Instant.parse("2026-01-13T10:28:30Z"), //
+				ZoneId.of("UTC"));
 
-		var adjustedDelay = Utils.calculateAdjustedDelay(clock, requestedDelay);
+		var durationUntilNextQuarter = DateUtils.durationUntilNextQuarter(clock);
+		var maxAllowedDelay = durationUntilNextQuarter.minus(Optimizer.BUFFER_LATEST_START);
+		var requestedDelay = maxAllowedDelay.minusSeconds(1);
 
-		var expectedDelay = DateUtils.durationUntilNextQuarter(clock).plus(Optimizer.BUFFER_START);
-		assertEquals(expectedDelay, adjustedDelay);
+		var actual = Utils.calculateAdjustedDelay(clock, requestedDelay);
+
+		assertEquals(requestedDelay, actual);
+	}
+
+	@Test
+	public void testCalculateAdjustedDelay_shouldReturnAdjustedDelay_whenMaxAllowedDelayIsReached() {
+		var clock = Clock.fixed(//
+				Instant.parse("2026-01-13T10:28:30Z"), //
+				ZoneId.of("UTC"));
+
+		var durationUntilNextQuarter = DateUtils.durationUntilNextQuarter(clock);
+		var requestedDelay = durationUntilNextQuarter.minus(Optimizer.BUFFER_LATEST_START);
+
+		var actual = Utils.calculateAdjustedDelay(clock, requestedDelay);
+
+		var expected = durationUntilNextQuarter.plus(Optimizer.BUFFER_START);
+
+		assertEquals(expected, actual);
 	}
 
 	@Test

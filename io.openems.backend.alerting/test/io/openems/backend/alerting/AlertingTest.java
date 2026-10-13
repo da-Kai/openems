@@ -1,17 +1,17 @@
 package io.openems.backend.alerting;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.lang.annotation.Annotation;
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.osgi.service.event.Event;
 
 import io.openems.backend.common.test.DummyMetadata;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-
-public class AlertingTest {
+class AlertingTest {
 
 	private static final int HANDLER_COUNT = 2;
 
@@ -71,7 +71,7 @@ public class AlertingTest {
 	};
 
 	@Test
-	public void testActivateAndDeactivate() {
+	void testActivateAndDeactivate() {
 		final var alerting = new DummyAlerting();
 		alerting.metadata = new DummyMetadata();
 
@@ -87,13 +87,13 @@ public class AlertingTest {
 	}
 
 	@Test
-	public void testHandleEvent() {
+	void testHandleEvent() {
 		final var alerting = new DummyAlerting();
 		final var event = new Event("TestEvent", Map.of());
 
 		alerting.activate(testConf);
 
-        assertNull(alerting.lastEvent);
+		assertNull(alerting.lastEvent);
 
 		alerting.handleEvent(event);
 

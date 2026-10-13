@@ -1,6 +1,5 @@
 package io.openems.edge.energy.optimizer;
 
-import static io.openems.common.utils.IntUtils.fitWithin;
 import static io.openems.common.utils.JsonUtils.buildJsonObject;
 import static io.openems.edge.energy.optimizer.InitialPopulationUtils.generateInitialPopulation;
 import static io.openems.edge.energy.optimizer.SimulationResult.EMPTY_SIMULATION_RESULT;
@@ -12,11 +11,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -29,16 +28,15 @@ import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonObject;
 
 import io.jenetics.EliteSelector;
-import io.jenetics.GaussianMutator;
-import io.jenetics.Gene;
 import io.jenetics.IntegerGene;
+import io.jenetics.Mutator;
 import io.jenetics.Phenotype;
 import io.jenetics.ShiftMutator;
-import io.jenetics.ShuffleMutator;
 import io.jenetics.SinglePointCrossover;
 import io.jenetics.TournamentSelector;
 import io.jenetics.engine.Engine;
 import io.jenetics.engine.EvolutionStream;
+import io.jenetics.engine.Limits;
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.energy.api.handler.AbstractEnergyScheduleHandler;
 import io.openems.edge.energy.api.handler.EnergyScheduleHandler;
@@ -47,7 +45,6 @@ import io.openems.edge.energy.api.simulation.EnergyFlow;
 import io.openems.edge.energy.api.simulation.GlobalOptimizationContext;
 import io.openems.edge.energy.api.simulation.GlobalScheduleContext;
 import io.openems.edge.energy.api.simulation.GocUtils;
-import io.openems.edge.energy.optimizer.ModeCombinations.Mode;
 import io.openems.edge.energy.optimizer.ModeCombinations.ModeCombination;
 import io.openems.edge.energy.optimizer.SimulationResult.BestScheduleCollector;
 
@@ -63,7 +60,7 @@ public class Simulator {
 	private final AtomicInteger simulationsCounter = new AtomicInteger(0);
 	private final AtomicLong generationsCounter = new AtomicLong(0);
 
-	private Duration earliestCallbackDelay = Duration.ofSeconds(30);
+	private Duration publishInterval = Duration.ofSeconds(30);
 
 	public Simulator(GlobalOptimizationContext goc) {
 		this.goc = goc;
@@ -85,7 +82,7 @@ public class Simulator {
 		return (int) this.generationsCounter.get();
 	}
 
-	protected static Fitness simulate(//
+	protected static Fitness.Builder simulate(//
 			GlobalOptimizationContext goc, //
 			ModeCombinations modeCombinations, //
 			int[] schedule, //
@@ -101,7 +98,7 @@ public class Simulator {
 		}
 		final var cscs = cscsBuilder.build();
 		final var noOfPeriods = goc.periods().size();
-		final var fitness = new Fitness();
+		final var fitness = Fitness.builder();
 
 		for (var periodIndex = 0; periodIndex < noOfPeriods; periodIndex++) {
 			var modeCombination = modeCombinations.get(schedule[periodIndex]);
@@ -110,7 +107,7 @@ public class Simulator {
 
 		final var modePreferencePenalty = calculateModePreferencePenalty(goc, modeCombinations, schedule,
 				normalizedEshModePreferenceRanks);
-		fitness.setModePreferencePenalty(modePreferencePenalty);
+		fitness.withModePreferencePenalty(modePreferencePenalty);
 
 		final var runLengthCost = calculateRunLengthCost(goc, modeCombinations, schedule);
 		fitness.addSoftConstraintViolation(runLengthCost);
@@ -125,7 +122,7 @@ public class Simulator {
 	 * @param cscs            the ControllerScheduleContexts
 	 * @param periodIndex     the index of the simulated period
 	 * @param modeCombination the {@link ModeCombination} of the simulated period
-	 * @param fitness         the {@link Fitness} result
+	 * @param fitness         the {@link Fitness.Builder} result
 	 * @param bsc             the {@link BestScheduleCollector}; or null
 	 */
 	public static void simulatePeriod(//
@@ -133,7 +130,7 @@ public class Simulator {
 			ImmutableMap<EnergyScheduleHandler, Object> cscs, //
 			int periodIndex, //
 			ModeCombination modeCombination, //
-			Fitness fitness, //
+			Fitness.Builder fitness, //
 			BestScheduleCollector bsc) {
 		final var period = gsc.goc.periods().get(periodIndex);
 		final var eshs = gsc.goc.eshs();
@@ -147,18 +144,15 @@ public class Simulator {
 			return;
 		}
 
-		var eshsWithDifferentModesIndex = 0;
+		// Simulate period
+		int modeIndex = 0;
 		for (var esh : eshs) {
 			try {
 				var csc = cscs.get(esh);
 				switch (esh) {
 				case EnergyScheduleHandler.WithDifferentModes e -> {
-					final var modeIndex = e.modes().isEmpty() //
-							? -1 // none available
-							: Optional.ofNullable(modeCombination.mode(eshsWithDifferentModesIndex++)) //
-									.map(Mode::index) //
-									.orElse(-1); // none available
-					final var preProcessedMode = e.preProcessPeriod(period, gsc, modeIndex);
+					final int eshModeIndex = resolveModeIndex(e, modeCombination, modeIndex++);
+					final int preProcessedMode = e.preProcessPeriod(period, gsc, eshModeIndex);
 
 					if (bsc == null) {
 						e.simulate(period, gsc, csc, ef, preProcessedMode, fitness, false);
@@ -181,6 +175,26 @@ public class Simulator {
 
 		final EnergyFlow energyFlow = ef.solve();
 
+		// Evaluate period
+		modeIndex = 0;
+		for (var esh : eshs) {
+			try {
+				var csc = cscs.get(esh);
+				switch (esh) {
+				case EnergyScheduleHandler.WithDifferentModes e -> {
+					final int eshModeIndex = resolveModeIndex(e, modeCombination, modeIndex++);
+					final var preProcessedMode = e.preProcessPeriod(period, gsc, eshModeIndex);
+					e.evaluate(period, gsc, csc, energyFlow, preProcessedMode, fitness, bsc != null);
+				}
+				case EnergyScheduleHandler.WithOnlyOneMode e -> //
+					e.evaluate(period, gsc, csc, energyFlow, fitness);
+				}
+			} catch (RuntimeException e) {
+				throw new RuntimeException("Error during evaluation of [" + esh.getParentId() + "] " //
+						+ "Period [" + period.index() + "/" + period.time() + "]: " + e.getMessage(), e);
+			}
+		}
+
 		// Evaluate Grid-Buy Soft-Limit
 		if (period.gridBuySoftLimit() != null && energyFlow.getGrid() > period.gridBuySoftLimit()) {
 			fitness.addHardConstraintViolation();
@@ -194,12 +208,12 @@ public class Simulator {
 			final int gridToCons = buyFromGrid - gridToEss;
 
 			period.data().gridBuyPrice().ifPresent(p -> {
-				final double gridBuyPrice = p.actual();
+				final double shiftedGridBuyPrice = p.positiveShifted();
 
 				// Cost for direct consumption
-				final double directCost = gridToCons * gridBuyPrice;
+				final double directCost = gridToCons * shiftedGridBuyPrice;
 				// Cost for future consumption after storage
-				final double costWithStorage = gridToEss * gridBuyPrice * EFFICIENCY_FACTOR;
+				final double costWithStorage = gridToEss * shiftedGridBuyPrice * EFFICIENCY_FACTOR;
 
 				fitness.addGridBuyCostScore(directCost + costWithStorage);
 			});
@@ -233,123 +247,96 @@ public class Simulator {
 	}
 
 	/**
-	 * Runs the optimization and reports the "best" simulation result.
+	 * Runs the optimization and reports intermediate and final optimization
+	 * results.
 	 *
-	 * @param previousResultSupplier     supplies the previous
-	 *                                   {@link SimulationResult}
-	 * @param optimizeCurrentPeriod      whether the current period should be
-	 *                                   optimized; if {@code false}, the
-	 *                                   {@link Gene} of the current period is fixed
-	 *                                   to the previous result
-	 * @param engineInterceptor          interceptor to customize the
-	 *                                   {@link Engine.Builder}
-	 * @param evolutionStreamInterceptor interceptor to customize the
-	 *                                   {@link EvolutionStream}
-	 * @param onBestResult               consumer that is called to apply a new best
-	 *                                   {@link SimulationResult}
+	 * @param previousResultSupplier       supplies the previously applied
+	 *                                     {@link SimulationResult}
+	 * @param isCurrentPeriodFixedSupplier supplies whether the current period is
+	 *                                     fixed to the value of the previously
+	 *                                     applied result
+	 * @param engineInterceptor            interceptor to customize the
+	 *                                     {@link Engine.Builder}
+	 * @param evolutionStreamInterceptor   interceptor to customize the
+	 *                                     {@link EvolutionStream}
+	 * @param onResult                     consumer that is called with intermediate
+	 *                                     and final {@link OptimizationResult}s
 	 */
 	public void runOptimization(//
 			Supplier<SimulationResult> previousResultSupplier, //
-			boolean optimizeCurrentPeriod,
+			BooleanSupplier isCurrentPeriodFixedSupplier, //
 			Function<Engine.Builder<IntegerGene, Fitness>, Engine.Builder<IntegerGene, Fitness>> engineInterceptor, //
 			Function<EvolutionStream<IntegerGene, Fitness>, EvolutionStream<IntegerGene, Fitness>> evolutionStreamInterceptor, //
-			Consumer<SimulationResult> onBestResult) {
-		final var isCurrentPeriodFixed = new AtomicBoolean(!optimizeCurrentPeriod);
-		final var codec = EshCodec.of(this.goc, this.modeCombinations, previousResultSupplier,
-				isCurrentPeriodFixed::get);
+			Consumer<OptimizationResult> onResult) {
+		if (this.goc.eshsWithDifferentModes().isEmpty()) {
+			this.simulationsCounter.incrementAndGet();
+			onResult.accept(new OptimizationResult(//
+					SimulationResult.fromQuarters(//
+							this.goc, //
+							new int[this.goc.periods().size()], //
+							this.getTotalNumberOfSimulations(), //
+							this.getTotalNumberOfGenerations()), //
+					OptimizationResult.Type.FINAL));
+			return;
+		}
+
+		final var codec = EshCodec.of(//
+				this.goc, //
+				this.modeCombinations, //
+				previousResultSupplier, //
+				isCurrentPeriodFixedSupplier);
+
 		if (codec == null) {
-			// TODO if there are ESHs we should return the fixed Schedule as
-			// SimulationResult
-			onBestResult.accept(EMPTY_SIMULATION_RESULT);
+			onResult.accept(new OptimizationResult(//
+					EMPTY_SIMULATION_RESULT, //
+					OptimizationResult.Type.FINAL));
+			return;
 		}
 
-		// Decide for single- or multi-threading
-		final Executor executor;
-		final var availableCores = Runtime.getRuntime().availableProcessors() - 1;
-		if (availableCores > 1) {
-			// Executor is a Thread-Pool with CPU-Cores minus one
-			executor = new ForkJoinPool(availableCores);
-			System.out.println("OPTIMIZER Executor runs on " + availableCores + " cores");
-		} else {
-			// Executor is the current thread
-			executor = Runnable::run;
-			System.out.println("OPTIMIZER Executor runs on current thread");
-		}
+		final var executor = createExecutor();
 
-		// Build the Jenetics Engine
-		final var initialPopulation = generateInitialPopulation(codec);
-		var populationSize = fitWithin(10, 50, initialPopulation.population().size() * 2);
+		try {
+			var engine = this.buildEngine(codec, executor);
+			if (engineInterceptor != null) {
+				engine = engineInterceptor.apply(engine);
+			}
 
-		var engine = Engine //
-				.builder(gt -> {
-					this.simulationsCounter.incrementAndGet();
-					return simulate(this.goc, this.modeCombinations, gt, null, this.normalizedEshModePreferenceRanks);
-				}, codec) //
-				.selector(//
-						new EliteSelector<IntegerGene, Fitness>(populationSize / 4, //
-								new TournamentSelector<>(3)))
-				.alterers(//
-						new ShiftMutator<>(), //
-						new ShuffleMutator<>(), //
-						new SinglePointCrossover<>(), //
-						new GaussianMutator<>()) //
-				.populationSize(populationSize) //
-				.executor(executor) //
-				.minimizing();
-		if (engineInterceptor != null) {
-			engine = engineInterceptor.apply(engine);
-		}
+			var stream = engine.build()//
+					.stream(generateInitialPopulation(codec))//
+					.limit(Limits.bySteadyFitness(500))//
+					.limit(result -> !Thread.currentThread().isInterrupted());
 
-		var stream = engine.build() //
-				.stream(initialPopulation) //
-				.limit(result -> !Thread.currentThread().isInterrupted());
-		if (evolutionStreamInterceptor != null) {
-			stream = evolutionStreamInterceptor.apply(stream);
-		}
+			if (evolutionStreamInterceptor != null) {
+				stream = evolutionStreamInterceptor.apply(stream);
+			}
 
-		final var bestPt = new AtomicReference<Phenotype<IntegerGene, Fitness>>();
-		final var earliestCallback = Instant.now().plus(this.earliestCallbackDelay);
+			final var state = new RunState(this.publishInterval);
 
-		// Start the evaluation
-		stream.forEach(er -> {
-			this.generationsCounter.set(er.generation());
-			var currentBest = er.bestPhenotype();
+			stream.forEach(er -> {
+				this.generationsCounter.set(er.generation());
 
-			// Update best phenotype
-			bestPt.updateAndGet(prev -> {
-				if (prev == null || currentBest.fitness().compareTo(prev.fitness()) < 0) {
-					return currentBest;
+				final var currentBest = er.bestPhenotype();
+				if (isBetter(currentBest, state.best)) {
+					state.best = currentBest;
 				}
-				return prev;
+
+				if (this.shouldPublish(state)) {
+					onResult.accept(this.toOptimizationResult(//
+							codec, //
+							state.best, //
+							OptimizationResult.Type.INTERMEDIATE));
+
+					state.lastPublished = state.best;
+				}
 			});
 
-			// Apply current best result
-			if (!isCurrentPeriodFixed.get() && Instant.now().isAfter(earliestCallback)) {
-				if (bestPt.get() == null) {
-					onBestResult.accept(SimulationResult.EMPTY_SIMULATION_RESULT);
-				} else {
-					onBestResult.accept(SimulationResult.fromQuarters(//
-							this.goc, //
-							codec.decode(bestPt.get().genotype()), //
-							this.getTotalNumberOfSimulations(), //
-							this.getTotalNumberOfGenerations()));
-				}
-				// Fix current period form now on
-				isCurrentPeriodFixed.set(true);
-			}
-		});
+			final var best = state.best;
+			onResult.accept(best == null //
+					? new OptimizationResult(EMPTY_SIMULATION_RESULT, OptimizationResult.Type.FINAL) //
+					: this.toOptimizationResult(codec, best, OptimizationResult.Type.FINAL));
 
-		// Apply final best result
-		if (Instant.now().isAfter(earliestCallback)) {
-			if (bestPt.get() == null) {
-				onBestResult.accept(SimulationResult.EMPTY_SIMULATION_RESULT);
-				return;
-			}
-			onBestResult.accept(SimulationResult.fromQuarters(//
-					this.goc, //
-					codec.decode(bestPt.get().genotype()), //
-					this.getTotalNumberOfSimulations(), //
-					this.getTotalNumberOfGenerations()));
+		} finally {
+			shutdownExecutor(executor);
 		}
 	}
 
@@ -399,6 +386,19 @@ public class Simulator {
 		return penalty;
 	}
 
+	private static int resolveModeIndex(//
+			EnergyScheduleHandler.WithDifferentModes esh, //
+			ModeCombination modeCombination, //
+			int index) {
+		if (esh.modes().isEmpty()) {
+			return -1;
+		}
+
+		return Optional.ofNullable(modeCombination.mode(index))//
+				.map(ModeCombinations.Mode::index)//
+				.orElse(-1);
+	}
+
 	/**
 	 * Calculates the run-length based cost for a schedule of modes.
 	 * 
@@ -446,6 +446,86 @@ public class Simulator {
 		return Math.round(cost);
 	}
 
+	private static Executor createExecutor() {
+		final var threadCount = Math.max(1, Runtime.getRuntime().availableProcessors() - 1);
+
+		if (threadCount == 1) {
+			return Runnable::run;
+		}
+
+		return Executors.newFixedThreadPool(//
+				threadCount, //
+				new OptimizerThreadFactory(//
+						OptimizerThreadFactory.KEY_JENETICS, //
+						Thread.MIN_PRIORITY));
+	}
+
+	private Engine.Builder<IntegerGene, Fitness> buildEngine(//
+			EshCodec codec, //
+			Executor executor) {
+		return Engine //
+				.builder(gt -> {
+					this.simulationsCounter.incrementAndGet();
+
+					return simulate(//
+							this.goc, //
+							this.modeCombinations, //
+							gt, //
+							null, //
+							this.normalizedEshModePreferenceRanks) //
+							.build();
+				}, codec) //
+				.selector(new EliteSelector<IntegerGene, Fitness>(new TournamentSelector<>())) //
+				.alterers(//
+						new Mutator<>(0.05), //
+						new ShiftMutator<>(0.2), //
+						new SinglePointCrossover<>(0.2)) //
+				.populationSize(300) //
+				.executor(executor) //
+				.minimizing();
+	}
+
+	private static boolean isBetter(//
+			Phenotype<IntegerGene, Fitness> candidate, //
+			Phenotype<IntegerGene, Fitness> reference) {
+		return reference == null //
+				|| candidate.fitness().compareTo(reference.fitness()) < 0;
+	}
+
+	private boolean shouldPublish(RunState state) {
+		if (state.best == null) {
+			return false;
+		}
+
+		final var now = Instant.now(this.goc.clock());
+		if (now.isBefore(state.nextPublishAt)) {
+			return false;
+		}
+
+		state.nextPublishAt = now.plus(this.publishInterval);
+
+		return isBetter(state.best, state.lastPublished);
+	}
+
+	private OptimizationResult toOptimizationResult(//
+			EshCodec codec, //
+			Phenotype<IntegerGene, Fitness> phenotype, //
+			OptimizationResult.Type type) {
+		return new OptimizationResult(//
+				SimulationResult.fromQuarters(//
+						this.goc, //
+						codec.decode(phenotype.genotype()), //
+						this.getTotalNumberOfSimulations(), //
+						this.getTotalNumberOfGenerations()), //
+				type);
+	}
+
+	private static void shutdownExecutor(Executor executor) {
+		if (executor instanceof ThreadPoolExecutor poolExecutor) {
+			poolExecutor.shutdownNow();
+		}
+	}
+
 	/**
 	 * Serialize.
 	 * 
@@ -458,7 +538,18 @@ public class Simulator {
 	}
 
 	@VisibleForTesting
-	public void setEarliestCallbackDelay(Duration delay) {
-		this.earliestCallbackDelay = delay;
+	public void setPublishInterval(Duration interval) {
+		this.publishInterval = interval;
+	}
+
+	private final class RunState {
+
+		private Phenotype<IntegerGene, Fitness> best;
+		private Phenotype<IntegerGene, Fitness> lastPublished;
+		private Instant nextPublishAt;
+
+		private RunState(Duration publishInterval) {
+			this.nextPublishAt = Instant.now(Simulator.this.goc.clock()).plus(publishInterval);
+		}
 	}
 }

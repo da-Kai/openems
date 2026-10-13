@@ -9,6 +9,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.openems.common.utils.CancellationToken;
+import io.openems.common.utils.Mutex;
+
 /**
  * Defines a generic Worker Thread.
  *
@@ -48,11 +56,14 @@ public abstract class AbstractWorker {
 
 	private final Logger log = LoggerFactory.getLogger(AbstractWorker.class);
 
-	private final AtomicBoolean isStopped = new AtomicBoolean(false);
 	private final Mutex cycleMutex = new Mutex(false);
 
 	private final AtomicReference<DelayReferencePoint> delayReferencePoint = //
 			new AtomicReference<>(DelayReferencePoint.START_TIME);
+
+	private Integer threadPriority;
+	private Thread thread;
+	private CancellationToken threadCancel;
 
 	public AbstractWorker() {
 		this(DelayReferencePoint.START_TIME);
@@ -61,7 +72,6 @@ public abstract class AbstractWorker {
 	public AbstractWorker(DelayReferencePoint drp) {
 		this.delayReferencePoint.set(drp);
 	}
-
 	/**
 	 * Initializes the worker and starts the worker thread.
 	 *
@@ -105,23 +115,44 @@ public abstract class AbstractWorker {
 	}
 
 	private synchronized void startWorker(String name, boolean autoTriggerNextRun) {
-		if (name != null) {
-			this.thread.setName(name);
-		}
-		if (!this.thread.isAlive() && !this.thread.isInterrupted() && !this.isStopped.get()) {
+		if (!this.isCurrentThreadStillAlive()) {
+			this.threadCancel = new CancellationToken();
+			this.thread = new Thread(this::threadRun);
+			if (name != null) {
+				this.thread.setName(name);
+			}
+			if (this.threadPriority != null) {
+				this.thread.setPriority(this.threadPriority);
+			}
 			this.thread.start();
 		}
+
 		if (autoTriggerNextRun) {
 			this.triggerNextRun();
 		}
 	}
 
+	private boolean isCurrentThreadStillAlive() {
+		return this.thread != null && this.thread.isAlive() && !this.threadCancel.isCancelled();
+	}
+
+	public String getThreadName() {
+		return this.thread != null ? this.thread.getName() : null;
+	}
+
 	/**
 	 * Stops the worker thread.
 	 */
-	public void deactivate() {
-		this.isStopped.set(true);
-		this.thread.interrupt();
+	public synchronized void deactivate() {
+		if (this.thread != null) {
+			this.threadCancel.cancel();
+			this.thread.interrupt();
+			try {
+				this.thread.join();
+			} catch (InterruptedException ex) {
+				// Should not be handled
+			}
+		}
 	}
 
 	/**
@@ -152,10 +183,12 @@ public abstract class AbstractWorker {
 		this.cycleMutex.release();
 	}
 
-	protected final Thread thread = new Thread(() -> {
+	protected void threadRun() {
+		final var cancellationToken = this.threadCancel;
+
 		final var cycleStopWatch = Stopwatch.createStarted();
 		var onWorkerExceptionSleep = 1L; // seconds
-		while (!AbstractWorker.this.isStopped.get()) {
+		while (!cancellationToken.isCancelled()) {
 			try {
 				/*
 				 * Wait for next cycle
@@ -190,7 +223,7 @@ public abstract class AbstractWorker {
 
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
-				if (!AbstractWorker.this.isStopped.get()) {
+				if (!cancellationToken.isCancelled()) {
 					AbstractWorker.this.log.error("Worker interrupted. {}: {}", //
 							e.getClass().getSimpleName(), e.getMessage());
 				}
@@ -207,7 +240,7 @@ public abstract class AbstractWorker {
 				onWorkerExceptionSleep = AbstractWorker.this.onWorkerExceptionSleep(onWorkerExceptionSleep);
 			}
 		}
-	});
+	}
 
 	/**
 	 * Little helper method: Sleep and don't let yourself interrupt by a
@@ -224,7 +257,7 @@ public abstract class AbstractWorker {
 		var targetTime = System.currentTimeMillis() + duration * 1000;
 		do {
 			try {
-				var thisDuration = (targetTime - System.currentTimeMillis()) / 1000;
+				var thisDuration = targetTime - System.currentTimeMillis();
 				if (thisDuration > 0) {
 					Thread.sleep(thisDuration);
 				}
@@ -249,7 +282,10 @@ public abstract class AbstractWorker {
 	 * @throws SecurityException        if the current thread cannot modify this
 	 *                                  thread.
 	 */
-	public final void setPriority(int newPriority) {
-		this.thread.setPriority(newPriority);
+	public synchronized void setPriority(int newPriority) {
+		this.threadPriority = newPriority;
+		if (this.thread != null) {
+			this.thread.setPriority(newPriority);
+		}
 	}
 }

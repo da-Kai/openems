@@ -1,17 +1,17 @@
 package io.openems.edge.goodwe.stsbox;
 
 import static io.openems.common.utils.FunctionUtils.doNothing;
-import static io.openems.common.utils.StringUtils.isNullOrEmpty;
 import static io.openems.edge.common.channel.ChannelUtils.setWriteValueIfNotRead;
 import static io.openems.edge.common.event.EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE;
 import static io.openems.edge.common.event.EdgeEventConstants.TOPIC_CYCLE_BEFORE_PROCESS_IMAGE;
 import static org.osgi.service.component.annotations.ConfigurationPolicy.REQUIRE;
 import static org.osgi.service.component.annotations.ReferenceCardinality.MANDATORY;
+import static org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE;
 import static org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL;
+import static org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC;
 import static org.osgi.service.component.annotations.ReferencePolicy.STATIC;
 import static org.osgi.service.component.annotations.ReferencePolicyOption.GREEDY;
 
-import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -24,6 +24,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
+import io.openems.common.referencetarget.GenerateTargetsFromReferences;
+import io.openems.common.types.ServiceBinder;
 import io.openems.edge.bridge.modbus.api.AbstractOpenemsModbusComponent;
 import io.openems.edge.bridge.modbus.api.BridgeModbus;
 import io.openems.edge.bridge.modbus.api.ElementToChannelConverter;
@@ -35,10 +37,15 @@ import io.openems.edge.bridge.modbus.api.element.UnsignedWordElement;
 import io.openems.edge.bridge.modbus.api.task.FC16WriteRegistersTask;
 import io.openems.edge.bridge.modbus.api.task.FC3ReadRegistersTask;
 import io.openems.edge.common.component.OpenemsComponent;
+import io.openems.edge.common.serialnumber.SerialNumberStorage;
 import io.openems.edge.common.taskmanager.Priority;
+import io.openems.edge.common.update.Updateable;
+import io.openems.edge.goodwe.batteryinverter.GoodWeBatteryInverter;
 import io.openems.edge.goodwe.common.enums.GensetInstalledStatus;
 import io.openems.edge.goodwe.common.enums.MultiplexingMode;
 import io.openems.edge.goodwe.genset.GoodWeStsBoxGensetMeter;
+import io.openems.edge.goodwe.stsbox.update.GoodWeStsBoxUpdateParams;
+import io.openems.edge.goodwe.stsbox.update.GoodWeStsBoxUpdateable;
 
 @Designate(ocd = Config.class, factory = true)
 @Component(//
@@ -49,6 +56,7 @@ import io.openems.edge.goodwe.genset.GoodWeStsBoxGensetMeter;
 		TOPIC_CYCLE_BEFORE_PROCESS_IMAGE, //
 		TOPIC_CYCLE_AFTER_PROCESS_IMAGE //
 })
+@GenerateTargetsFromReferences({ "Modbus", "genset", "BatteryInverter" })
 public class GoodWeStsBoxImpl extends AbstractOpenemsModbusComponent
 		implements OpenemsComponent, GoodWeStsBox, ModbusComponent {
 
@@ -56,17 +64,66 @@ public class GoodWeStsBoxImpl extends AbstractOpenemsModbusComponent
 
 	private Config config;
 
-	@Reference
-	private ConfigurationAdmin cm;
+	private final ServiceBinder<GoodWeStsBoxUpdateParams, GoodWeStsBoxUpdateable> updateServiceBinder = new ServiceBinder<>(
+			Updateable.class, updateParams -> {
+				final var bridge = this.getBridgeModbus();
+				if (bridge == null) {
+					return null;
+				}
+				final var inverter = this.batteryInverter;
+				if (inverter == null) {
+					return null;
+				}
+				return new GoodWeStsBoxUpdateable(bridge, updateParams, inverter.getGoodweTypeChannel(),
+						this.channel(GoodWeStsBox.ChannelId.VERSION), this.channel(GoodWeStsBox.ChannelId.SUB_VERSION));
+			}, GoodWeStsBoxUpdateable::deactivate);
 
-	@Reference(policy = STATIC, cardinality = OPTIONAL, policyOption = GREEDY)
+	@Reference(//
+			policy = DYNAMIC, policyOption = GREEDY, cardinality = MULTIPLE //
+	)
+	private void bindUpdateParams(GoodWeStsBoxUpdateParams updateParams) {
+		this.updateServiceBinder.bindService(updateParams);
+	}
+
+	@SuppressWarnings("unused")
+	private void unbindUpdateParams(GoodWeStsBoxUpdateParams updateParams) {
+		this.updateServiceBinder.unbindService(updateParams);
+	}
+
+	@Reference(//
+			policy = STATIC, cardinality = OPTIONAL, policyOption = GREEDY, //
+			target = "(&(id=${config.genset_id})(enabled=true))" //
+	)
 	private volatile GoodWeStsBoxGensetMeter genset;
 
 	@Override
-	@Reference(policy = STATIC, policyOption = GREEDY, cardinality = MANDATORY)
+	@Reference(//
+			policy = STATIC, policyOption = GREEDY, cardinality = MANDATORY, //
+			target = "(&(id=${config.modbus_id})(enabled=true))" //
+	)
 	protected void setModbus(BridgeModbus modbus) {
 		super.setModbus(modbus);
+		this.updateServiceBinder.updateConfiguration();
 	}
+
+	private GoodWeBatteryInverter batteryInverter;
+
+	@Reference(//
+			policy = DYNAMIC, policyOption = GREEDY, cardinality = OPTIONAL, //
+			target = "(&(modbus.id=${config.modbus_id})(enabled=true))" //
+	)
+	protected void bindBatteryInverter(GoodWeBatteryInverter batteryInverter) {
+		this.batteryInverter = batteryInverter;
+		this.updateServiceBinder.updateConfiguration();
+	}
+
+	protected void unbindBatteryInverter(GoodWeBatteryInverter batteryInverter) {
+		this.batteryInverter = null;
+		this.updateServiceBinder.updateConfiguration();
+	}
+
+	@Reference
+	private SerialNumberStorage serialNumberStorage;
 
 	public GoodWeStsBoxImpl() {
 		super(//
@@ -78,24 +135,20 @@ public class GoodWeStsBoxImpl extends AbstractOpenemsModbusComponent
 
 	@Activate
 	private void activate(ComponentContext context, Config config) throws OpenemsNamedException {
-		if (super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
-				"Modbus", config.modbus_id())) {
-			return;
-		}
+		super.activate(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId());
+		this.serialNumberStorage.createAndAddOnChangeListener(this.channel(GoodWeStsBox.ChannelId.SERIAL_NUMBER));
 		this.applyConfig(context, config);
 	}
 
 	@Modified
 	private void modified(ComponentContext context, Config config) throws OpenemsNamedException {
-		if (super.modified(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId(), this.cm,
-				"Modbus", config.modbus_id())) {
-			return;
-		}
+		super.modified(context, config.id(), config.alias(), config.enabled(), config.modbusUnitId());
 		this.applyConfig(context, config);
 	}
 
 	@Deactivate
-	private void deactivate(ComponentContext context, Config config) {
+	@Override
+	protected void deactivate() {
 		super.deactivate();
 	}
 
@@ -165,14 +218,9 @@ public class GoodWeStsBoxImpl extends AbstractOpenemsModbusComponent
 	}
 
 	private void applyConfig(ComponentContext context, Config config) throws OpenemsNamedException {
-		this.config = config;
+		this.updateServiceBinder.updateBundleContext(context.getBundleContext());
 
-		// updateReferenceFilter for genset
-		if (isNullOrEmpty(config.genset_id())) {
-			OpenemsComponent.updateReferenceFilter(this.cm, this.servicePid(), "genset", "(false=true)");
-		} else {
-			OpenemsComponent.updateReferenceFilter(this.cm, this.servicePid(), "genset", config.genset_id());
-		}
+		this.config = config;
 
 		// validate charge SoC Start/End
 		if (this.config.chargeSocStart() >= this.config.chargeSocEnd()) {
