@@ -113,12 +113,12 @@ public abstract class WebSocketClient extends org.java_websocket.client.WebSocke
 		/*
 		 * From here it's a copy of #reset()
 		 */
-		Thread current = Thread.currentThread();
+		final Thread current = Thread.currentThread();
 		if (current == writeThread || current == connectReadThread) {
 			throw new IllegalStateException(
 					"You cannot initialize a reconnect out of the websocket thread. Use reconnect in another thread to ensure a successful cleanup.");
 		}
-		var closeSuccess = FunctionUtils.runWithTimeout("WebsocketClient::Close", closeTimeoutMs, () -> {
+		var closeSuccess = FunctionUtils.runWithTimeout(current.getName() + "::Close", closeTimeoutMs, () -> {
 			try {
 				// This socket null check ensures we can reconnect a socket that failed to
 				// connect. It's an uncommon edge case, but we want to make sure we support it
