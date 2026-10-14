@@ -1,6 +1,7 @@
 package io.openems.common.websocket;
 
 import com.google.common.base.Stopwatch;
+import io.openems.common.exceptions.OpenemsException;
 import io.openems.common.logger.LazyContextLogger;
 import io.openems.common.uri.URIResolver;
 import io.openems.common.utils.FunctionUtils;
@@ -81,11 +82,18 @@ public class ClientReconnectorWorker extends AbstractWorker {
         for (var uri : retryUris) {
             final var ws = this.parent.setupWebsocket(uri);
             try {
-                this.log.info("# Connecting WebSocket to '{}'... Blocking[{}s]", uri, this.config.connectTimeoutSeconds());
-                this.isConnected.set(ws.connectBlocking(this.config.connectTimeoutSeconds(), TimeUnit.SECONDS));
-            } catch (IllegalStateException e) {
+                final var timeoutSec = this.config.connectTimeoutSeconds();
+                this.log.info("# Connecting WebSocket to '{}'... Blocking[{}s]", uri, timeoutSec);
+                this.isConnected.set(ws.connectBlocking(timeoutSec, TimeUnit.SECONDS));
+            } catch (InterruptedException e) {
+                this.log.error("# Exception while connecting: {}", e.toString());
+                Thread.currentThread().interrupt();
+                this.resetWebSocketClient(ws, ex -> //
+                        this.log.error("# Exception while resetting WebSocketClient: {}", ex.toString()));
+            } catch (RuntimeException e) {
                 this.log.warn("# Exception while connecting: {}", e.toString());
-                this.resetWebSocketClient(ws);
+                this.resetWebSocketClient(ws, ex -> //
+                        this.log.warn("# Exception while resetting WebSocketClient: {}", ex.toString()));
             }
 
 
@@ -123,11 +131,11 @@ public class ClientReconnectorWorker extends AbstractWorker {
      * original one may block at the call of 'closeBlocking()' method. It also sets
      * the new attachment from the attachment supplier.
      *
-     * @param <T> the type of the attachment
-     * @param ws  the {@link WebSocketClient} to reset
-     * @throws Exception on error
+     * @param <T>               the type of the attachment
+     * @param ws                the {@link WebSocketClient} to reset
+     * @param exceptionConsumer a consumer to handle exceptions that occur during the reset process
      */
-    protected <T extends WsData> void resetWebSocketClient(WebSocketClient ws) throws Exception {
+    protected <T extends WsData> void resetWebSocketClient(WebSocketClient ws, Consumer<Exception> exceptionConsumer) {
         this.callEvent(WebsocketReconnectorEvent.RESET_WEBSOCKET_CLIENT);
 
         try {
@@ -138,6 +146,11 @@ public class ClientReconnectorWorker extends AbstractWorker {
                     ex.getMessage());
             this.additionalLogInfos.add("{CLOSE_FAILED: " + ex.getMessage() + "}");
             this.callEvent(WebsocketReconnectorEvent.CLOSE_FAILED);
+        } catch (OpenemsException e) {
+            exceptionConsumer.accept(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            exceptionConsumer.accept(e);
         }
     }
 

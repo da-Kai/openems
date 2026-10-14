@@ -56,7 +56,7 @@ public abstract class WebSocketClient extends org.java_websocket.client.WebSocke
 	}
 
 	private static Field getField(String name) throws NoSuchFieldException {
-		Field field = WebSocketClient.class.getDeclaredField(name);
+		Field field = org.java_websocket.client.WebSocketClient.class.getDeclaredField(name);
 		field.setAccessible(true);
 		return field;
 	}

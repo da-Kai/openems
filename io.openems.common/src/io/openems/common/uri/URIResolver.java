@@ -1,6 +1,5 @@
 package io.openems.common.uri;
 
-import jdk.dynalink.linker.support.Lookup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,7 +15,6 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -75,9 +73,15 @@ public class URIResolver {
 		return subdomain.endsWith("." + base);
 	}
 
+	private static boolean isNoDomain(String host) {
+		final var isIP = host.matches("\\d+\\.\\d+\\.\\d+\\.\\d+") || host.contains(":");
+		final var isHostname = !host.contains(".");
+		return isIP || isHostname;
+	}
+
 	private static List<URI> resolveSRV(URI uri) {
 		String host = uri.getHost();
-		if (host == null || host.isEmpty()) {
+		if (host == null || host.isEmpty() || isNoDomain(host)) {
 			return List.of(uri);
 		}
 
@@ -87,8 +91,9 @@ public class URIResolver {
 		env.put("java.naming.factory.initial", "com.sun.jndi.dns.DnsContextFactory");
 		env.put("java.naming.provider.url", "dns:");
 
+		InitialDirContext ctx = null;
 		try {
-			InitialDirContext ctx = new InitialDirContext(env);
+			ctx = new InitialDirContext(env);
 			Attributes attrs = ctx.getAttributes(srvQuery, new String[] { "SRV" });
 			Attribute srvAttr = attrs.get("SRV");
 
@@ -147,7 +152,15 @@ public class URIResolver {
 		} catch (Exception e) {
 			log.error("SRV resolution failed: {}", e.getMessage());
 			return List.of(uri);
-		}
+		} finally {
+            if (ctx != null) {
+                try {
+                    ctx.close();
+                } catch (Exception e) {
+                    log.warn("Failed to close InitialDirContext: {}", e.getMessage());
+                }
+            }
+        }
 	}
 
 	private static List<ResolvedURI> resolveDomain(URI uri, ResolveStrategy strategy) {
@@ -172,10 +185,10 @@ public class URIResolver {
 			final var isIpv6 = ip instanceof Inet6Address;
 
 			if (strategy == ResolveStrategy.IPv4_ONLY && !isIpv4) {
-				return Collections.emptyList();
+				continue;
 			}
 			if (strategy == ResolveStrategy.IPv6_ONLY && !isIpv6) {
-				return Collections.emptyList();
+				continue;
 			}
 
 			final ResolvedURI resolved;
@@ -183,7 +196,7 @@ public class URIResolver {
 				resolved = new ResolvedURI(uri, ip, host);
 			} catch (URISyntaxException ex) {
 				log.error("Unable to resolve URI with ip '{}'", ip.getHostAddress());
-				return Collections.emptyList();
+				continue;
 			}
 
 			if (strategy == ResolveStrategy.ANY //

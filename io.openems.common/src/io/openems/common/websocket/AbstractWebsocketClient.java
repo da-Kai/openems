@@ -73,7 +73,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 						AbstractWebsocketClient.this.getOnOpen(), //
 						AbstractWebsocketClient.this::logWarn, //
 						AbstractWebsocketClient.this::handleInternalError));
-				this.updateIsConnected();
+				this.updateIsConnected(true);
 			}
 
 			@Override
@@ -119,21 +119,28 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 
 				AbstractWebsocketClient.this.log.info("WebSocket [{}] closed. Code [{}] Reason [{}]", uri, code,
 						reason);
-				if (this.updateIsConnected()) {
+				if (this.updateIsConnected(false)) {
 					AbstractWebsocketClient.this.reconnectorWorker.triggerNextRun();
 				}
 			}
 
-			private boolean updateIsConnected() {
-				var isOpen = this.isOpen();
-				if (AbstractWebsocketClient.this.isConnected.getAndSet(isOpen) != isOpen) {
-					// Value has changed
-					AbstractWebsocketClient.this.onConnectedChange.accept(isOpen);
-					return true;
+			private boolean updateIsConnected(boolean isOpen) {
+				if (this == AbstractWebsocketClient.this.ws.get()) {
+					return AbstractWebsocketClient.this.updateIsConnected(isOpen);
 				}
 				return false;
 			}
+
 		};
+	}
+
+	private boolean updateIsConnected(boolean isOpen) {
+		if (this.isConnected.getAndSet(isOpen) != isOpen) {
+			// Value has changed
+			this.onConnectedChange.accept(isOpen);
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -177,7 +184,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 		if (websocket != null) {
 			websocket.close();
 		}
-		this.isConnected.set(false);
+		this.updateIsConnected(false);
 	}
 
 	/**
@@ -229,6 +236,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 		this.reconnectorWorker.deactivate();
 		// close websocket
 		final var websocket = this.ws.getAndSet(null);
+		this.updateIsConnected(false);
 		if (websocket != null) {
 			websocket.close(CloseFrame.NORMAL, "Closing connection [" + this.getName() + "]");
 		}

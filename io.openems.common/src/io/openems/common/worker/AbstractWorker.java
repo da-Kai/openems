@@ -150,7 +150,7 @@ public abstract class AbstractWorker {
 			try {
 				this.thread.join();
 			} catch (InterruptedException ex) {
-				// Should not be handled
+				Thread.currentThread().interrupt();
 			}
 		}
 	}
