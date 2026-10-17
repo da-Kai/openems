@@ -1,5 +1,14 @@
 package io.openems.common.worker;
 
+import com.google.common.base.Stopwatch;
+import io.openems.common.utils.Mutex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -27,6 +36,21 @@ import io.openems.common.utils.Mutex;
  */
 public abstract class AbstractWorker {
 
+	/**
+	 * Defines the reference point for the delay of the next execution of the
+	 * forever() method.
+	 *
+	 * <ul>
+	 * <li>{@code START_TIME}: The delay is calculated from the start time of the
+	 * previous execution of forever().</li>
+	 * <li>{@code END_TIME}: The delay is calculated from the end time of the
+	 * previous execution of forever().</li>
+	 * </ul>
+	 */
+	public enum DelayReferencePoint {
+		START_TIME, END_TIME
+	}
+
 	public static final int ALWAYS_WAIT_FOR_TRIGGER_NEXT_RUN = -1;
 	public static final int DO_NOT_WAIT = 0;
 
@@ -34,10 +58,20 @@ public abstract class AbstractWorker {
 
 	private final Mutex cycleMutex = new Mutex(false);
 
+	private final AtomicReference<DelayReferencePoint> delayReferencePoint = //
+			new AtomicReference<>(DelayReferencePoint.START_TIME);
+
 	private Integer threadPriority;
 	private Thread thread;
 	private CancellationToken threadCancel;
 
+	public AbstractWorker() {
+		this(DelayReferencePoint.START_TIME);
+	}
+
+	public AbstractWorker(DelayReferencePoint drp) {
+		this.delayReferencePoint.set(drp);
+	}
 	/**
 	 * Initializes the worker and starts the worker thread.
 	 *
@@ -61,7 +95,7 @@ public abstract class AbstractWorker {
 
 	/**
 	 * Modifies the worker thread.
-	 * 
+	 *
 	 * @param name                    the name of the worker thread
 	 * @param initiallyTriggerNextRun true if the {@link AbstractWorker#forever()}
 	 *                                method should get called immediately; if not
@@ -73,7 +107,7 @@ public abstract class AbstractWorker {
 
 	/**
 	 * Modifies the worker thread.
-	 * 
+	 *
 	 * @param name the name of the worker thread
 	 */
 	public void modified(String name) {
@@ -116,7 +150,7 @@ public abstract class AbstractWorker {
 			try {
 				this.thread.join();
 			} catch (InterruptedException ex) {
-				// Should not be handled
+				Thread.currentThread().interrupt();
 			}
 		}
 	}
@@ -128,6 +162,9 @@ public abstract class AbstractWorker {
 
 	/**
 	 * Gets the cycleTime of this worker in [ms].
+	 * 
+	 * <p>
+	 * Does not have to be deterministic. it is evaluated before every cycle.
 	 * <ul>
 	 * <li>&gt; 0 sets the minimum execution time of one Cycle
 	 * <li>= 0 never wait between two consecutive executions of forever()
@@ -149,8 +186,8 @@ public abstract class AbstractWorker {
 	protected void threadRun() {
 		final var cancellationToken = this.threadCancel;
 
+		final var cycleStopWatch = Stopwatch.createStarted();
 		var onWorkerExceptionSleep = 1L; // seconds
-		var cycleStart = System.currentTimeMillis();
 		while (!cancellationToken.isCancelled()) {
 			try {
 				/*
@@ -161,7 +198,10 @@ public abstract class AbstractWorker {
 					// no wait
 				} else if (cycleTime > 0) {
 					// wait remaining cycleTime
-					var sleep = cycleTime - (System.currentTimeMillis() - cycleStart);
+					final var sleep = switch (this.delayReferencePoint.get()) {
+					case START_TIME -> cycleTime - cycleStopWatch.elapsed(TimeUnit.MILLISECONDS);
+					case END_TIME -> cycleTime;
+					};
 					if (sleep > 0) {
 						AbstractWorker.this.cycleMutex.awaitOrTimeout(sleep, TimeUnit.MILLISECONDS);
 					}
@@ -171,28 +211,32 @@ public abstract class AbstractWorker {
 				}
 
 				// store start time
-				cycleStart = System.currentTimeMillis();
+				cycleStopWatch.reset().start();
 
 				/*
 				 * Call forever() forever.
 				 */
 				AbstractWorker.this.forever();
 
-				// Everything went ok -> decrease onWorkerExceptionSleep
-				onWorkerExceptionSleep = Math.max(onWorkerExceptionSleep - 5, 1);
+				// Everything went ok -> reset onWorkerExceptionSleep
+				onWorkerExceptionSleep = 1;
 
-			} catch (Throwable e) {
-				if (e instanceof InterruptedException && cancellationToken.isCancelled()) {
-					// nothing
-				} else {
-					/*
-					 * Handle Worker-Exceptions
-					 */
-					AbstractWorker.this.log
-							.error("Worker error. " + e.getClass().getSimpleName() + ": " + e.getMessage() //
-									+ (e.getCause() != null ? " - Caused by: " + e.getCause().getMessage() : ""));
-					e.printStackTrace();
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				if (!cancellationToken.isCancelled()) {
+					AbstractWorker.this.log.error("Worker interrupted. {}: {}", //
+							e.getClass().getSimpleName(), e.getMessage());
 				}
+				break;
+			} catch (Throwable e) {
+				/*
+				 * Handle Worker-Exceptions
+				 */
+				AbstractWorker.this.log.error("Worker error. {}: {}{}", //
+						e.getClass().getSimpleName(), //
+						e.getMessage(), //
+						e.getCause() == null ? "" : " - Caused by: " + e.getCause().getMessage(), //
+						e);
 				onWorkerExceptionSleep = AbstractWorker.this.onWorkerExceptionSleep(onWorkerExceptionSleep);
 			}
 		}
@@ -226,7 +270,7 @@ public abstract class AbstractWorker {
 
 	/**
 	 * Changes the priority of this thread.
-	 * 
+	 *
 	 * <p>
 	 * See {@link Thread#setPriority(int)}, {@link Thread#MIN_PRIORITY},
 	 * {@link Thread#NORM_PRIORITY}, {@link Thread#MAX_PRIORITY}}.

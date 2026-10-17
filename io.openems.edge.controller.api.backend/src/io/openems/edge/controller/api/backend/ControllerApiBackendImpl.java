@@ -1,37 +1,6 @@
 package io.openems.edge.controller.api.backend;
 
-import static io.openems.common.utils.StringUtils.definedOrElse;
-
-import java.net.InetSocketAddress;
-import java.net.Proxy;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-
-import io.openems.common.websocket.CommonHttpHeader;
-import org.osgi.service.component.ComponentContext;
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.ConfigurationPolicy;
-import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.event.Event;
-import org.osgi.service.event.EventHandler;
-import org.osgi.service.event.propertytypes.EventTopics;
-import org.osgi.service.metatype.annotations.Designate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.jsonrpc.base.JsonrpcRequest;
 import io.openems.common.jsonrpc.base.JsonrpcResponseSuccess;
@@ -39,7 +8,9 @@ import io.openems.common.jsonrpc.notification.EdgeConfigNotification;
 import io.openems.common.oem.OpenemsEdgeOem;
 import io.openems.common.types.EdgeConfig;
 import io.openems.common.utils.ThreadPoolUtils;
-import io.openems.common.websocket.AbstractWebsocketClient;
+import io.openems.common.websocket.ClientReconnectorWorker;
+import io.openems.common.websocket.CommonHttpHeader;
+import io.openems.common.websocket.WebsocketClientParams;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -52,6 +23,33 @@ import io.openems.edge.controller.api.Controller;
 import io.openems.edge.controller.api.backend.api.ControllerApiBackend;
 import io.openems.edge.controller.api.common.ApiWorker;
 import io.openems.edge.controller.api.common.handler.ComponentConfigRequestHandler;
+import org.osgi.service.component.ComponentContext;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.event.Event;
+import org.osgi.service.event.EventHandler;
+import org.osgi.service.event.propertytypes.EventTopics;
+import org.osgi.service.metatype.annotations.Designate;
+import org.slf4j.Logger;
+
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
+import static io.openems.common.utils.StringUtils.definedOrElse;
 
 @Designate(ocd = Config.class, factory = true)
 @Component(//
@@ -73,7 +71,7 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 	protected final SendChannelValuesWorker sendChannelValuesWorker = new SendChannelValuesWorker(this);
 	protected final ApiWorker apiWorker = new ApiWorker(this);
 
-	private final Logger log = LoggerFactory.getLogger(ControllerApiBackendImpl.class);
+	private final Logger log = OpenemsComponent.getComponentLogger(this);
 	private final String instanceId = UUID.randomUUID().toString();
 
 	@Reference
@@ -93,7 +91,9 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 
 	protected WebsocketClient websocket = null;
 	protected Config config;
-	/** Used for SubscribeSystemLogRequests. */
+	/**
+	 * Used for SubscribeSystemLogRequests.
+	 */
 	private ScheduledExecutorService executor;
 
 	public ControllerApiBackendImpl() {
@@ -126,37 +126,40 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 		this.apiWorker.setTimeoutSeconds(config.apiTimeout());
 
 		// Get URI
-		URI uri = null;
+		final URI uri;
 		try {
 			uri = new URI(definedOrElse(config.uri(), this.oem.getBackendApiUrl()));
 		} catch (URISyntaxException e) {
-			this.log.error("URI [" + config.uri() + "] is invalid: " + e.getMessage());
+			this.log.error("URI [{}] is invalid: {}", config.uri(), e.getMessage());
 			return;
 		}
 
 		// Get Proxy configuration
-		Proxy proxy;
-		if (config.proxyAddress().isBlank() || config.proxyPort() == 0) {
-			proxy = AbstractWebsocketClient.NO_PROXY;
+		final Proxy proxy;
+		if (config.proxyAddress().trim().isBlank() || config.proxyPort() == 0) {
+			proxy = WebsocketClientParams.NO_PROXY;
 		} else {
 			proxy = new Proxy(config.proxyType(), new InetSocketAddress(config.proxyAddress(), config.proxyPort()));
 		}
 
-		// create http headers
-		Map<String, String> httpHeaders = new HashMap<>();
+		final var httpHeaders = new HashMap<String, String>();
 		httpHeaders.put(CommonHttpHeader.APIKEY.asString(), config.apikey());
 		httpHeaders.put(CommonHttpHeader.INSTANCE_ID.asString(), this.instanceId);
 
 		final var uriScheme = uri.getScheme();
 		if (!("https".equalsIgnoreCase(uriScheme) || "wss".equalsIgnoreCase(uriScheme))) {
 			this.log.warn("Insecure or missing URI scheme detected: [{}]. " //
-					+ "This may lead to credential exposure. " //
-					+ "Do not use this configuration in production!", //
+							+ "This may lead to credential exposure. " //
+							+ "Do not use this configuration in production!", //
 					uriScheme == null ? "N/A" : uriScheme);
 		}
 
 		// Create Websocket instance
-		this.websocket = new WebsocketClient(this, name, uri, httpHeaders, proxy);
+		this.websocket = new WebsocketClient(this, name, new WebsocketClientParams.Builder(uri) //
+				.proxy(proxy) //
+				.httpHeaders(httpHeaders) //
+				.reconnectorConfig(ClientReconnectorWorker.DEFAULT_CONFIG.withEventHandler(this::onReconnectEvent)) //
+				.build());
 		this.websocket.start();
 
 		this.resendHistoricDataWorker = this.resendHistoricDataWorkerFactory.get();
@@ -175,6 +178,12 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 			call.put(EdgeKeys.IS_FROM_BACKEND_KEY, true);
 		});
 		this.requestHandler.setDebug(config.debugMode());
+	}
+
+	private void onReconnectEvent(ClientReconnectorWorker.WebsocketReconnectorEvent event) {
+		if (event == ClientReconnectorWorker.WebsocketReconnectorEvent.CLOSE_FAILED) {
+			this.getConnectionCloseFailureChannel().setNextValue(true);
+		}
 	}
 
 	@Override
@@ -236,7 +245,7 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 				this.sendChannelValuesWorker.sendValuesOfAllChannelsOnce();
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			this.log.error(e.toString(), e);
 		}
 	}
 

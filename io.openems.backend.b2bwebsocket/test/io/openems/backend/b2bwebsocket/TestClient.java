@@ -7,6 +7,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.openems.common.websocket.WebsocketClientParams;
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,13 +47,14 @@ public class TestClient extends AbstractWebsocketClient<WsData> implements AutoC
 		var auth = new String(Base64.getEncoder().encode((username + ":" + password).getBytes()),
 				StandardCharsets.UTF_8);
 		httpHeaders.put("Authorization", "Basic " + auth);
-		var client = new TestClient(new URI(uri), httpHeaders);
+		var params = new WebsocketClientParams.Builder(new URI(uri)).httpHeaders(httpHeaders).build();
+		var client = new TestClient(params);
 		client.startBlocking();
 		return client;
 	}
 
-	protected TestClient(URI serverUri, Map<String, String> httpHeaders) {
-		super("B2bwebsocket.Unittest", serverUri, httpHeaders);
+	protected TestClient(WebsocketClientParams params) {
+		super("B2bwebsocket.Unittest", params);
 		this.onOpen = (ws, handshake) -> {
 			this.log.info("OnOpen: {}", handshake);
 			return null;
