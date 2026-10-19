@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import io.openems.backend.common.edge.jsonrpc.UpdateMetadataCache;
 import io.openems.backend.common.metadata.Edge;
@@ -23,19 +24,19 @@ public class EdgeCache {
 	/**
 	 * Map Edge-ID (String) to Edge. Initialized with expected cache size.
 	 */
-	private final Map<String, MyEdge> edgeIdToEdge = new HashMap<>(EXPECTED_NUMBER_OF_EDGES);
+	private final Map<String, MyEdge> edgeIdToEdge = new ConcurrentHashMap<>(EXPECTED_NUMBER_OF_EDGES);
 
 	/**
 	 * Map Odoo-ID (Integer) to Edge-ID (String). Initialized with expected cache
 	 * size.
 	 */
-	private final Map<Integer, String> odooIdToEdgeId = new HashMap<>(EXPECTED_NUMBER_OF_EDGES);
+	private final Map<Integer, String> odooIdToEdgeId = new ConcurrentHashMap<>(EXPECTED_NUMBER_OF_EDGES);
 
 	/**
 	 * Map Apikey (String) to Edge-ID (String). Initialized with expected cache
 	 * size.
 	 */
-	private final Map<String, String> apikeyToEdgeId = new HashMap<>(EXPECTED_NUMBER_OF_EDGES);
+	private final Map<String, String> apikeyToEdgeId = new ConcurrentHashMap<>(EXPECTED_NUMBER_OF_EDGES);
 
 	public EdgeCache(MetadataOdoo parent) {
 		this.parent = parent;
@@ -85,7 +86,7 @@ public class EdgeCache {
 	 * @param edgeId the Edge-ID
 	 * @return the Edge, or null
 	 */
-	public synchronized MyEdge getEdgeFromEdgeId(String edgeId) {
+	public MyEdge getEdgeFromEdgeId(String edgeId) {
 		return this.edgeIdToEdge.get(edgeId);
 	}
 
@@ -95,7 +96,7 @@ public class EdgeCache {
 	 * @param odooId the Odoo-ID
 	 * @return the Edge, or null
 	 */
-	public synchronized MyEdge getEdgeFromOdooId(int odooId) {
+	public MyEdge getEdgeFromOdooId(int odooId) {
 		var edgeId = this.odooIdToEdgeId.get(odooId);
 		if (edgeId == null) {
 			return null;
@@ -109,7 +110,7 @@ public class EdgeCache {
 	 * @param apikey the Apikey
 	 * @return the Edge, or null
 	 */
-	public synchronized MyEdge getEdgeForApikey(String apikey) {
+	public MyEdge getEdgeForApikey(String apikey) {
 		var edgeId = this.apikeyToEdgeId.get(apikey);
 		if (edgeId == null) {
 			return null;
