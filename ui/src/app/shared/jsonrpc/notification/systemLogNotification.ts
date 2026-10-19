@@ -9,12 +9,12 @@ import { JsonrpcNotification } from "../base";
  *   "jsonrpc": "2.0",
  *   "method": "systemLog",
  *   "params": {
- *     "line": {
+ *     "lines": [{
  *       "time": string, // in the form '2011-12-03T10:15:30+01:00'
  *       "level": 'ERROR' | 'WARN' | 'INFO',
  *       "source": string,
  *       "message": string
- *     }
+ *     }]
  *   }
  * }
  * </pre>
@@ -25,7 +25,7 @@ export class SystemLogNotification extends JsonrpcNotification {
 
     public constructor(
         public override readonly params: {
-            line: SystemLog
+            lines: SystemLog[]
         },
     ) {
         super(SystemLogNotification.METHOD, params);
