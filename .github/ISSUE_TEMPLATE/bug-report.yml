@@ -17,12 +17,12 @@ body:
       description: |
         Please provide a description of your issue here.
     validations:
-      required: true 
+      required: true
   - type: textarea
     id: screenshots
     attributes:
       label: Screenshots
-      description: Please provide one or more screenshots, if feasible. 
+      description: Please provide one or more screenshots, if feasible.
   - type: input
     id: os-ver
     attributes:
