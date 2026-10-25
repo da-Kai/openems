@@ -1,0 +1,171 @@
+#!/bin/bash
+
+set +x
+
+OPENEMS="/home/openems"
+BRANCH="${BRANCH:-develop}"
+TYPE="${TYPE:-edge}"
+
+BUILD_ARGS=""
+IMG_NAME=""
+GIT_TOKEN="$GIT_TOKEN"
+
+DOCKER_SERVER="$DOCKER_SERVER"
+
+if [[ -f /home/openems/git_secret ]]
+then
+    GIT_TOKEN="$(cat /home/openems/git_secret)";
+fi
+
+set -e
+
+function fix_files {
+    echo "cleanup files"
+    find "${OPENEMS}/tools/docker" -type f -print0 | xargs -0 dos2unix 2>&1 >/dev/null
+    find "${OPENEMS}/tools/docker" -type f -name 'run' -o -name '*.sh' -exec chmod +x {} \; >/dev/null
+}
+
+function build_build-args {
+    local build_args=""
+    local name value arg_name
+
+    echo "BUILD_ARGS:"
+
+    while read -r name; do
+        value="${!name}"
+        arg_name="${name#BUILDARG_}"
+
+        echo "- ${arg_name}=${value}"
+
+        build_args+=" --build-arg ${arg_name}=${value}"
+    done < <(compgen -e BUILDARG_)
+
+    echo ""
+
+    export BUILD_ARGS="${build_args# }"
+}
+
+function build_edge {
+    echo
+    echo "____________"
+    echo " BUILD EDGE "
+
+    IMG_NAME="${IMAGE_PREFIX}/edge/${BRANCH,,}:$(date +'%y%m%d%H%M%S')"
+    echo
+    echo "${IMG_NAME}"
+
+    set -x
+
+    docker buildx build --no-cache --network host $BUILD_ARGS -t $IMG_NAME -f $OPENEMS/tools/docker/edge/Dockerfile $OPENEMS
+}
+
+function build_backend {
+    echo
+    echo "_______________"
+    echo " BUILD BACKEND "
+
+    IMG_NAME="${IMAGE_PREFIX}/backend/${BRANCH,,}:$(date +'%y%m%d%H%M%S')"
+    echo
+    echo "${IMG_NAME}"
+
+    build_build-args;
+
+    set -x
+
+    docker buildx build --no-cache --network host $BUILD_ARGS -t $IMG_NAME -f $OPENEMS/tools/docker/backend/Dockerfile $OPENEMS
+}
+
+function build_backend-edge {
+    echo
+    echo "_______________"
+    echo " BUILD BACKEND-EDGE "
+
+    IMG_NAME="${IMAGE_PREFIX}/backend-edge/${BRANCH,,}:$(date +'%y%m%d%H%M%S')"
+    echo
+    echo "${IMG_NAME}"
+
+    build_build-args;
+
+    set -x
+
+    docker buildx build --no-cache --network host $BUILD_ARGS -t $IMG_NAME -f $OPENEMS/tools/docker/backend-edge/Dockerfile $OPENEMS
+}
+
+function build_backend_ui {
+    echo
+    echo "__________"
+    echo " BUILD BACKEND UI "
+
+    IMG_NAME="${IMAGE_PREFIX}/ui/${BRANCH,,}:$(date +'%y%m%d%H%M%S')"
+    echo
+    echo "${IMG_NAME}"
+
+    export BUILDARG_VERSION=${BUILDARG_VERSION:-"fenecon,fenecon-backend-docker,prod"};
+
+    build_build-args;
+
+    set -x
+
+    docker buildx build --no-cache --network host $BUILD_ARGS -t $IMG_NAME -f "${OPENEMS}/tools/docker/ui/Dockerfile.backend" "${OPENEMS}"
+}
+
+function build_edge_ui {
+    echo
+    echo "__________"
+    echo " BUILD EDGE UI "
+
+    IMG_NAME="${IMAGE_PREFIX}/ui-edge/${BRANCH,,}:$(date +'%y%m%d%H%M%S')"
+    echo
+    echo "${IMG_NAME}"
+
+    export BUILDARG_VERSION=${BUILDARG_VERSION:-"fenecon,fenecon-edge-docker,prod"};
+
+    build_build-args;
+
+    set -x
+
+    docker buildx build --no-cache --network host $BUILD_ARGS -t $IMG_NAME -f "${OPENEMS}/tools/docker/ui/Dockerfile.edge" "${OPENEMS}"
+}
+
+### MAIN ###
+
+echo "Start build ${TYPE} for ${BRANCH}"
+
+if [ -e "${GIT_TOKEN}" ]; then
+        curl -s -H "Authorization: token $GIT_TOKEN" "$GIT_SERVER/api/v1/user" 2>&1 >/dev/null
+        GIT_ORIGIN="${GIT_ORIGIN%%:*}:${GIT_TOKEN}@${GIT_ORIGIN#*:}"
+fi
+
+git remote set-url origin "${GIT_ORIGIN}"
+
+echo "Update GIT-Repo!!"
+
+git fetch --no-all origin "$BRANCH"
+git checkout "$BRANCH"
+git reset --hard "origin/${BRANCH}"
+
+fix_files;
+
+case "${TYPE^^}" in
+    "EDGE") build_edge;;
+    "BACKEND") build_backend;;
+    "UI" | "BACKEND-UI") build_backend_ui;;
+    "EDGE-UI") build_edge_ui;;
+    "BACKEND-EDGE") build_backend-edge;;
+    *) echo "type '$TYPE' not found!"; exit 404;;
+esac
+
+if [ -e "${DOCKER_SERVER}" ]; then
+    docker tag $IMG_NAME localhost:5000/$IMG_NAME
+    docker push localhost:5000/$IMG_NAME
+
+    docker tag $IMG_NAME $DOCKER_SERVER/$IMG_NAME
+    docker push $DOCKER_SERVER/$IMG_NAME
+fi
+
+set +x
+
+echo
+echo
+echo "Built ${TYPE} for ${BRANCH} as image ${IMG_NAME}!"
+echo
