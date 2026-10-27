@@ -10,6 +10,7 @@ import org.osgi.service.event.EventHandler;
 import io.openems.common.channel.Level;
 import io.openems.common.channel.PersistencePriority;
 import io.openems.common.channel.Unit;
+import io.openems.common.event.Subscribable;
 import io.openems.common.jsonrpc.base.JsonrpcRequest;
 import io.openems.common.jsonrpc.base.JsonrpcResponseSuccess;
 import io.openems.common.types.OpenemsType;
@@ -21,9 +22,9 @@ import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.user.User;
 import io.openems.edge.controller.api.Controller;
 
-public interface ControllerApiBackend extends Controller, OpenemsComponent, EventHandler {
+public interface ControllerApiBackend extends Controller, OpenemsComponent, org.osgi.service.event.EventHandler {
 
-	public enum ChannelId implements io.openems.edge.common.channel.ChannelId {
+	enum ChannelId implements io.openems.edge.common.channel.ChannelId {
 		API_WORKER_LOG(Doc.of(OpenemsType.STRING)//
 				.text("Logs Write-Commands via ApiWorker")), //
 		UNABLE_TO_SEND(Doc.of(Level.WARNING)// Make sure this is always persisted, as it is required for resending
@@ -59,7 +60,7 @@ public interface ControllerApiBackend extends Controller, OpenemsComponent, Even
 	 *
 	 * @return the Channel
 	 */
-	public default StringReadChannel getApiWorkerLogChannel() {
+	default StringReadChannel getApiWorkerLogChannel() {
 		return this.channel(ChannelId.API_WORKER_LOG);
 	}
 
@@ -68,7 +69,7 @@ public interface ControllerApiBackend extends Controller, OpenemsComponent, Even
 	 *
 	 * @return the Channel
 	 */
-	public default StateChannel getUnableToSendChannel() {
+	default StateChannel getUnableToSendChannel() {
 		return this.channel(ChannelId.UNABLE_TO_SEND);
 	}
 
@@ -77,7 +78,7 @@ public interface ControllerApiBackend extends Controller, OpenemsComponent, Even
 	 * 
 	 * @return the Channel
 	 */
-	public default LongReadChannel getLastSuccessFulResendChannel() {
+	default LongReadChannel getLastSuccessFulResendChannel() {
 		return this.channel(ChannelId.LAST_SUCCESSFUL_RESEND);
 	}
 
@@ -95,7 +96,7 @@ public interface ControllerApiBackend extends Controller, OpenemsComponent, Even
 	 * 
 	 * @return true if it is connected
 	 */
-	public boolean isConnected();
+	boolean isConnected();
 
 	/**
 	 * Sends the request to the connected backend.
@@ -104,6 +105,20 @@ public interface ControllerApiBackend extends Controller, OpenemsComponent, Even
 	 * @param request the request to send
 	 * @return the result future
 	 */
-	public CompletableFuture<? extends JsonrpcResponseSuccess> sendRequest(User user, JsonrpcRequest request);
+	CompletableFuture<? extends JsonrpcResponseSuccess> sendRequest(User user, JsonrpcRequest request);
 
+	/**
+	 * Get the event emitter for backend events. You can use it to subscribe for
+	 * events like connection established, received notification from backend, etc.
+	 * 
+	 * @return {@link Subscribable} instance.
+	 */
+	Subscribable<BackendEvent> getEventHandler();
+
+	/**
+	 * Returns an array with all supported features from this backend.
+	 * 
+	 * @return Array with features this backend supports.
+	 */
+	public BackendFeature[] getSupportedFeatures();
 }

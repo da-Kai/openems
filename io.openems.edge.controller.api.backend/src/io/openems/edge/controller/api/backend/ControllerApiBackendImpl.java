@@ -1,16 +1,51 @@
 package io.openems.edge.controller.api.backend;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import static io.openems.common.utils.StringUtils.definedOrElse;
+
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
+import org.osgi.service.component.ComponentContext;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.event.Event;
+import org.osgi.service.event.EventHandler;
+import org.osgi.service.event.propertytypes.EventTopics;
+import org.osgi.service.metatype.annotations.Designate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
+import io.openems.common.event.EventEmitter;
 import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.common.jsonrpc.base.JsonrpcRequest;
 import io.openems.common.jsonrpc.base.JsonrpcResponseSuccess;
 import io.openems.common.jsonrpc.notification.EdgeConfigNotification;
 import io.openems.common.oem.OpenemsEdgeOem;
 import io.openems.common.types.EdgeConfig;
+import io.openems.common.utils.ArrayUtils;
 import io.openems.common.utils.ThreadPoolUtils;
 import io.openems.common.websocket.ClientReconnectorWorker;
 import io.openems.common.websocket.CommonHttpHeader;
 import io.openems.common.websocket.WebsocketClientParams;
+import io.openems.common.websocket.AbstractWebsocketClient;
+import io.openems.common.websocket.CommonHttpHeader;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -20,6 +55,8 @@ import io.openems.edge.common.jsonapi.EdgeKeys;
 import io.openems.edge.common.jsonapi.Key;
 import io.openems.edge.common.user.User;
 import io.openems.edge.controller.api.Controller;
+import io.openems.edge.controller.api.backend.api.BackendEvent;
+import io.openems.edge.controller.api.backend.api.BackendFeature;
 import io.openems.edge.controller.api.backend.api.ControllerApiBackend;
 import io.openems.edge.controller.api.common.ApiWorker;
 import io.openems.edge.controller.api.common.handler.ComponentConfigRequestHandler;
@@ -68,7 +105,6 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 
 	public static final Key<WebsocketClient> WEBSOCKET_CLIENT_KEY = new Key<>("websocketClient", WebsocketClient.class);
 
-	protected final SendChannelValuesWorker sendChannelValuesWorker = new SendChannelValuesWorker(this);
 	protected final ApiWorker apiWorker = new ApiWorker(this);
 
 	private final Logger log = OpenemsComponent.getComponentLogger(this);
@@ -81,6 +117,8 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 	@Reference
 	protected Cycle cycle;
 
+	protected EventEmitter<BackendEvent> backendEventsEmitter = new EventEmitter<>();
+
 	@Reference
 	private ResendHistoricDataWorkerFactory resendHistoricDataWorkerFactory;
 	protected ResendHistoricDataWorker resendHistoricDataWorker;
@@ -90,6 +128,7 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 	protected BackendOnRequest requestHandler;
 
 	protected WebsocketClient websocket = null;
+	protected SendChannelValuesWorker sendChannelValuesWorker;
 	protected Config config;
 	/**
 	 * Used for SubscribeSystemLogRequests.
@@ -110,7 +149,6 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 		super.activate(context, config.id(), config.alias(), config.enabled());
 
 		this.apiWorker.setLogChannel(this.getApiWorkerLogChannel());
-		this.resendHistoricDataWorker = this.resendHistoricDataWorkerFactory.get();
 		this.requestHandler = this.requestHandlerFactory.get();
 
 		if (!this.isEnabled()) {
@@ -162,15 +200,19 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 				.build());
 		this.websocket.start();
 
-		this.resendHistoricDataWorker = this.resendHistoricDataWorkerFactory.get();
-		this.resendHistoricDataWorker.setConfig(new ResendHistoricDataWorker.Config(//
-				this.getUnableToSendChannel().address(), //
-				this.getLastSuccessFulResendChannel().address(), //
-				config.resendPriority(), //
-				t -> this.getLastSuccessFulResendChannel().setNextValue(t), //
-				t -> this.websocket.sendMessage(t) //
-		));
-		this.resendHistoricDataWorker.activate(this.id(), false);
+		if (this.shouldUploadChannelData()) {
+			this.sendChannelValuesWorker = new SendChannelValuesWorker(this);
+
+			this.resendHistoricDataWorker = this.resendHistoricDataWorkerFactory.get();
+			this.resendHistoricDataWorker.setConfig(new ResendHistoricDataWorker.Config(//
+					this.getUnableToSendChannel().address(), //
+					this.getLastSuccessFulResendChannel().address(), //
+					config.resendPriority(), //
+					t -> this.getLastSuccessFulResendChannel().setNextValue(t), //
+					t -> this.websocket.sendMessage(t) //
+			));
+			this.resendHistoricDataWorker.activate(this.id(), false);
+		}
 
 		this.requestHandler.setOnCall(call -> {
 			call.put(WEBSOCKET_CLIENT_KEY, this.websocket);
@@ -190,9 +232,13 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 	@Deactivate
 	protected synchronized void deactivate() {
 		super.deactivate();
+
 		this.resendHistoricDataWorkerFactory.unget(this.resendHistoricDataWorker);
 		this.resendHistoricDataWorker = null;
-		this.sendChannelValuesWorker.deactivate();
+		if (this.sendChannelValuesWorker != null) {
+			this.sendChannelValuesWorker.deactivate();
+			this.sendChannelValuesWorker = null;
+		}
 		if (this.websocket != null) {
 			this.websocket.stop();
 		}
@@ -227,7 +273,9 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 			}
 			switch (event.getTopic()) {
 			case EdgeEventConstants.TOPIC_CYCLE_AFTER_PROCESS_IMAGE:
-				this.sendChannelValuesWorker.collectData();
+				if (this.sendChannelValuesWorker != null) {
+					this.sendChannelValuesWorker.collectData();
+				}
 				break;
 
 			case EdgeEventConstants.TOPIC_CONFIG_UPDATE:
@@ -242,7 +290,9 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 
 				// Trigger sending of all channel values, because a Component might have
 				// disappeared
-				this.sendChannelValuesWorker.sendValuesOfAllChannelsOnce();
+				if (this.sendChannelValuesWorker != null) {
+					this.sendChannelValuesWorker.sendValuesOfAllChannelsOnce();
+				}
 			}
 		} catch (Exception e) {
 			this.log.error(e.toString(), e);
@@ -293,4 +343,18 @@ public class ControllerApiBackendImpl extends AbstractOpenemsComponent
 		return this.websocket.debugLog();
 	}
 
+	@Override
+	public EventEmitter<BackendEvent> getEventHandler() {
+		return this.backendEventsEmitter;
+	}
+
+	@Override
+	public BackendFeature[] getSupportedFeatures() {
+		return this.config.supportedFeatures();
+	}
+
+	protected boolean shouldUploadChannelData() {
+		return this.config.useDefaultFeatures()
+				|| ArrayUtils.containsIgnoreNull(this.config.supportedFeatures(), BackendFeature.UPLOAD_CHANNEL_DATA);
+	}
 }
