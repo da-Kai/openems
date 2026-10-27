@@ -20,6 +20,9 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import io.openems.common.utils.FunctionUtils;
+import io.openems.common.websocket.ClientReconnectorWorker;
+import io.openems.common.websocket.WebsocketClientParams;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
@@ -54,7 +57,6 @@ import io.openems.common.session.Role;
 import io.openems.common.types.ChannelAddress;
 import io.openems.common.types.EdgeConfig;
 import io.openems.common.utils.PasswordUtils;
-import io.openems.common.websocket.AbstractWebsocketClient;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
@@ -186,8 +188,10 @@ public class Edge2EdgeWebsocketBridgeImpl extends AbstractOpenemsComponent
 		this.clusterSlaveUpdateableRegistration = context.getBundleContext()
 				.registerService(ClusterSlaveUpdateable.class, this.clusterSlaveUpdateable, new Hashtable<>());
 
-		this.client = new WebsocketClient(config.id(), URI.create("ws://" + config.ip() + ":" + config.port()),
-				emptyMap(), AbstractWebsocketClient.NO_PROXY, this::setConnectionState, this::onCurrentData,
+		var wsConfig = new WebsocketClientParams.Builder(URI.create("ws://" + config.ip() + ":" + config.port())) //
+				.reconnectorConfig(new ClientReconnectorWorker.Config(5, 10, 5, FunctionUtils::doNothing)) //
+				.build();
+		this.client = new WebsocketClient(config.id(), wsConfig, this::setConnectionState, this::onCurrentData,
 				this::onEdgeConfig, this::onChannelChange);
 
 		this.client.start();

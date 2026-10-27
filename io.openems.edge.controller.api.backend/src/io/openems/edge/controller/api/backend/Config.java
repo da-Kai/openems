@@ -1,10 +1,10 @@
 package io.openems.edge.controller.api.backend;
 
-import java.net.Proxy;
-
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.AttributeType;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
+
+import java.net.Proxy;
 
 import io.openems.common.channel.PersistencePriority;
 import io.openems.edge.controller.api.backend.api.BackendFeature;
@@ -26,7 +26,7 @@ import io.openems.edge.controller.api.backend.api.BackendFeature;
 	@AttributeDefinition(name = "Apikey", description = "Apikey for authentication at OpenEMS Backend.", type = AttributeType.PASSWORD)
 	String apikey();
 
-	@AttributeDefinition(name = "Uri", description = "The connection Uri to OpenEMS Backend.")
+	@AttributeDefinition(name = "URI", description = "The connection URI to OpenEMS Backend.")
 	String uri() default "";
 
 	@AttributeDefinition(name = "Proxy Address", description = "The IP address or hostname of the proxy server.")

@@ -1,15 +1,14 @@
 package io.openems.common.websocket;
 
-import static io.openems.common.utils.JsonrpcUtils.simplifyJsonrpcMessage;
-import static io.openems.common.utils.StringUtils.toShortString;
-import static io.openems.common.websocket.WebsocketUtils.generateWsDataString;
-
+import io.openems.common.jsonrpc.base.JsonrpcMessage;
 import org.java_websocket.WebSocket;
 import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.openems.common.jsonrpc.base.JsonrpcMessage;
+import static io.openems.common.utils.JsonrpcUtils.simplifyJsonrpcMessage;
+import static io.openems.common.utils.StringUtils.toShortString;
+import static io.openems.common.websocket.WebsocketUtils.generateWsDataString;
 
 public abstract class AbstractWebsocket<T extends WsData> {
 
@@ -20,7 +19,7 @@ public abstract class AbstractWebsocket<T extends WsData> {
 	/**
 	 * Creates an empty WsData object that is attached to the given
 	 * {@link WebSocket} as early as possible.
-	 * 
+	 *
 	 * @param ws the {@link WebSocket}
 	 * @return the typed {@link WsData}
 	 */
@@ -108,7 +107,7 @@ public abstract class AbstractWebsocket<T extends WsData> {
 	 * @return true if sending was successful
 	 */
 	protected final boolean sendMessage(WebSocket ws, JsonrpcMessage message) {
-		if (!ws.isOpen()) {
+		if (ws == null || !ws.isOpen()) {
 			// Catch status before to avoid throwing an expensive
 			// WebsocketNotConnectedException
 			this.sendMessageFailedLog(ws, message);
@@ -154,6 +153,12 @@ public abstract class AbstractWebsocket<T extends WsData> {
 	/**
 	 * Log a info message.
 	 *
+	 * <p>
+	 * <strong>DEPRECATED</strong>: Use
+	 * {@link io.openems.common.logger.PrefixedLogger} to create a Logger that
+	 * automatically includes a prefix in all log messages, and then use
+	 * that Logger for logging instead of this method.
+	 *
 	 * @param log     a Logger instance
 	 * @param message the message
 	 */
@@ -162,6 +167,12 @@ public abstract class AbstractWebsocket<T extends WsData> {
 	/**
 	 * Log a warn message.
 	 *
+	 * <p>
+	 * <strong>DEPRECATED</strong>: Use
+	 * {@link io.openems.common.logger.PrefixedLogger} to create a Logger that
+	 * automatically includes a prefix in all log messages, and then use
+	 * that Logger for logging instead of this method.
+	 *
 	 * @param log     a Logger instance
 	 * @param message the message
 	 */
@@ -169,6 +180,12 @@ public abstract class AbstractWebsocket<T extends WsData> {
 
 	/**
 	 * Log a error message.
+	 *
+	 * <p>
+	 * <strong>DEPRECATED</strong>: Use
+	 * {@link io.openems.common.logger.PrefixedLogger} to create a Logger that
+	 * automatically includes a prefix in all log messages, and then use
+	 * that Logger for logging instead of this method.
 	 *
 	 * @param log     a Logger instance
 	 * @param message the message

@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import io.openems.common.websocket.WebsocketClientParams;
 import org.java_websocket.WebSocket;
 import org.slf4j.Logger;
 
@@ -44,21 +45,14 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 
 	/**
 	 * Builds a {@link WebsocketClient}.
-	 * 
-	 * @param name              a human readble name
-	 * @param uri               the connection Uri to OpenEMS Backend Edge-Manager
-	 * @param id                unique ID of this Backend Edge Application
-	 * @param poolSize          number of threads to handle tasks
-	 * @param onConnectedChange callback for connection to Edge-Manager status
-	 *                          changes
-	 * @param app               reference to {@link BackendEdgeServerApp}
+	 *
+	 * @param name                   a human readble name
+	 * @param params                 the {@link WebsocketClientParams} for the connection
+	 * @param poolSize               number of threads to handle tasks
+	 * @param app                    reference to {@link BackendEdgeServerApp}
 	 */
-	public WebsocketClient(//
-			String name, URI uri, String id, int poolSize, //
-			BooleanConsumer onConnectedChange, //
-			BackendEdgeServerApp app) {
-		super(name, uri, Map.of("id", id), onConnectedChange,
-				new ClientReconnectorWorker.Config(100, 30, 2, FunctionUtils::doNothing));
+	public WebsocketClient(String name, WebsocketClientParams params, int poolSize, BackendEdgeServerApp app) {
+		super(name, params);
 		this.log = new ContextLogger(WebsocketClient.class, this.getName());
 		this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(poolSize,
 				new ThreadFactoryBuilder().setNameFormat("Backend.Edge.App-%d").build());
@@ -166,8 +160,14 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 		this.log.error(message);
 	}
 
+	/**
+	 * Checks if the WebSocket connection to the Edge-Manager is currently open.
+	 *
+	 * @return true if Open
+	 */
 	public boolean isConnected() {
-		return this.ws.isOpen();
+		final var websocket = this.ws.get();
+		return websocket != null && websocket.isOpen();
 	}
 
 	@Override
