@@ -2,6 +2,7 @@ package io.openems.edge.controller.api.backend;
 
 import java.net.Proxy;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -29,6 +30,8 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 	private final Logger log = LoggerFactory.getLogger(WebsocketClient.class);
 
 	private final ControllerApiBackendImpl parent;
+	private final URI serverUri;
+	private final BackendSrvResolver srvResolver = new BackendSrvResolver();
 	private final OnOpen onOpen;
 	private final io.openems.common.websocket.OnNotification onNotification;
 	private final OnError onError;
@@ -39,6 +42,7 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 		super(name, serverUri, AbstractWebsocketClient.DEFAULT_DRAFT, httpHeaders, proxy, null,
 				ClientReconnectorWorker.DEFAULT_CONFIG.withEventHandler(e -> onReconnectEvent(parent, e)));
 		this.parent = parent;
+		this.serverUri = serverUri;
 		this.onOpen = new OnOpen(parent);
 		this.onError = new OnError(parent);
 		this.onClose = (ws, code, reason, remote) -> {
@@ -65,6 +69,11 @@ public class WebsocketClient extends AbstractWebsocketClient<WsData> {
 		if (event == ClientReconnectorWorker.WebsocketReconnectorEvent.CLOSE_FAILED) {
 			ChannelUtils.setValue(parent, ControllerApiBackend.ChannelId.CONNECTION_CLOSE_FAILURE, true);
 		}
+	}
+
+	@Override
+	protected List<URI> resolveConnectionUris() {
+		return this.srvResolver.resolve(this.serverUri);
 	}
 
 	@Override

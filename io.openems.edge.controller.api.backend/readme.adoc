@@ -76,6 +76,15 @@ Implements the main Backend API controller service that maintains WebSocket conn
 | `debugMode` | Enable verbose debug logging | Boolean | `false`
 |===
 
+If the URI has no explicit port, the controller looks up `_openems._tcp.<hostname>` DNS SRV records.
+Only targets strictly below the configured hostname's registrable domain are accepted.
+For example, `api.example.com` can resolve to `node.example.com`, but not to `example.com` or `node.other.com`.
+Targets are tried in SRV priority and weighted order, with two seconds between attempts, on both initial connection and reconnection.
+If there is no SRV record or the DNS lookup fails, the configured URI is used with the normal WebSocket default port.
+If records exist but none are trusted and valid, no connection is made until a subsequent lookup succeeds.
+An explicit port or an IP literal bypasses the SRV lookup.
+TLS certificate validation uses the selected SRV target hostname.
+
 == WebSocket Communication Model
 
 The controller operates in a pull-push model:

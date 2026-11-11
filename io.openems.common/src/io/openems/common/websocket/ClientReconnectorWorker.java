@@ -2,6 +2,7 @@ package io.openems.common.websocket;
 
 import java.lang.reflect.Field;
 import java.net.Socket;
+import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -48,6 +49,7 @@ public class ClientReconnectorWorker extends AbstractWorker {
 
 	private static final long CLOSE_TIMEOUT_MILLIS = 60_000L;
 	private static final int THREAD_CYCLE_MILLIS = 1_000;
+	private static final long ENDPOINT_RETRY_DELAY_SECONDS = 2;
 
 	private final Logger log = LoggerFactory.getLogger(ClientReconnectorWorker.class);
 	private final AbstractWebsocketClient<?> parent;
@@ -56,6 +58,7 @@ public class ClientReconnectorWorker extends AbstractWorker {
 	private final List<String> additionalLogInfos = new CopyOnWriteArrayList<>();
 	private Stopwatch timeSinceLastTry;
 	private String debugLog = null;
+	private boolean connectionAttempted;
 
 	public ClientReconnectorWorker(AbstractWebsocketClient<?> parent, Config config) {
 		this.parent = parent;
@@ -84,40 +87,49 @@ public class ClientReconnectorWorker extends AbstractWorker {
 			return;
 		}
 
-		this.timeSinceLastTry.reset();
-		this.timeSinceLastTry.start();
-
-		this.logAndSetDebugInfo("Connecting WebSocket... [" + ws.getReadyState() + "]");
-
-		if (ws.getReadyState() != ReadyState.NOT_YET_CONNECTED) {
-			// Copy of WebSocketClient#reconnectBlocking.
-			// Do not 'reset' if WebSocket has never been connected before.
-			this.resetWebSocketClient(ws, this.parent::createWsData, this.config.connectTimeoutSeconds());
-		}
-
-		var success = false;
-		try {
-			this.logAndSetDebugInfo("# Connect Blocking [" + this.config.connectTimeoutSeconds() + "]...");
-			success = ws.connectBlocking(this.config.connectTimeoutSeconds(), TimeUnit.SECONDS);
-			if (success) {
-				this.callEvent(WebsocketReconnectorEvent.CONNECTED);
+		var uris = this.parent.resolveConnectionUris();
+		for (var i = 0; i < uris.size(); i++) {
+			if (i > 0) {
+				TimeUnit.SECONDS.sleep(ENDPOINT_RETRY_DELAY_SECONDS);
 			}
-			this.logAndSetDebugInfo("# Connect Blocking [" + this.config.connectTimeoutSeconds() + "]... done");
+			if (this.connect(ws, uris.get(i))) {
+				return;
+			}
+		}
+		if (uris.size() != 1) {
+			this.timeSinceLastTry.reset().start();
+		}
+		this.logAndSetDebugInfo("Connection failed");
+	}
 
-		} catch (IllegalStateException e) {
-			// Catch "WebSocketClient objects are not reuseable" thrown by
-			// WebSocketClient#connect(). Set WebSocketClient#connectReadThread to `null`.
-			this.logAndSetDebugInfo("# Reset WebSocket Client after Exception... " + e.getMessage());
+	private boolean connect(WebSocketClient ws, URI uri) throws Exception {
+		this.timeSinceLastTry.reset().start();
+		this.logAndSetDebugInfo("Connecting WebSocket [" + uri + "]... [" + ws.getReadyState() + "]");
+
+		if (this.connectionAttempted || ws.getReadyState() != ReadyState.NOT_YET_CONNECTED) {
 			this.resetWebSocketClient(ws, this.parent::createWsData, this.config.connectTimeoutSeconds());
-			this.logAndSetDebugInfo("# Reset WebSocket Client after Exception... done");
 		}
+		this.parent.setConnectionUri(uri);
 
-		if (success) {
-			this.logAndSetDebugInfo(
-					"Connected successfully [" + this.timeSinceLastTry.elapsed(TimeUnit.SECONDS) + "s]");
-		} else {
-			this.logAndSetDebugInfo("Connection failed");
+		try {
+			this.connectionAttempted = true;
+			this.logAndSetDebugInfo("# Connect Blocking [" + this.config.connectTimeoutSeconds() + "]...");
+			if (this.parent.connectWithTimeout(this.config.connectTimeoutSeconds())) {
+				this.callEvent(WebsocketReconnectorEvent.CONNECTED);
+				this.logAndSetDebugInfo(
+						"Connected successfully [" + this.timeSinceLastTry.elapsed(TimeUnit.SECONDS) + "s]");
+				return true;
+			}
+		} catch (IllegalStateException e) {
+			this.logAndSetDebugInfo("# Reset WebSocket Client after Exception... " + e.getMessage());
+		} catch (InterruptedException e) {
+			this.resetWebSocketClient(ws, this.parent::createWsData, this.config.connectTimeoutSeconds());
+			this.connectionAttempted = false;
+			throw e;
 		}
+		this.resetWebSocketClient(ws, this.parent::createWsData, this.config.connectTimeoutSeconds());
+		this.connectionAttempted = false;
+		return false;
 	}
 
 	private void logAndSetDebugInfo(String message) {

@@ -4,8 +4,11 @@ import java.net.ConnectException;
 import java.net.Proxy;
 import java.net.URI;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.java_websocket.WebSocket;
@@ -82,7 +85,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 		super(name);
 		this.serverUri = serverUri;
 		this.onConnectedChange = onConnectedChange == null ? FunctionUtils::doNothing : onConnectedChange;
-		this.ws = new WebSocketClient(serverUri, draft, httpHeaders) {
+		this.ws = new TargetWebSocketClient(serverUri, draft, httpHeaders) {
 
 			private void logInfo(String message) {
 				AbstractWebsocketClient.this.logInfo(AbstractWebsocketClient.this.log, message);
@@ -103,6 +106,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 						AbstractWebsocketClient.this::logWarn, //
 						AbstractWebsocketClient.this::handleInternalError));
 				this.updateIsConnected();
+				this.signalConnectionAttempt();
 			}
 
 			@Override
@@ -139,6 +143,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 
 				if (code == CloseFrame.NEVER_CONNECTED) {
 					// Ignore "Code [-1] Reason [Connection refused: connect]"
+					this.signalConnectionAttempt();
 					return;
 				}
 
@@ -152,6 +157,7 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 				}
 
 				this.updateIsConnected();
+				this.signalConnectionAttempt();
 			}
 
 			private void updateIsConnected() {
@@ -183,6 +189,51 @@ public abstract class AbstractWebsocketClient<T extends WsData> extends Abstract
 
 	protected void onWebsocketHandshakeSent(ClientHandshake request) {
 		// nothing
+	}
+
+	/**
+	 * Resolves the endpoints to try during a connection attempt.
+	 *
+	 * @return endpoints in connection order
+	 */
+	protected List<URI> resolveConnectionUris() {
+		return List.of(this.serverUri);
+	}
+
+	void setConnectionUri(URI uri) {
+		((TargetWebSocketClient) this.ws).setConnectionUri(uri);
+	}
+
+	boolean connectWithTimeout(int timeoutSeconds) throws InterruptedException {
+		return ((TargetWebSocketClient) this.ws).connectWithTimeout(timeoutSeconds);
+	}
+
+	private abstract static class TargetWebSocketClient extends WebSocketClient {
+
+		private volatile CountDownLatch connectionAttempt;
+
+		private TargetWebSocketClient(URI uri, Draft draft, Map<String, String> headers) {
+			super(uri, draft, headers);
+		}
+
+		private void setConnectionUri(URI uri) {
+			this.uri = uri;
+		}
+
+		private boolean connectWithTimeout(int timeoutSeconds) throws InterruptedException {
+			// WebSocketClient.connectBlocking() can block indefinitely resetting after a
+			// timeout.
+			this.connectionAttempt = new CountDownLatch(1);
+			this.connect();
+			return this.connectionAttempt.await(timeoutSeconds, TimeUnit.SECONDS) && this.isOpen();
+		}
+
+		protected void signalConnectionAttempt() {
+			var attempt = this.connectionAttempt;
+			if (attempt != null) {
+				attempt.countDown();
+			}
+		}
 	}
 
 	/**
